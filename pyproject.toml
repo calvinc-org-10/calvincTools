@@ -38,9 +38,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/calvincTools"
-Repository = "https://github.com/yourusername/calvincTools"
-"Bug Tracker" = "https://github.com/yourusername/calvincTools/issues"
+Homepage = "https://github.com/calvinc-org-10/calvincTools"
+Repository = "https://github.com/calvinc-org-10/calvincTools"
+"Bug Tracker" = "https://github.com/calvinc-org-10/calvincTools/issues"
 
 [tool.black]
 line-length = 100
