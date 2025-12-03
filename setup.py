@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="calvincTools",
-    version="1.2.0",
+    version="1.2.1",
     author="Calvin C",
     author_email="calvinc404@gmail.com",
     description="A Python package for calvincTools",
