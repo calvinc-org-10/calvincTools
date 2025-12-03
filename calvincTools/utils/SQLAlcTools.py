@@ -4,8 +4,8 @@ from sqlalchemy import (FromClause, Table, Select, select, text, inspect, )
 from sqlalchemy.orm import (Session, sessionmaker, DeclarativeMeta, )
 from sqlalchemy.sql.elements import ClauseElement
 
-from cMenu.database import (get_cMenu_session, get_cMenu_sessionmaker, )
-from app.database import (get_app_session, get_app_sessionmaker, )
+from ..database import (get_cMenu_session, get_cMenu_sessionmaker, )
+# from app.database import (get_app_session, get_app_sessionmaker, )
 
 
 retListofQSQLRecord = -1
@@ -18,7 +18,8 @@ def recordsetList(
     retFlds:int|List[str] = retListofQSQLRecord, 
     where:str|None = None, 
     orderby:str|None = None, 
-    ssnmaker: sessionmaker[Session] = get_app_sessionmaker(),
+    # ssnmaker: sessionmaker[Session] = get_app_sessionmaker(),
+    ssnmaker = None,
     ) -> List:
     """Execute a SELECT query and return a list of record mappings.
     
@@ -54,10 +55,12 @@ def recordsetList(
     if orderby:
         stmt = stmt.order_by(text(orderby))
     #endif filter
-    
-    with ssnmaker() as session:
-        records = session.execute(stmt)
-        retList = list(records.mappings())
+
+    retList = []    
+    if ssnmaker is not None:
+        with ssnmaker() as session:
+            records = session.execute(stmt)
+            retList = list(records.mappings())
 
     return retList
 #enddef recordsetList

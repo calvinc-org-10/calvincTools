@@ -24,7 +24,7 @@ from sqlalchemy.orm import (Session, sessionmaker, )
 
 from .cQModels import (SQLAlchemyTableModel, )
 
-from app.database import (get_app_sessionmaker, get_app_session, )
+# from app.database import (get_app_sessionmaker, get_app_session, )
 
 
 class cDataList(QLineEdit):

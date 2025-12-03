@@ -6,8 +6,6 @@ import webbrowser
 from PySide6.QtCore import (Qt, QObject,
     Signal, Slot, 
     QAbstractTableModel, QModelIndex, )
-# from PySide6.QtSql import (QSqlRecord, QSqlQuery, QSqlQueryModel, QSqlDatabase, )
-# from PySide6.QtSql import (QSqlQueryModel, )
 from PySide6.QtGui import (QFont, QIcon, )
 from PySide6.QtWidgets import ( QBoxLayout, QLayout, QStyle, QTabWidget, 
     QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QFormLayout, QFrame, 
@@ -26,22 +24,22 @@ from sqlalchemy.orm.session import make_transient
 # there's no need to import cMenu, plus it's a circular ref - cMenu depends heavily on this module
 # from .kls_cMenu import cMenu 
 
-from cMenu.utils import (
+from .utils import (
     recordsetList,
     cSimpleRecordForm_Base, cSimpleRecordForm, cQFmConstants,
     cComboBoxFromDict, 
     cstdTabWidget, cGridWidget,
     areYouSure, 
     )
-from menuformname_viewMap import FormNameToURL_Map
-from externalWebPageURL_Map import ExternalWebPageURL_Map
+# from menuformname_viewMap import FormNameToURL_Map
+# from externalWebPageURL_Map import ExternalWebPageURL_Map
 
 from .database import (
     get_cMenu_sessionmaker, get_cMenu_session, 
     Repository,
     )
 from .dbmenulist import (MenuRecords, newgroupnewmenu_menulist, newmenu_menulist, )
-from sysver import sysver
+# from sysver import sysver
 from .menucommand_constants import MENUCOMMANDS, COMMANDNUMBER
 from .models import (menuItems, menuGroups, )
 from .utils import (cComboBoxFromDict, cQFmFldWidg, cQFmNameLabel, cQFmNameLabel,
@@ -51,7 +49,9 @@ from .utils import (cComboBoxFromDict, cQFmFldWidg, cQFmNameLabel, cQFmNameLabel
     pleaseWriteMe,  
     )
 
-from app.database import (get_app_sessionmaker, get_app_session, )
+# from app.database import (get_app_sessionmaker, get_app_session, )
+# this is VERY temporary - will fix/workaround later
+get_app_sessionmaker = get_cMenu_sessionmaker
 
 # copied from cMenu - if you change it here, change it there
 _NUM_menuBUTTONS:int = 20
@@ -65,7 +65,11 @@ Nochoice = {'---': None}    # only needed for combo boxes, not datalists
 # fontFormTitle.setPointSize(24)
 
 
-def FormBrowse(parntWind, formname, *args, **kwargs) -> Any|None:
+def FormBrowse(parntWind, 
+    formname, 
+    FormNameToURL_Map:Dict[str,Tuple[str,Any]],
+    *args, **kwargs
+    ) -> Any|None:
     urlIndex = 0
     viewIndex = 1
 
@@ -116,9 +120,9 @@ def FormBrowse(parntWind, formname, *args, **kwargs) -> Any|None:
     # if hasattr(theForm,'render'): theForm = theForm.render()
     # return theForm
 
-def ShowTable(parntWind, tblname):
+def ShowTable(parntWind, tblname, FormNameToURL_Map):
     # showing a table is nothing more than another form
-    return FormBrowse(parntWind,tblname)
+    return FormBrowse(parntWind,tblname, FormNameToURL_Map)
 
 #####################################################
 #####################################################
@@ -1161,7 +1165,7 @@ class cEditMenu(cSimpleRecordForm):
     ########    Display 
 
     def displayMenu(self):
-        from cMenu.cMenu import cMenu as cMenuClass
+        from .cMenu import cMenu as cMenuClass
 
         menuGroup = self.intmenuGroup
         menuID = self.intmenuID
@@ -1501,7 +1505,8 @@ class cEditMenu(cSimpleRecordForm):
 #############################################
 
 
-from app.database import get_app_sessionmaker
+# TODO: pass db session/engine where needed into cMenu?
+# from app.database import get_app_sessionmaker
 class OpenTable(QWidget):
     
     class cOpnTblDlgGetTable(QDialog):
@@ -1697,8 +1702,7 @@ class OpenTable(QWidget):
 #############################################
 
 class loadExternalWebPage():
-    def __init__(self, webPgKey:str, parent:QWidget|None = None):
-        url = ExternalWebPageURL_Map.get(webPgKey, None)
+    def __init__(self, url:str|None, parent:QWidget|None = None):
         if url:
             self.reloadPage(url)
     # __init__
@@ -1712,20 +1716,3 @@ class loadExternalWebPage():
 #############################################
 #############################################
 
-
-class _internalForms:
-    EditMenu = '.-EDT-menu.-'
-    OpenTable = '-.OPN-tbL.-'
-    # RunCode = ''
-    RunSQLStatement = '.-ruN-sql.-'
-    # ConstructSQLStatement = ''
-    # LoadExtWebPage = '.-lod-ext-wbpg.-'
-    # ChangePW = ''
-    # EditParameters = ''
-    # EditGreetings = ''
-    IconThemeViewer = '.-icn-thm-vwr.-'
-# FormNameToURL_Maps for internal use only
-# FormNameToURL_Map['menu Argument'.lower()] = (url, view)
-FormNameToURL_Map[_internalForms.EditMenu] = (None, cEditMenu)
-FormNameToURL_Map[_internalForms.OpenTable] = (None, OpenTable)
-FormNameToURL_Map[_internalForms.RunSQLStatement] = (None, cMRunSQL)

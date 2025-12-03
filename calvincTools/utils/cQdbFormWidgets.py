@@ -29,7 +29,7 @@ from .cQWidgets import (cDataList, cComboBoxFromDict, cstdTabWidget, cGridWidget
 from .messageBoxes import (areYouSure, )
 from .SQLAlcTools import (get_primary_key_column, )
 
-from app.database import (get_app_sessionmaker, get_app_session, )
+# from app.database import (get_app_sessionmaker, get_app_session, )
 
 
 class cQFmConstants(Enum):
@@ -98,7 +98,7 @@ class cSimpleTableForm(QWidget):
     def __init__(self, 
         formname: str|None = None, 
         tbl: Type[Any]|None = None, 
-        ssnmaker: sessionmaker[Session] = get_app_sessionmaker(), 
+        ssnmaker = None, 
         parent: QWidget|None = None
         ):
         """Initialize the SimpleTableForm.
@@ -128,6 +128,7 @@ class cSimpleTableForm(QWidget):
 
         # Setup model
         assert self._tbl, "Table model class must be provided"
+        assert ssnmaker, "Session maker must be provided"
         self.model = SQLAlchemyTableModel(self._tbl, ssnmaker)
         # self.model.setEditStrategy(QSqlTableModel.OnFieldChange)
 
@@ -1244,7 +1245,8 @@ class cSimpleRecordForm_Base(QWidget):
         # _apply_opt_attr
 
         ssnmkr = self.ssnmaker()
-        ssnmkr = ssnmkr if ssnmkr else get_app_sessionmaker()
+        assert ssnmkr is not None, "ssnmkr must be set before placing fields"
+        # ssnmkr = ssnmkr if ssnmkr else get_app_sessionmaker()
         mdl = self.ORMmodel()
         assert mdl is not None, "ORMmodel must be set before placing fields"
     

@@ -1,5 +1,3 @@
-# from PySide6.QtSql import (QSqlDatabase, QSqlQuery )
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
