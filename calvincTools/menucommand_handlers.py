@@ -51,7 +51,7 @@ from .utils import (cComboBoxFromDict, cQFmFldWidg, cQFmNameLabel, cQFmNameLabel
 
 # from app.database import (get_app_sessionmaker, get_app_session, )
 # this is VERY temporary - will fix/workaround later
-get_app_sessionmaker = get_cMenu_sessionmaker
+# get_app_sessionmaker = get_cMenu_sessionmaker
 
 # copied from cMenu - if you change it here, change it there
 _NUM_menuBUTTONS:int = 20
@@ -335,11 +335,15 @@ class QWShowSQL(QWidget):
     def closeEvent(self, event):
         self.closeMe.emit()  # Emit the signal
         event.accept()  # Accept the close event (allows the window to close)
-    
+# QWShowSQL
+
 class cMRunSQL(QWidget):
-    def __init__(self, parent = None):
+    def __init__(self, parent = None, app_sessionmaker = None):
         super().__init__(parent)
 
+        assert app_sessionmaker is not None, "app_sessionmaker must be provided"
+        self.app_sessionmaker = app_sessionmaker
+        
         self.inputSQL:str|None = None
         # self.qmodel:QSqlQueryModel|None = None
         self.colNames:str|List[str]|None = None
@@ -363,7 +367,7 @@ class cMRunSQL(QWidget):
     @Slot(str)  #type: ignore
     def rawSQLexec(self, inputSQL:str):
         #TODO: choose session - put in user control
-        engine = get_app_sessionmaker().kw["bind"]
+        engine = self.app_sessionmaker().kw["bind"]
 
         self.qmodel = SQLAlchemySQLQueryModel(inputSQL, engine)
 
@@ -401,6 +405,7 @@ class cMRunSQL(QWidget):
             self.wndwShowSQL.close()
         # Close this widget (cMRunSQL) as well.
         self.close()
+# cMRunSQL
 
 #############################################
 #############################################
@@ -1498,7 +1503,7 @@ class cEditMenu(cSimpleRecordForm):
     ##########################################
     ########    Widget-responding procs
 
-# class cWidgetMenuItem
+# cEditMenu
 
 #############################################
 #############################################
@@ -1512,16 +1517,18 @@ class OpenTable(QWidget):
     class cOpnTblDlgGetTable(QDialog):
         _tableListSQL:str = 'PRAGMA table_list;'
         
-        def __init__(self, db:Engine = get_app_sessionmaker().kw["bind"], parent:QWidget|None = None):
+        def __init__(self, app_sessionmaker, parent:QWidget|None = None):
             super().__init__(parent)
             
+            # db:Engine = app_sessionmaker().kw["bind"]
+            
             self.setWindowModality(Qt.WindowModality.WindowModal)
-            self.setWindowTitle(parent.windowTitle() if parent else 'Choose Tablew')
+            self.setWindowTitle(parent.windowTitle() if parent else 'Choose Table')
 
             layoutTableName = QHBoxLayout()
             lblTableName = QLabel(self.tr('Table to Show'))
             self.combobxTableName = QComboBox(self)
-            self.combobxTableName.addItems(self.TableList())
+            self.combobxTableName.addItems(self.TableList(app_sessionmaker))
             layoutTableName.addWidget(lblTableName)
             layoutTableName.addWidget(self.combobxTableName)
 
@@ -1538,7 +1545,10 @@ class OpenTable(QWidget):
             
             self.setLayout(layoutMine)
 
-        def TableList(self, db:Engine = get_app_sessionmaker().kw["bind"]) -> List:
+        def TableList(self, app_sessionmaker) -> List:
+            
+            db:Engine = app_sessionmaker().kw["bind"]
+            
             qmodel = SQLAlchemySQLQueryModel(self._tableListSQL, db)
             
             colIdx = qmodel.colIndex('name')
@@ -1559,19 +1569,22 @@ class OpenTable(QWidget):
                 self.combobxTableName.currentText()    if ret==self.DialogCode.Accepted else None,
                 )
     
-    def __init__(self, tbl:str|None = None, db:Engine=get_app_sessionmaker().kw["bind"], parent:QWidget|None = None):
+    def __init__(self, tbl:str|None = None, app_sessionmaker=None, parent:QWidget|None = None):
         super().__init__(parent)
         
         # font = QFont()
         # font.setPointSize(12)
         # self.setFont(font)
+    
+        assert app_sessionmaker is not None, "app_sessionmaker must be provided"
+        db:Engine=app_sessionmaker().kw["bind"]
         
         if not tbl:
             # get tbl name
                 # use self._tableListSQL
             # read all table names
             # present and select
-            tbl = self.chooseTable(db)
+            tbl = self.chooseTable(app_sessionmaker)
         
         # for testing ...
         # tbl = 'incShip_hbl'
@@ -1638,8 +1651,8 @@ class OpenTable(QWidget):
         self.layoutForm.addLayout(self.layoutFormMain)
         # self.layoutForm.addLayout(layoutButtons)
         
-    def chooseTable(self, db:Engine = get_app_sessionmaker().kw["bind"]) -> str|None:
-        dlg = self.cOpnTblDlgGetTable(db, self)
+    def chooseTable(self, app_sessionmaker) -> str|None:
+        dlg = self.cOpnTblDlgGetTable(app_sessionmaker, self)
         retval, tblName = dlg.exec_DlgGetTbl()
         return tblName if retval == QDialog.DialogCode.Accepted else None
             

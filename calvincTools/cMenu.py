@@ -80,6 +80,7 @@ class cMenu(QWidget):
         sysver:str,
         FormNameToURL_Map,
         ExternalWebPageURL_Map,
+        app_sessionmaker,
         initMenu=(0,0)
         ): # , mWidth=None, mHeight=None):
         super().__init__(parent)
@@ -90,6 +91,7 @@ class cMenu(QWidget):
         self.FormNameToURL_Map = FormNameToURL_Map
         self._addInternalForms()
         self.ExternalWebPageURL_Map = ExternalWebPageURL_Map
+        self.app_sessionmaker = app_sessionmaker
         
         self.menuLayout = cGridWidget(scrollable=True)
         self.menuButton: Dict[int, cMenu.menuBUTTON] = {}
@@ -255,7 +257,7 @@ class cMenu(QWidget):
                 self.open_childScreen(CmdFm, frm)
         elif CommandText == 'RunSQLStatement':
             CmdFm = self._internalForms.RunSQLStatement
-            frm = menucommand_handlers.FormBrowse(self, CmdFm, self.FormNameToURL_Map)
+            frm = menucommand_handlers.FormBrowse(self, CmdFm, self.FormNameToURL_Map, app_sessionmaker=self.app_sessionmaker)
             if frm is not None: 
                 self.open_childScreen(CmdFm, frm)
         # elif CommandText == 'ConstructSQLStatement':

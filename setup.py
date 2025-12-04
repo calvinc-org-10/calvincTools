@@ -1,13 +1,14 @@
 from setuptools import setup, find_packages
+from calvincTools import (__version__, __author__, __email__, )
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
     name="calvincTools",
-    version="1.2.0",
-    author="Calvin C",
-    author_email="calvinc404@gmail.com",
+    version=__version__,
+    author=__author__,
+    author_email=__email__,
     description="A Python package for calvincTools",
     long_description=long_description,
     long_description_content_type="text/markdown",
