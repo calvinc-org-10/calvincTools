@@ -21,8 +21,8 @@ def get_cMenu_sessionmaker():
 ###################    REPOSITORIES    ###################
 ##########################################################
 
-from sqlalchemy import select
-from typing import Generic, Sequence, TypeVar, Type
+from sqlalchemy import (select, insert, update, delete, )   # pylint: disable=unused-import
+from typing import Generic, Sequence, TypeVar, Type     # pylint: disable=unused-import
 
 T = TypeVar("T")  # entity type
 
@@ -30,6 +30,7 @@ class Repository(Generic[T]):
     def __init__(self, session_factory, model: Type[T]):
         self._session_factory = session_factory
         self._model = model
+    # __init__
 
     def get_all(
         self,
@@ -66,6 +67,7 @@ class Repository(Generic[T]):
                 session.expunge(row)
 
         return results
+    # get_all
     
     def get_by_id(self, id_: int, newifnotfound: bool = False) -> T | None:
         with self._session_factory() as session:
@@ -75,6 +77,7 @@ class Repository(Generic[T]):
             elif newifnotfound:
                 obj = self._model(id=id_) # type: ignore
             return obj
+    # get_by_id
 
     def add(self, entity: T) -> T:
         with self._session_factory() as session:
@@ -83,12 +86,26 @@ class Repository(Generic[T]):
             session.refresh(entity)
             session.expunge(entity)
         return entity
+    # add
+    #addmultiple ??
 
     def remove(self, entity: T) -> None:
         with self._session_factory() as session:
             obj = session.merge(entity)  # reattach if detached
             session.delete(obj)
             session.commit()
+        # endwith
+    # remove
+    def removewhere(self, whereclause) -> int:
+        with self._session_factory() as session:
+            stmt = delete(self._model).where(whereclause)
+            rs = session.execute(stmt)
+            deleted_count = rs.rowcount    # Get the count of affected rows
+            session.commit()
+        # endwith
+        return deleted_count
+        # endwith
+    # removewhere
 
     def update(self, entity: T) -> T:
         with self._session_factory() as session:
@@ -96,3 +113,17 @@ class Repository(Generic[T]):
             session.commit()
             session.expunge(obj)
         return obj
+    # update
+    def updatewhere(self, whereclause, values: dict) -> int:
+        with self._session_factory() as session:
+            stmt = update(self._model) \
+                .where(whereclause) \
+                .values(**values)
+            rs = session.execute(stmt)
+            updated_count = rs.rowcount    # Get the count of affected rows
+            session.commit()
+        # endwith
+        return updated_count
+    #updatewhere
+    
+# Repository
