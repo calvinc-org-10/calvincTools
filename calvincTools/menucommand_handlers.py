@@ -363,7 +363,7 @@ class cMRunSQL(QWidget):
     @Slot(str)  #type: ignore
     def rawSQLexec(self, inputSQL:str):
         #TODO: choose session - put in user control
-        engine = self.app_sessionmaker().kw["bind"]
+        engine = self.app_sessionmaker().get_bind()
 
         self.qmodel = SQLAlchemySQLQueryModel(inputSQL, engine)
 
@@ -1541,7 +1541,7 @@ class OpenTable(QWidget):
 
         def TableList(self, app_sessionmaker) -> List:
             
-            db:Engine = app_sessionmaker().kw["bind"]
+            db:Engine = app_sessionmaker().get_bind()
             
             qmodel = SQLAlchemySQLQueryModel(self._tableListSQL, db)
             
@@ -1572,7 +1572,7 @@ class OpenTable(QWidget):
     
         app_sessionmaker = cTools_apphooks().get_app_sessionmaker()
         assert app_sessionmaker is not None, "app_sessionmaker must be provided"
-        db:Engine=app_sessionmaker().kw["bind"]
+        db:Engine=app_sessionmaker().get_bind()
         
         if not tbl:
             # get tbl name
