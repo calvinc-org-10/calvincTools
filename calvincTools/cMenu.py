@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (QApplication, QWidget, QGridLayout, QHBoxLayout, 
     )
 from PySide6.QtSvgWidgets import QSvgWidget
 
+from .apphooks import cTools_apphooks
 from .dbmenulist import MenuRecords
 from .menucommand_constants import MENUCOMMANDS, COMMANDNUMBER
 from . import menucommand_handlers
@@ -77,21 +78,22 @@ class cMenu(QWidget):
 
     def __init__(self, 
         parent:QWidget|None, 
-        sysver:str,
-        FormNameToURL_Map,
-        ExternalWebPageURL_Map,
-        app_sessionmaker,
         initMenu=(0,0)
         ): # , mWidth=None, mHeight=None):
         super().__init__(parent)
-        
-        self.MasterLayout: QVBoxLayout = QVBoxLayout(self)
-        
+
+        # TODO: deprecate these - get it from apphooks where needed
+        sysver:str = cTools_apphooks().get_appver()
+        FormNameToURL_Map:Dict[str,Tuple[Any,Any]] = cTools_apphooks().get_FormNameToURL_Map()
+        ExternalWebPageURL_Map:Dict[str,str] = cTools_apphooks().get_ExternalWebPageURL_Map()
+        app_sessionmaker = cTools_apphooks().get_app_sessionmaker()
         self.sysver = sysver
         self.FormNameToURL_Map = FormNameToURL_Map
         self._addInternalForms()
         self.ExternalWebPageURL_Map = ExternalWebPageURL_Map
         self.app_sessionmaker = app_sessionmaker
+        
+        self.MasterLayout: QVBoxLayout = QVBoxLayout(self)
         
         self.menuLayout = cGridWidget(scrollable=True)
         self.menuButton: Dict[int, cMenu.menuBUTTON] = {}
@@ -247,17 +249,17 @@ class cMenu(QWidget):
             CommandArg = int(CommandArg)
             self.loadMenu(self.menuGroup, CommandArg)
         elif CommandText == 'FormBrowse':
-            frm = menucommand_handlers.FormBrowse(self, CommandArg.lower(), self.FormNameToURL_Map)
+            frm = menucommand_handlers.FormBrowse(self, CommandArg.lower())
             if frm is not None: 
                 self.open_childScreen(CommandArg, frm)
         elif CommandText == 'OpenTable' :
             CmdFm = self._internalForms.OpenTable
-            frm = menucommand_handlers.FormBrowse(self, CmdFm, self.FormNameToURL_Map, CommandArg)
+            frm = menucommand_handlers.FormBrowse(self, CmdFm, CommandArg)
             if frm is not None: 
                 self.open_childScreen(CmdFm, frm)
         elif CommandText == 'RunSQLStatement':
             CmdFm = self._internalForms.RunSQLStatement
-            frm = menucommand_handlers.FormBrowse(self, CmdFm, self.FormNameToURL_Map, app_sessionmaker=self.app_sessionmaker)
+            frm = menucommand_handlers.FormBrowse(self, CmdFm)
             if frm is not None: 
                 self.open_childScreen(CmdFm, frm)
         # elif CommandText == 'ConstructSQLStatement':
@@ -274,7 +276,7 @@ class cMenu(QWidget):
         # elif CommandText == 'ChangeMenuGroup':
         elif CommandText == 'EditMenu':
             CmdFm = self._internalForms.EditMenu
-            frm = menucommand_handlers.FormBrowse(self, CmdFm, self.FormNameToURL_Map, MainMenuWindow=self)
+            frm = menucommand_handlers.FormBrowse(self, CmdFm, MainMenuWindow=self)
             if frm: 
                 self.open_childScreen(CmdFm, frm)
         # elif CommandText == 'EditParameters':

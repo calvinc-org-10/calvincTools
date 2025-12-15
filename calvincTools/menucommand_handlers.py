@@ -31,9 +31,7 @@ from .utils import (
     cstdTabWidget, cGridWidget,
     areYouSure, 
     )
-# from menuformname_viewMap import FormNameToURL_Map
-# from externalWebPageURL_Map import ExternalWebPageURL_Map
-
+from .apphooks import cTools_apphooks
 from .database import (
     get_cMenu_sessionmaker, get_cMenu_session, 
     Repository,
@@ -49,10 +47,6 @@ from .utils import (cComboBoxFromDict, cQFmFldWidg, cQFmNameLabel, cQFmNameLabel
     pleaseWriteMe,  
     )
 
-# from app.database import (get_app_sessionmaker, get_app_session, )
-# this is VERY temporary - will fix/workaround later
-# get_app_sessionmaker = get_cMenu_sessionmaker
-
 # copied from cMenu - if you change it here, change it there
 _NUM_menuBUTTONS:int = 20
 _NUM_menuBUTNCOLS:int = 2
@@ -67,12 +61,13 @@ Nochoice = {'---': None}    # only needed for combo boxes, not datalists
 
 def FormBrowse(parntWind, 
     formname, 
-    FormNameToURL_Map:Dict[str,Tuple[str,Any]],
     *args, **kwargs
     ) -> Any|None:
     urlIndex = 0
     viewIndex = 1
 
+    FormNameToURL_Map:Dict[str,Tuple[str,Any]] = cTools_apphooks().get_FormNameToURL_Map()
+    
     # theForm = 'Form ' + formname + ' is not built yet.  Calvin needs more coffee.'
     theForm = None
     # formname = formname.lower()
@@ -338,9 +333,10 @@ class QWShowSQL(QWidget):
 # QWShowSQL
 
 class cMRunSQL(QWidget):
-    def __init__(self, parent = None, app_sessionmaker = None):
+    def __init__(self, parent = None):
         super().__init__(parent)
 
+        app_sessionmaker = cTools_apphooks().get_app_sessionmaker()
         assert app_sessionmaker is not None, "app_sessionmaker must be provided"
         self.app_sessionmaker = app_sessionmaker
         
@@ -1510,17 +1506,15 @@ class cEditMenu(cSimpleRecordForm):
 #############################################
 
 
-# TODO: pass db session/engine where needed into cMenu?
-# from app.database import get_app_sessionmaker
 class OpenTable(QWidget):
     
     class cOpnTblDlgGetTable(QDialog):
         _tableListSQL:str = 'PRAGMA table_list;'
         
-        def __init__(self, app_sessionmaker, parent:QWidget|None = None):
+        def __init__(self, parent:QWidget|None = None):
             super().__init__(parent)
             
-            # db:Engine = app_sessionmaker().kw["bind"]
+            app_sessionmaker = cTools_apphooks().get_app_sessionmaker()
             
             self.setWindowModality(Qt.WindowModality.WindowModal)
             self.setWindowTitle(parent.windowTitle() if parent else 'Choose Table')
@@ -1569,13 +1563,14 @@ class OpenTable(QWidget):
                 self.combobxTableName.currentText()    if ret==self.DialogCode.Accepted else None,
                 )
     
-    def __init__(self, tbl:str|None = None, app_sessionmaker=None, parent:QWidget|None = None):
+    def __init__(self, tbl:str|None = None, parent:QWidget|None = None):
         super().__init__(parent)
         
         # font = QFont()
         # font.setPointSize(12)
         # self.setFont(font)
     
+        app_sessionmaker = cTools_apphooks().get_app_sessionmaker()
         assert app_sessionmaker is not None, "app_sessionmaker must be provided"
         db:Engine=app_sessionmaker().kw["bind"]
         
@@ -1584,7 +1579,7 @@ class OpenTable(QWidget):
                 # use self._tableListSQL
             # read all table names
             # present and select
-            tbl = self.chooseTable(app_sessionmaker)
+            tbl = self.chooseTable()
         
         # for testing ...
         # tbl = 'incShip_hbl'
@@ -1651,8 +1646,8 @@ class OpenTable(QWidget):
         self.layoutForm.addLayout(self.layoutFormMain)
         # self.layoutForm.addLayout(layoutButtons)
         
-    def chooseTable(self, app_sessionmaker) -> str|None:
-        dlg = self.cOpnTblDlgGetTable(app_sessionmaker, self)
+    def chooseTable(self) -> str|None:
+        dlg = self.cOpnTblDlgGetTable(self)
         retval, tblName = dlg.exec_DlgGetTbl()
         return tblName if retval == QDialog.DialogCode.Accepted else None
             
