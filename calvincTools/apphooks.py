@@ -1,4 +1,4 @@
-# calvinctools/cTools_apphooks.py
+# calvinctools/apphooks.py
 
 class cTools_apphooks:
     """

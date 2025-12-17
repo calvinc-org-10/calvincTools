@@ -5,8 +5,8 @@ calvincTools - A Python package
 _pkgname='Calvin C Tools'
 _base_ver_major=1
 _base_ver_minor=2
-_base_ver_patch=3
-_ver_date='2025-12-14'
+_base_ver_patch=4
+_ver_date='2025-12-15'
 _base_ver = f'{_base_ver_major}.{_base_ver_minor}.{_base_ver_patch}'
 __version__ = _base_ver
 sysver = {
@@ -21,6 +21,7 @@ __author__ = "Calvin C"
 __email__ = "calvinc404@gmail.com"
 
 # Change Log:
+# 1.2.4 - 2025-12-15 - bug fix - replace .kw['bind'] with .get_bind()
 # 1.2.3 - 2025-12-14 - cTools_apphooks
 # 1.2.2 - 2025-12-03 - fixed some bugs, pass app_sessionmaker where needed
         # TODO: set cMenu vars via subclassing - use cSimpleRecordForm as example
