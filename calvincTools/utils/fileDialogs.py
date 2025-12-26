@@ -18,8 +18,6 @@ class cFileSelectWidget(QWidget):
     """A QPushButton that accepts file drops and opens a QFileDialog
     with the dropped file pre-selected.
     """
-    _btnChooseFile: QPushButton = QPushButton()
-    _lblFileChosen: QLabel = QLabel("No file chosen")
     fileChosen: Signal = Signal()
     
     def __init__(self, *args, btnIcon=None, btnText="Pick or Drop File Here", **kwargs):
@@ -27,6 +25,10 @@ class cFileSelectWidget(QWidget):
         # TODO: TFacceptMultiFiles: bool = False
         
         super().__init__(*args, **kwargs)
+        
+        self._btnChooseFile: QPushButton = QPushButton()
+        self._lblFileChosen: QLabel = QLabel("No file chosen")
+        
         if btnIcon is not None:
             self._btnChooseFile.setIcon(btnIcon)
         self._btnChooseFile.setText(btnText)
