@@ -60,10 +60,12 @@ class StandardMenuBuilder:
         self.menuGroup_id = menuGroup_id
         
         try:
+            # Use SQLAlchemy for safer database access
             with self._session_maker() as session:
+                from sqlalchemy import text
                 result = session.execute(
-                    "SELECT menu_structure FROM menugroup_stdmenus WHERE MenuGroup_id = ?",
-                    (menuGroup_id,)
+                    text("SELECT menu_structure FROM menugroup_stdmenus WHERE MenuGroup_id = :group_id"),
+                    {"group_id": menuGroup_id}
                 ).fetchone()
                 
                 if result:
@@ -192,8 +194,19 @@ class StandardMenuBuilder:
         Returns:
             Handler function if found, None otherwise
         """
+        # Whitelist of allowed handler methods for security
+        # This prevents accidental exposure of unintended methods
+        ALLOWED_HANDLERS = {
+            'handleNew', 'handleExit', 'handleAbout', 'handleDocumentation',
+            'handleTheme', 'handleLanguage', 'handleRefresh', 'handleImportExcel',
+            'handleImportCSV', 'handleExportExcel', 'handleExportPDF',
+            # Add more handlers as needed
+        }
+        
         if hasattr(menucommand_handlers, handler_name):
-            return getattr(menucommand_handlers, handler_name)
+            # Only allow whitelisted handlers unless it starts with Form
+            if handler_name in ALLOWED_HANDLERS or handler_name.startswith('Form'):
+                return getattr(menucommand_handlers, handler_name)
         
         # Check if it's a FormBrowse wrapper
         if handler_name.startswith('FormBrowse:'):

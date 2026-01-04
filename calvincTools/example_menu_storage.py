@@ -225,26 +225,27 @@ def store_menu_structure(menuGroup_id: int, menu_structure: Dict[str, Any]) -> b
         menu_json = json.dumps(menu_structure, indent=2)
         
         with get_cMenu_session() as session:
+            from sqlalchemy import text
             # Check if structure already exists
             existing = session.execute(
-                "SELECT id FROM menugroup_stdmenus WHERE MenuGroup_id = ?",
-                (menuGroup_id,)
+                text("SELECT id FROM menugroup_stdmenus WHERE MenuGroup_id = :group_id"),
+                {"group_id": menuGroup_id}
             ).fetchone()
             
             if existing:
                 # Update existing structure
                 session.execute(
-                    """UPDATE menugroup_stdmenus 
-                       SET menu_structure = ?, updated_at = CURRENT_TIMESTAMP 
-                       WHERE MenuGroup_id = ?""",
-                    (menu_json, menuGroup_id)
+                    text("""UPDATE menugroup_stdmenus 
+                       SET menu_structure = :structure, updated_at = CURRENT_TIMESTAMP 
+                       WHERE MenuGroup_id = :group_id"""),
+                    {"structure": menu_json, "group_id": menuGroup_id}
                 )
             else:
                 # Insert new structure
                 session.execute(
-                    """INSERT INTO menugroup_stdmenus (MenuGroup_id, menu_structure) 
-                       VALUES (?, ?)""",
-                    (menuGroup_id, menu_json)
+                    text("""INSERT INTO menugroup_stdmenus (MenuGroup_id, menu_structure) 
+                       VALUES (:group_id, :structure)"""),
+                    {"group_id": menuGroup_id, "structure": menu_json}
                 )
             
             session.commit()
@@ -266,9 +267,10 @@ def get_menu_structure(menuGroup_id: int) -> Optional[Dict[str, Any]]:
     """
     try:
         with get_cMenu_session() as session:
+            from sqlalchemy import text
             result = session.execute(
-                "SELECT menu_structure FROM menugroup_stdmenus WHERE MenuGroup_id = ?",
-                (menuGroup_id,)
+                text("SELECT menu_structure FROM menugroup_stdmenus WHERE MenuGroup_id = :group_id"),
+                {"group_id": menuGroup_id}
             ).fetchone()
             
             if result:
@@ -291,9 +293,10 @@ def delete_menu_structure(menuGroup_id: int) -> bool:
     """
     try:
         with get_cMenu_session() as session:
+            from sqlalchemy import text
             session.execute(
-                "DELETE FROM menugroup_stdmenus WHERE MenuGroup_id = ?",
-                (menuGroup_id,)
+                text("DELETE FROM menugroup_stdmenus WHERE MenuGroup_id = :group_id"),
+                {"group_id": menuGroup_id}
             )
             session.commit()
             return True
