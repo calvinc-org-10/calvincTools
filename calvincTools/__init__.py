@@ -6,7 +6,7 @@ _pkgname='Calvin C Tools'
 _base_ver_major=1
 _base_ver_minor=5
 _base_ver_patch=0
-_ver_date='2025-12-28'
+_ver_date='2026-01-04'
 _base_ver = f'{_base_ver_major}.{_base_ver_minor}.{_base_ver_patch}'
 __version__ = _base_ver
 sysver = {
@@ -21,7 +21,7 @@ __author__ = "Calvin C"
 __email__ = "calvinc404@gmail.com"
 
 # Change Log:
-# 1.5.0 - 2025-12-30 - removed calvindate class
+# 1.5.0 - 2026-01-04 - DeprecationWarning on calvindate class. Removal coming soon
 # 1.4.0 - 2025-12-28 - added cPrintManager to utils/print.py
 # 1.3.1 - 2025-12-26 - fixed issue in cFileDialogDropWidget
 # 1.3.0 - 2025-12-20 - added cFileDialogDropWidget to utils/fileDialogs.py.
