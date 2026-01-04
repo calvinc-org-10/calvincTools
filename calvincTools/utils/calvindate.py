@@ -23,6 +23,8 @@ class calvindate(datetime):
             calvindate(date_object)               # date_object is a datetime.date or datetime.datetime object
     """
     def __new__(cls, *args):
+        raise DeprecationWarning("calvindate class has been removed as of version 1.5.0. Please use datetime and dateutil directly.")   
+        return None
     # def __init__(self, *args) -> None:
     # we initialize via __new__ since datetime is immutable (__init__ constructor parameters must be YY,MM,DD, with optional hh,mm,ss,us)
     # since we want to allow more flexible construction formats, we have to do the work here
