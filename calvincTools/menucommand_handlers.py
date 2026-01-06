@@ -24,13 +24,6 @@ from sqlalchemy.orm.session import make_transient
 # there's no need to import cMenu, plus it's a circular ref - cMenu depends heavily on this module
 # from .kls_cMenu import cMenu 
 
-from .utils import (
-    recordsetList,
-    cSimpleRecordForm_Base, cSimpleRecordForm, cQFmConstants,
-    cComboBoxFromDict, 
-    cstdTabWidget, cGridWidget,
-    areYouSure, 
-    )
 from .apphooks import cTools_apphooks
 from .database import (
     get_cMenu_sessionmaker, get_cMenu_session, 
@@ -40,9 +33,15 @@ from .dbmenulist import (MenuRecords, newgroupnewmenu_menulist, newmenu_menulist
 # from sysver import sysver
 from .menucommand_constants import MENUCOMMANDS, COMMANDNUMBER
 from .models import (menuItems, menuGroups, )
-from .utils import (cComboBoxFromDict, cQFmFldWidg, cQFmNameLabel, cQFmNameLabel,
-    SQLAlchemyTableModel, SQLAlchemySQLQueryModel,
-    UnderConstruction_Dialog, areYouSure,
+from .utils import (
+    recordsetList,
+    cSimpleRecordForm_Base, cSimpleRecordForm, cQFmConstants,
+    cComboBoxFromDict, 
+    cstdTabWidget, cGridWidget,
+    areYouSure, 
+    cQFmNameLabel, 
+    SQLAlchemySQLQueryModel,
+    UnderConstruction_Dialog,
     Excelfile_fromqs, ExcelWorkbook_fileext,
     pleaseWriteMe,  
     )
@@ -341,7 +340,7 @@ class cMRunSQL(QWidget):
         self.app_sessionmaker = app_sessionmaker
         
         self.inputSQL:str|None = None
-        # self.qmodel:QSqlQueryModel|None = None
+        self.qmodel:SQLAlchemySQLQueryModel
         self.colNames:str|List[str]|None = None
         self.wndwAlive:Dict[str,bool] = {}
         
@@ -352,7 +351,7 @@ class cMRunSQL(QWidget):
         self.wndwAlive['Get'] = True
         self.wndwGetSQL.destroyed.connect(lambda: self.wndwDest('Get'))
         
-        # self.wndwShowSQL = None        # will be redefined later
+        self.wndwShowSQL: QWShowSQL     # will be redefined later
 
     def wndwDest(self, whichone:str):
         self.wndwAlive[whichone] = False
@@ -1478,20 +1477,22 @@ class cEditMenu(cSimpleRecordForm):
         pleaseWriteMe('Remove Menu', parent=self)
         return
         
-        (mGrp, mnu, mOpt) = (self.currRec().MenuGroup, self.currRec().MenuID, self.currRec().OptionNumber)
+        ##### old code below #####
+        # (mGrp, mnu, mOpt) = (self.currRec().MenuGroup, self.currRec().MenuID, self.currRec().OptionNumber)
         
-        # verify delete
+        # # verify delete
         
-        # remove from db
-        if self.currRec().pk:
-            self.currRec().delete()
+        # # remove from db
+        # if self.currRec().pk:
+        #     self.currRec().delete()
         
-        # replace with an "next" record
-        self.setcurrRec(menuItems_QT(
-            MenuGroup = mGrp,
-            MenuID = mnu,
-            OptionNumber = mOpt,
-            ))
+        # # replace with an "next" record
+        # self.setcurrRec(menuItems_QT(
+        #     MenuGroup = mGrp,
+        #     MenuID = mnu,
+        #     OptionNumber = mOpt,
+        #     ))
+    # rmvMenu
 
     ##########################################
     ########    object status
