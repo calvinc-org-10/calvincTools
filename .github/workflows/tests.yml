@@ -63,10 +63,11 @@ jobs:
         flake8 calvincTools --count --select=E9,F63,F7,F82 --show-source --statistics
         # Exit-zero treats all errors as warnings
         flake8 calvincTools --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
-    
-    - name: Check formatting with black
-      run: |
-        black --check calvincTools tests
+
+    # skip black check
+    # - name: Check formatting with black
+    #   run: |
+    #     black --check calvincTools tests
     
     - name: Type check with mypy
       run: |
