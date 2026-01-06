@@ -35,7 +35,7 @@ setup(
     install_requires=[
         # Add your package dependencies here
         # e.g., "numpy>=1.20.0",
-        "﻿PySide6==6.10.1",
+        "PySide6==6.10.1",
         "PySide6_Addons==6.10.1",
         "PySide6_Essentials==6.10.1",
         "typing_extensions==4.12.2",
