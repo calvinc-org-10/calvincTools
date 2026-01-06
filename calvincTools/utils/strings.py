@@ -1,5 +1,6 @@
+from typing import Any
 
-def str2(s: str, TypeTransforms={None: lambda:'', }, ValueTransforms={None: lambda:''}) -> str:
+def str2(s: Any, TypeTransforms={None: lambda:'', }, ValueTransforms={None: lambda:''}) -> str:
     """
     Convert input to string, handling "special values or types".
     :param s: Input value.

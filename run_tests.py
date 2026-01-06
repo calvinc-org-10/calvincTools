@@ -109,6 +109,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # skip testing for now
-    # sys.exit(main())
-    ...
+    sys.exit(main())

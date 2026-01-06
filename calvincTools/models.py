@@ -12,7 +12,6 @@ from .utils import (pleaseWriteMe, )
 
 from .database import (get_cMenu_sessionmaker, get_cMenu_session, )
 from .menucommand_constants import MENUCOMMANDS, COMMANDNUMBER
-from .dbmenulist import (newgroupnewmenu_menulist, )
 
 
 tblName_menuGroups = 'cMenu_menuGroups'

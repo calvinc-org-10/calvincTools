@@ -39,6 +39,7 @@ A comprehensive test suite has been developed for the calvincTools project, prov
   - Various quote patterns
 
 #### Date Utilities (`calvincTools.utils.calvindate`)
+### (calvindate deprecated - tests removed)
 - ✅ `calvindate` class construction
   - Multiple construction formats (no args, Y/M/D, M/D, date object, string)
   - Time components (hour, minute, second, microsecond)

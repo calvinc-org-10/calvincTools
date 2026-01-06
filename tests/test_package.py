@@ -55,13 +55,6 @@ class TestModuleImports:
         assert hasattr(strings, 'UnWrapQuotes')
         assert hasattr(strings, 'IsWrappedInQuotes')
     
-    def test_import_utils_calvindate(self):
-        """Test importing calvindate."""
-        from calvincTools.utils.calvindate import calvindate, IsDateString
-        # calvindate is a class, not a module
-        assert calvindate is not None
-        assert IsDateString is not None
-    
     def test_import_utils_misctools(self):
         """Test importing misctools."""
         from calvincTools.utils import misctools

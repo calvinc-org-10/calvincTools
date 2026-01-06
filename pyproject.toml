@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "calvincTools"
-version = "1.5.0"
+version = "1.5.1"
 description = "A Python package for calvincTools"
 readme = "README.md"
 authors = [
@@ -26,6 +26,19 @@ classifiers = [
 requires-python = ">=3.9"
 dependencies = [
     # Add your package dependencies here
+    "﻿PySide6==6.10.1",
+    "PySide6_Addons==6.10.1",
+    "PySide6_Essentials==6.10.1",
+    "typing_extensions==4.12.2",
+    "et_xmlfile==2.0.0",
+    "openpyxl==3.1.5",
+    "qtawesome==1.4.0",
+    "shiboken6==6.10.1",
+    "SQLAlchemy==2.0.36",
+    "sqlparse==0.5.3",
+    "python-dateutil==2.9.0.post0",
+    "tzdata==2024.2"
+
 ]
 
 [project.optional-dependencies]

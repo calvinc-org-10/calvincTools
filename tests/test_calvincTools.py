@@ -44,11 +44,9 @@ def test_sysver_format():
 def test_utils_submodule_import():
     """Test that utils submodules can be imported."""
     from calvincTools.utils import strings
-    from calvincTools.utils import calvindate
     from calvincTools.utils import misctools
     
     assert strings is not None
-    assert calvindate is not None
     assert misctools is not None
 
 

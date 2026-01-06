@@ -2,39 +2,13 @@
 import pytest
 from datetime import datetime
 from calvincTools.utils.strings import str2, WrapInQuotes, UnWrapQuotes
-from calvincTools.utils.calvindate import calvindate
 from calvincTools.utils.misctools import show_fns
 
 
 class TestIntegrationStringAndDate:
     """Test integration between string utilities and date handling."""
+    pass
     
-    def test_str2_with_calvindate(self):
-        """Test str2 function with calvindate objects."""
-        cd = calvindate(2024, 11, 15, 10, 30, 0)
-        date_str = str2(str(cd))
-        assert "2024" in date_str
-        assert "11" in date_str
-        assert "15" in date_str
-    
-    def test_wrap_date_string(self):
-        """Test wrapping date strings in quotes."""
-        cd = calvindate(2024, 11, 15)
-        date_str = str(cd)
-        wrapped = WrapInQuotes(date_str)
-        assert wrapped.startswith('"')
-        assert wrapped.endswith('"')
-    
-    def test_parse_unwrapped_date(self):
-        """Test parsing dates that have been wrapped and unwrapped."""
-        original_date = "2024-11-15"
-        wrapped = WrapInQuotes(original_date)
-        unwrapped = UnWrapQuotes(wrapped)
-        cd = calvindate(unwrapped)
-        assert cd.year == 2024
-        assert cd.month == 11
-        assert cd.day == 15
-
 
 class TestIntegrationModelsAndUtils:
     """Test integration between models and utilities."""
@@ -77,39 +51,7 @@ class TestIntegrationModelsAndUtils:
 
 class TestIntegrationDateCalculations:
     """Test integration of date calculations with real-world scenarios."""
-    
-    def test_calculate_future_dates(self):
-        """Test calculating future dates for scheduling."""
-        start_date = calvindate(2024, 11, 15)
-        
-        # Calculate dates in the future
-        one_week = start_date.daysfrom(7)
-        two_weeks = start_date.daysfrom(14)
-        one_month = start_date.daysfrom(30)
-        
-        assert one_week.day == 22
-        assert two_weeks.day == 29
-        assert one_month.month == 12
-        assert one_month.day == 15
-    
-    def test_workday_scheduling(self):
-        """Test scheduling to next workday."""
-        # Friday
-        friday = calvindate(2024, 12, 6)
-        next_workday = friday.nextWorkdayAfter()
-        
-        # Should be Monday
-        assert next_workday.weekday() == 0
-        assert next_workday.day == 9
-    
-    def test_date_range_iteration(self):
-        """Test iterating over a date range."""
-        start = calvindate(2024, 11, 1)
-        dates = [start.daysfrom(i) for i in range(7)]
-        
-        assert len(dates) == 7
-        assert dates[0].day == 1
-        assert dates[6].day == 7
+    pass
 
 
 class TestIntegrationFileAnalysis:
@@ -167,7 +109,7 @@ class TestIntegrationEndToEnd:
         from calvincTools.models import menuGroups, menuItems
         
         # Create a group with date-based naming
-        today = calvindate()
+        today = datetime.today().date()
         group_name = f"Group_{today.year}_{today.month}_{today.day}"
         
         group = menuGroups(
@@ -206,7 +148,7 @@ class TestIntegrationEndToEnd:
         """Test storing date-related parameters."""
         from calvincTools.models import cParameters
         
-        install_date = calvindate(2024, 11, 1)
+        install_date = datetime(2024, 11, 1).date()
         
         param = cParameters(
             ParmName="InstallDate",
@@ -219,8 +161,8 @@ class TestIntegrationEndToEnd:
         
         # Retrieve and parse
         found = test_session.query(cParameters).filter_by(ParmName="InstallDate").first()
-        parsed_date = calvindate(found.ParmValue)
+        # parsed_date = calvindate(found.ParmValue)
         
-        assert parsed_date.year == 2024
-        assert parsed_date.month == 11
-        assert parsed_date.day == 1
+        # assert parsed_date.year == 2024
+        # assert parsed_date.month == 11
+        # assert parsed_date.day == 1
