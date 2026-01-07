@@ -5,8 +5,8 @@ calvincTools - A Python package
 _pkgname='Calvin C Tools'
 _base_ver_major=1
 _base_ver_minor=5
-_base_ver_patch=1
-_ver_date='2026-01-05'
+_base_ver_patch=2
+_ver_date='2026-01-06'
 _base_ver = f'{_base_ver_major}.{_base_ver_minor}.{_base_ver_patch}'
 __version__ = _base_ver
 sysver = {
@@ -21,6 +21,7 @@ __author__ = "Calvin C"
 __email__ = "calvinc404@gmail.com"
 
 # Change Log:
+# 1.5.2 - 2026-01-06 - simplified str2 function in utils/strings.py for now - doesn't work as intended
 # 1.5.1 - 2026-01-05 - fixed setup.py and pyproject.toml so that tests actually run (sort of)
 #       removed calvindate tests
 #       allow str2 to accept Any type
