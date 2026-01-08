@@ -58,6 +58,12 @@ Unlike `cSimpleRecordForm_Base` which is abstract, `cSimpleRecordForm`:
 | `pages` | `List[str]` | List of page/tab names (inherited) |
 | `fieldDefs` | `Dict[str, Dict[str, Any]]` | Field definitions (inherited) |
 
+## Instance Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `dictFormLayouts` | `Dict[str, QWidget|QLayout|None]` | Dictionary returned from _buildFormLayout |
+
 ## Constructor
 
 ### `__init__(model=None, formname=None, ssnmaker=None, parent=None)`
@@ -88,6 +94,7 @@ class PersonForm(cSimpleRecordForm):
 form = PersonForm()
 ```
 
+<div style="page-break-after: always;"></div>
 ## Layout Structure
 
 The standard layout created by `_buildFormLayout()`:
