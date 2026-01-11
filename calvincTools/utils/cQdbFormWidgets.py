@@ -2271,12 +2271,7 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
             # nothing to do - already set as class attribute
             pass
         else:
-            if parent_linkFld is not None:
-                self._parent_linkFld = getattr(self._ORMmodel, parent_linkFld) if isinstance(parent_linkFld, str) else parent_linkFld # type: ignore
-            else:
-                self._parent_linkFld = None     # set later to incoming record's PK
-                self.setParentLinkFromIncoming = True
-            # endif parent_linkFld is not None
+            self._parent_linkFld = parent_linkFld
         # endif self._parent_linkFld is not None
 
         if not self._ssnmaker:
@@ -2318,7 +2313,6 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
             Type[Any] | None: The SQLAlchemy ORM model class.
         """
         return self._ORMmodel
-    
     def setORMmodel(self, model):
         """Set the ORM model class and update the primary key.
         
@@ -2327,7 +2321,6 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
         """
         self._ORMmodel = model
         self.setPrimary_key()
-    
     def primary_key(self):
         """Get the primary key column.
         
@@ -2335,7 +2328,6 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
             Primary key column object.
         """
         return self._primary_key
-    
     def setPrimary_key(self):
         """Set the primary key from the ORM model.
         
@@ -2347,7 +2339,7 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
             raise Exception('ORMmodel must be set first')
         # model is now narrowed to a non-None Type[Any]
         self._primary_key = get_primary_key_column(model)
-    # get/set ORFMmodel/primary_key
+    # get/set ORMmodel/primary_key
 
     def ssnmaker(self):
         """Get the session maker.
@@ -2356,7 +2348,6 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
             sessionmaker[Session] | None: Database session factory.
         """
         return self._ssnmaker
-    
     def setssnmaker(self,ssnmaker):
         """Set the session maker.
         
@@ -2373,7 +2364,6 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
             Current ORM record object.
         """
         return self._currRec
-    
     def setcurrRec(self, rec):
         """Set the current record.
         
@@ -2383,10 +2373,23 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
         self._currRec = rec
     # get/set currRec
 
+    def parent_linkFld(self):
+        """Get the parent record primary key."""
+        pRec = self.parentRec()
+        linkFld = self._parent_linkFld
+        if pRec:
+            retval = getattr(pRec, linkFld) if isinstance(linkFld, str) else linkFld
+        else:
+            retval = linkFld
+        return retval
+    def parent_linkFld_keystr(self, rec):
+        PLFkey = self.parent_linkFld()
+        return getattr(rec, PLFkey.key, PLFkey)
+    # get parent_linkFld, parent_linkFld_keystr
+    
     def linkFld(self):
         """Get the parent foreign key field."""
         return self._linkFld
-    
     def setlinkFld(self, linkFld):
         """Set the parent foreign key field."""
         modl = self.ORMmodel()
@@ -2398,17 +2401,6 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
     def parentRec(self):
         """Get the parent record."""
         return self._parentRec
-    
-    def parent_linkFld(self):
-        """Get the parent record primary key."""
-        pRec = self.parentRec()
-        linkFld = self._parent_linkFld
-        if pRec:
-            retval = getattr(pRec, linkFld) if isinstance(linkFld, str) else linkFld
-        else:
-            retval = linkFld
-        return retval
-    
     def setparentRec(self, rec):
         """Set the parent record and extract its primary key."""
         self._parentRec = rec
@@ -2420,42 +2412,44 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
     # --- Lifecycle hooks ---
     def loadFromRecord(self, rec):
         """Load subrecords for the given parent record."""
-        self._parentRec = rec
-        if self.setParentLinkFromIncoming:
-            self._parent_linkFld = get_primary_key_column(rec.__class__)
+        self.setparentRec(rec)
         self._childRecs.clear()
         self._deleted_childRecs.clear()
-        
+
+        PLFkey = self.parent_linkFld_keystr(rec)
 
         with self._ssnmaker() as session:
             rows = session.scalars(
                 select(self._ORMmodel)
-                .filter(self._linkFld == getattr(rec, self._parent_linkFld.key)) # type: ignore
+                .filter(self._linkFld == getattr(rec, PLFkey)) # type: ignore
                 ).all()
             for r in rows:
                 session.expunge(r)
             self._childRecs.extend(rows)
 
-            self.Tblmodel.refresh(filter=(self._linkFld == getattr(rec, self._parent_linkFld.key))) # type: ignore
+            self.Tblmodel.refresh(filter=(self._linkFld == getattr(rec, PLFkey))) # type: ignore
         #endwith
     # loadFromRecord
 
     def saveToRecord(self, rec):
         """Save subrecords back to database."""
-        if not self._parentRec:
+        parntRec = self.parentRec()
+        if not parntRec:
             return
-        if self._parentRec != rec:
+        if parntRec != rec:
             raise ValueError("Parent record mismatch on saveToRecord")
+
+        PLFkey = self.parent_linkFld_keystr(rec)
 
         with self._ssnmaker() as session:
             # reattach new/edited
             for rec in self._childRecs:
-                setattr(rec, self._linkFld.key, getattr(self._parentRec, self._parent_linkFld.key)) # type: ignore
+                setattr(rec, self._linkFld.key, getattr(parntRec, PLFkey)) # type: ignore
                 session.merge(rec)
 
             # delete removed
             for rec in self._deleted_childRecs:
-                if getattr(rec, self._parent_linkFld.key, None) is not None: # type: ignore
+                if getattr(rec, PLFkey, None) is not None: # type: ignore
                     obj = session.merge(rec)
                     session.delete(obj)
 
@@ -2469,8 +2463,8 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
 
     def add_row(self):
         """Add a new empty row to the subform table."""
-        row = self._ORMmodel()
-        setattr(row, self._linkFld.key, getattr(self._parentRec, self._parent_linkFld.key, None)) # type: ignore
+        row = self.ORMmodel()
+        setattr(row, self.linkFld().key, getattr(self.parentRec(), self.parent_linkFld_keystr(), None)) # type: ignore
         self.Tblmodel.insertRow(row)
     # add_row
 
@@ -2743,19 +2737,22 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
     def linkFld(self):
         """Get the parent foreign key field."""
         return self._linkFld
-    
     def setlinkFld(self, linkFld):
         """Set the parent foreign key field."""
         modl = self.ORMmodel()
         if not modl:
             raise ValueError("ORMmodel must be set before setting parentFK")
         self._linkFld = getattr(modl, linkFld) if isinstance(linkFld, str) else linkFld
-    # get/set parentFK
+    # get/set linkFld
 
     def parentRec(self):
         """Get the parent record."""
         return self._parentRec
-    
+    def setparentRec(self, rec):
+        """Set the parent record and extract its primary key."""
+        self._parentRec = rec
+        if self.setParentLinkFromIncoming:
+            self._parent_linkFld = get_primary_key_column(rec.__class__)
     def parent_linkFld(self):
         """Get the parent record primary key."""
         pRec = self.parentRec()
@@ -2765,12 +2762,12 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         else:
             retval = linkFld
         return retval
-        
-    def setparentRec(self, rec):
-        """Set the parent record and extract its primary key."""
-        self._parentRec = rec
-        if self.setParentLinkFromIncoming:
-            self._parent_linkFld = get_primary_key_column(rec.__class__)
+    def parent_linkFld_keystr(self, rec = None):
+        if rec is None:
+            rec = self.parentRec()
+        PLFkey = self.parent_linkFld()
+        P2 = str(getattr(PLFkey, 'key', PLFkey))
+        return getattr(rec, P2, PLFkey)
     # get/set parentFK
 
 
@@ -2892,7 +2889,7 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         modl = self.ORMmodel()
         assert modl is not None, "ORMmodel must be set before deleting record"
         row = modl()
-        setattr(row, self.linkFld().key, getattr(self.parentRec(), self.parent_linkFld().key, None)) # type: ignore
+        setattr(row, self.linkFld(), getattr(self.parentRec(), self.parent_linkFld_keystr(), None)) # type: ignore
 
         self._childRecs.append(row)
         self._addDisplayRow(row)
@@ -2914,11 +2911,11 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         modl = self.ORMmodel()
         assert modl is not None, "ORMmodel must be set before deleting record"
         linkFld = self.linkFld()
-        parnt_linkFld = self.parent_linkFld()
+        parnt_linkFldKey = self.parent_linkFld_keystr(rec)
         with ssnmkr() as session:
             rows = session.scalars(
                 select(modl)
-                .filter(linkFld == getattr(rec, parnt_linkFld.key)) # type: ignore
+                .filter(linkFld == getattr(rec, parnt_linkFldKey)) # type: ignore
                 ).all()
             for r in rows:
                 session.expunge(r)
@@ -2954,7 +2951,7 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         with ssnmkr() as session:
             # reattach new/edited
             for rec in self._childRecs:
-                setattr(rec, linkFld, getattr(pRec, self.parent_linkFld().key)) # type: ignore
+                setattr(rec, linkFld.key, getattr(pRec, self.parent_linkFld_keystr())) # type: ignore
                 session.merge(rec)
 
             # delete removed
