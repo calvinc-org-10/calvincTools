@@ -2379,18 +2379,28 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
         pRec = self.parentRec()
         linkFld = self._parent_linkFld
         if pRec:
-            retval = getattr(pRec, linkFld) if isinstance(linkFld, str) else linkFld
+            retval = getattr(pRec.__class__, linkFld) if isinstance(linkFld, str) else linkFld
         else:
             retval = linkFld
         return retval
     def parent_linkFld_keystr(self, rec):
+        if rec is None:
+            rec = self.parentRec()
         PLFkey = self.parent_linkFld()
-        return getattr(rec, PLFkey.key, PLFkey)
+        return str(getattr(PLFkey, 'key', PLFkey))
     # get parent_linkFld, parent_linkFld_keystr
     
     def linkFld(self):
         """Get the parent foreign key field."""
-        return self._linkFld
+        # return self._linkFld
+        recKls = self.ORMmodel()
+        lFld = self._linkFld
+        if recKls:
+            retval = getattr(recKls, lFld) if isinstance(lFld, str) else lFld
+        else:
+            retval = lFld
+        return retval
+
     def setlinkFld(self, linkFld):
         """Set the parent foreign key field."""
         modl = self.ORMmodel()
@@ -2733,7 +2743,14 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
 
     def linkFld(self):
         """Get the parent foreign key field."""
-        return self._linkFld
+        # return self._linkFld
+        recKls = self.ORMmodel()
+        lFld = self._linkFld
+        if recKls:
+            retval = getattr(recKls, lFld) if isinstance(lFld, str) else lFld
+        else:
+            retval = lFld
+        return retval
     def setlinkFld(self, linkFld):
         """Set the parent foreign key field."""
         modl = self.ORMmodel()
@@ -2755,7 +2772,7 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         pRec = self.parentRec()
         linkFld = self._parent_linkFld
         if pRec:
-            retval = getattr(pRec, linkFld) if isinstance(linkFld, str) else linkFld
+            retval = getattr(pRec.__class__, linkFld) if isinstance(linkFld, str) else linkFld
         else:
             retval = linkFld
         return retval
@@ -2763,8 +2780,7 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         if rec is None:
             rec = self.parentRec()
         PLFkey = self.parent_linkFld()
-        P2 = str(getattr(PLFkey, 'key', PLFkey))
-        return getattr(rec, P2, PLFkey)
+        return str(getattr(PLFkey, 'key', PLFkey))
     # get/set parentFK
 
 
