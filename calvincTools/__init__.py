@@ -5,7 +5,7 @@ calvincTools - A Python package
 _pkgname='Calvin C Tools'
 _base_ver_major=1
 _base_ver_minor=6
-_base_ver_patch='1a'
+_base_ver_patch='1b'
 _ver_date='2026-01-11'
 _base_ver = f'{_base_ver_major}.{_base_ver_minor}.{_base_ver_patch}'
 __version__ = _base_ver
@@ -21,6 +21,7 @@ __author__ = "Calvin C"
 __email__ = "calvinc404@gmail.com"
 
 # Change Log:
+# 1.6.1b - 2026-01-11 - fixed issue in cQdbFormWidgets.py where parent_linkFld was not being set properly in __init__
 # 1.6.1a - 2026-01-11 - bug fixes and better use of getters/setters in cQdbFormWidgets.py
 # 1.6.1 - 2026-01-11 - fixed parent_linkFld property in cQdbFormWidgets.py to return actual PK value if parentRec is set
 # 1.6.0 - 2026-01-10 - 

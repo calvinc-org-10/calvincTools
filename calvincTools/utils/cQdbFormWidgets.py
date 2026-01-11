@@ -2272,6 +2272,7 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
             pass
         else:
             self._parent_linkFld = parent_linkFld
+            self.setParentLinkFromIncoming = True
         # endif self._parent_linkFld is not None
 
         if not self._ssnmaker:
@@ -2712,12 +2713,8 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
             # nothing to do - already set as class attribute
             pass
         else:
-            if parent_linkFld is not None:
-                self._parent_linkFld = getattr(self._ORMmodel, parent_linkFld) if isinstance(parent_linkFld, str) else parent_linkFld # type: ignore
-            else:
-                self._parent_linkFld = None     # set later to incoming record's PK
-                self.setParentLinkFromIncoming = True
-            # endif parent_linkFld is not None
+            self._parent_linkFld = parent_linkFld # type: ignore
+            self.setParentLinkFromIncoming = True
         # endif self._parent_linkFld is not None
 
         if not self._ssnmaker:
