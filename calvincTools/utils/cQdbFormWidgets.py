@@ -2308,6 +2308,115 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
     # __init__
 
 
+    ######################################################
+    ########    property and key widget getters/setters
+
+    def ORMmodel(self):
+        """Get the ORM model class.
+        
+        Returns:
+            Type[Any] | None: The SQLAlchemy ORM model class.
+        """
+        return self._ORMmodel
+    
+    def setORMmodel(self, model):
+        """Set the ORM model class and update the primary key.
+        
+        Args:
+            model: SQLAlchemy ORM model class.
+        """
+        self._ORMmodel = model
+        self.setPrimary_key()
+    
+    def primary_key(self):
+        """Get the primary key column.
+        
+        Returns:
+            Primary key column object.
+        """
+        return self._primary_key
+    
+    def setPrimary_key(self):
+        """Set the primary key from the ORM model.
+        
+        Raises:
+            Exception: If ORMmodel is not set.
+        """
+        model = self.ORMmodel()
+        if model is None:
+            raise Exception('ORMmodel must be set first')
+        # model is now narrowed to a non-None Type[Any]
+        self._primary_key = get_primary_key_column(model)
+    # get/set ORFMmodel/primary_key
+
+    def ssnmaker(self):
+        """Get the session maker.
+        
+        Returns:
+            sessionmaker[Session] | None: Database session factory.
+        """
+        return self._ssnmaker
+    
+    def setssnmaker(self,ssnmaker):
+        """Set the session maker.
+        
+        Args:
+            ssnmaker: SQLAlchemy session maker.
+        """
+        self._ssnmaker = ssnmaker
+    # get/set ssnmaker
+    
+    def currRec(self):
+        """Get the current record.
+        
+        Returns:
+            Current ORM record object.
+        """
+        return self._currRec
+    
+    def setcurrRec(self, rec):
+        """Set the current record.
+        
+        Args:
+            rec: ORM record object to set as current.
+        """
+        self._currRec = rec
+    # get/set currRec
+
+    def linkFld(self):
+        """Get the parent foreign key field."""
+        return self._linkFld
+    
+    def setlinkFld(self, linkFld):
+        """Set the parent foreign key field."""
+        modl = self.ORMmodel()
+        if not modl:
+            raise ValueError("ORMmodel must be set before setting parentFK")
+        self._linkFld = getattr(modl, linkFld) if isinstance(linkFld, str) else linkFld
+    # get/set parentFK
+
+    def parentRec(self):
+        """Get the parent record."""
+        return self._parentRec
+    
+    def parent_linkFld(self):
+        """Get the parent record primary key."""
+        pRec = self.parentRec()
+        linkFld = self._parent_linkFld
+        if pRec:
+            retval = getattr(pRec, linkFld) if isinstance(linkFld, str) else linkFld
+        else:
+            retval = linkFld
+        return retval
+    
+    def setparentRec(self, rec):
+        """Set the parent record and extract its primary key."""
+        self._parentRec = rec
+        if self.setParentLinkFromIncoming:
+            self._parent_linkFld = get_primary_key_column(rec.__class__)
+    # get/set parentFK
+
+
     # --- Lifecycle hooks ---
     def loadFromRecord(self, rec):
         """Load subrecords for the given parent record."""
@@ -2649,8 +2758,14 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
     
     def parent_linkFld(self):
         """Get the parent record primary key."""
-        return self._parent_linkFld
-    
+        pRec = self.parentRec()
+        linkFld = self._parent_linkFld
+        if pRec:
+            retval = getattr(pRec, linkFld) if isinstance(linkFld, str) else linkFld
+        else:
+            retval = linkFld
+        return retval
+        
     def setparentRec(self, rec):
         """Set the parent record and extract its primary key."""
         self._parentRec = rec

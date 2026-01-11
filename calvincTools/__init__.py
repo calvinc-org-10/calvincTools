@@ -5,8 +5,8 @@ calvincTools - A Python package
 _pkgname='Calvin C Tools'
 _base_ver_major=1
 _base_ver_minor=6
-_base_ver_patch=0
-_ver_date='2026-01-10'
+_base_ver_patch=1
+_ver_date='2026-01-11'
 _base_ver = f'{_base_ver_major}.{_base_ver_minor}.{_base_ver_patch}'
 __version__ = _base_ver
 sysver = {
@@ -21,6 +21,7 @@ __author__ = "Calvin C"
 __email__ = "calvinc404@gmail.com"
 
 # Change Log:
+# 1.6.1 - 2026-01-11 - fixed parent_linkFld property in cQdbFormWidgets.py to return actual PK value if parentRec is set
 # 1.6.0 - 2026-01-10 - 
 #       added is_hashable function to misctools.py
 #       updated str2 function in utils/strings.py to use is_hashable from misctools, and other checks
