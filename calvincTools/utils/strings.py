@@ -1,23 +1,43 @@
-from typing import Any
+from typing import Any, Mapping, Callable
+from .misctools import is_hashable
 
-# str2 doesn't work as intended, so just returning str for now and testing if s==None explicitly.
-def str2(s: Any, TypeTransforms={None: lambda:'', }, ValueTransforms={None: lambda:''}) -> str:
-#     """
-#     Convert input to string, handling "special values or types".
-#     :param s: Input value.
-#     :param TypeTransforms: Dict mapping types to functions that return strings.
-#     :param ValueTransforms: Dict mapping specific values to functions that return strings.
-#     :return: String representation of input.
+def str2(
+    s: Any, 
+    TypeTransforms: Mapping[type[Any], Callable[[], str]] | None = None,
+    ValueTransforms: Mapping[Any, Callable[[], str]] | None = None,
+    ) -> str:
+    """
+    Convert input to string, handling special values or types.
     
-#     By default, None is converted to an empty string.
-#     """
-#     if s in ValueTransforms:
-#         return ValueTransforms[s]()
-#     if s in TypeTransforms:
-#         return TypeTransforms[s]()
-    if s is None:
-        return ''
+    Precedence: ValueTransforms is checked first for specific values, 
+    then TypeTransforms is checked for type-based conversions.
+    By default, None is converted to an empty string.
+    
+    :param s: Input value.
+    :param TypeTransforms: Dict mapping types to callable functions that return strings.
+    :param ValueTransforms: Dict mapping specific hashable values to callable functions that return strings.
+                           Only applied to hashable types (not list, set, dict, bytearray).
+    :return: String representation of input.
+    """
+    # Initialize default transforms if not provided
+    if TypeTransforms is None:
+        TypeTransforms = {type(None): lambda: ''}
+    if ValueTransforms is None:
+        ValueTransforms = {None: lambda: ''}
+    
+    # Check ValueTransforms first (higher priority for specific values)
+    # Only check hashable types as dict keys (exclude list, set, dict, bytearray)
+    if is_hashable(s):
+        if s in ValueTransforms:
+            return ValueTransforms[s]()
+    
+    # Check TypeTransforms (for type-based conversions)
+    if type(s) in TypeTransforms:
+        return TypeTransforms[type(s)]()
+    
+    # Default: use built-in str()
     return str(s)
+# str2
 
 def WrapInQuotes(strg, openquotechar = '"', closequotechar = '"'):
     return openquotechar + strg + closequotechar

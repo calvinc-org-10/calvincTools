@@ -1,4 +1,16 @@
+from typing import Any
 import ast
+
+def is_hashable(obj: Any) -> bool:
+    """Check if an object is hashable."""
+    try:
+        hash(obj)
+    except TypeError:
+        return False
+    return True
+# is_hashable
+
+#################################################################################
 
 def show_fns(path_:str):
     """Parse a Python file and extract information about functions and classes.

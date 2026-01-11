@@ -2155,23 +2155,19 @@ class cSimpleRecordForm(cSimpleRecordForm_Base):
             action (str): Action name (case-insensitive), e.g., 'first', 'save', 'delete'.
         """
         # Generic action dispatch — override if needed
+        action_dict = {     # keys should be lowercase for consistency!!
+            "first": self.on_loadfirst_clicked,
+            "previous": self.on_loadprev_clicked,
+            "next": self.on_loadnext_clicked,
+            "last": self.on_loadlast_clicked,
+            "add": self.on_add_clicked,
+            "save": self.on_save_clicked,
+            "delete": self.on_delete_clicked,
+            "cancel": self.on_cancel_clicked,
+        }
         action = action.lower()
-        if action == "first":
-            self.on_loadfirst_clicked()
-        elif action == "previous":
-            self.on_loadprev_clicked()
-        elif action == "next":
-            self.on_loadnext_clicked()
-        elif action == "last":
-            self.on_loadlast_clicked()
-        elif action == "add":
-            self.on_add_clicked()
-        elif action == "save":
-            self.on_save_clicked()
-        elif action == "delete":
-            self.on_delete_clicked()
-        elif action == "cancel":
-            self.on_cancel_clicked()
+        if action in action_dict:
+            action_dict[action]()
         else:
             print(f"Unknown action: {action}")
             self.showError(f"Unknown action: {action}")
@@ -2233,7 +2229,8 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
 
     def __init__(self, 
         ORMmodel: Type[Any]|None = None, 
-        parentFK: Any = None, 
+        linkFld: Any = None, 
+        parent_linkFld: Any = None,
         session_factory: sessionmaker[Session] | None = None, 
         viewClass: Type[QTableView] = QTableView,
         parent=None
@@ -2258,11 +2255,29 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
             self._ORMmodel = ORMmodel
         self._primary_key = get_primary_key_column(self._ORMmodel)
 
-        pfk = parentFK if parentFK else getattr(self, '_parentFK', None)
-        if not self._parentFK:
-            if not parentFK:
-                raise ValueError("A parent FK must be provided either in the constructor or as a class attribute")
-        self._parentFK = getattr(self._ORMmodel, pfk) if isinstance(pfk, str) else parentFK # type: ignore
+        if getattr(self, '_linkFld', None) is not None:
+            # nothing to do - already set as class attribute
+            pass
+        else:
+            if linkFld is not None:
+                self._linkFld = getattr(self._ORMmodel, linkFld) if isinstance(linkFld, str) else linkFld # type: ignore
+            else:                
+                raise ValueError("A linkFld must be provided either in the constructor or as a class attribute")
+            # endif linkFld is not None
+        # endif self._linkFld is not None
+
+        self.setParentLinkFromIncoming = False      # if True, when loading from parent record, set parent link field to parent's PK
+        if getattr(self, '_parent_linkFld', None) is not None:
+            # nothing to do - already set as class attribute
+            pass
+        else:
+            if parent_linkFld is not None:
+                self._parent_linkFld = getattr(self._ORMmodel, parent_linkFld) if isinstance(parent_linkFld, str) else parent_linkFld # type: ignore
+            else:
+                self._parent_linkFld = None     # set later to incoming record's PK
+                self.setParentLinkFromIncoming = True
+            # endif parent_linkFld is not None
+        # endif self._parent_linkFld is not None
 
         if not self._ssnmaker:
             if not session_factory:
@@ -2270,7 +2285,6 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
             self._ssnmaker = session_factory
 
         self._parentRec = None  # set by parent form when loading
-        self._parentRecPK: Any  # set by parent form when loading
         self._childRecs:list = []
         self._deleted_childRecs:list = []
 
@@ -2280,24 +2294,26 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
         self.table.setModel(self.Tblmodel)
         self.layoutMain.addWidget(self.table)
 
-        # action buttons for add/remove
-        btnLayout = QHBoxLayout()
-        self.btnAdd = QPushButton("Add")
-        self.btnDel = QPushButton("Delete")
-        btnLayout.addWidget(self.btnAdd)
-        btnLayout.addWidget(self.btnDel)
-        self.layoutMain.addLayout(btnLayout)
+        # not now... mebbe later ...
+        # # action buttons for add/remove
+        # btnLayout = QHBoxLayout()
+        # self.btnAdd = QPushButton("Add")
+        # self.btnDel = QPushButton("Delete")
+        # btnLayout.addWidget(self.btnAdd)
+        # btnLayout.addWidget(self.btnDel)
+        # self.layoutMain.addLayout(btnLayout)
 
-        self.btnAdd.clicked.connect(self.add_row)
-        self.btnDel.clicked.connect(self.del_row)
-
+        # self.btnAdd.clicked.connect(self.add_row)
+        # self.btnDel.clicked.connect(self.del_row)
+    # __init__
 
 
     # --- Lifecycle hooks ---
     def loadFromRecord(self, rec):
         """Load subrecords for the given parent record."""
         self._parentRec = rec
-        self._parentRecPK = get_primary_key_column(rec.__class__)
+        if self.setParentLinkFromIncoming:
+            self._parent_linkFld = get_primary_key_column(rec.__class__)
         self._childRecs.clear()
         self._deleted_childRecs.clear()
         
@@ -2305,13 +2321,13 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
         with self._ssnmaker() as session:
             rows = session.scalars(
                 select(self._ORMmodel)
-                .filter(self._parentFK == getattr(rec, self._parentRecPK.key))
+                .filter(self._linkFld == getattr(rec, self._parent_linkFld.key)) # type: ignore
                 ).all()
             for r in rows:
                 session.expunge(r)
             self._childRecs.extend(rows)
 
-            self.Tblmodel.refresh(filter=(self._parentFK == getattr(rec, self._parentRecPK.key)))
+            self.Tblmodel.refresh(filter=(self._linkFld == getattr(rec, self._parent_linkFld.key))) # type: ignore
         #endwith
     # loadFromRecord
 
@@ -2325,12 +2341,12 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
         with self._ssnmaker() as session:
             # reattach new/edited
             for rec in self._childRecs:
-                setattr(rec, self._parentFK.key, getattr(self._parentRec, self._parentRecPK.key))
+                setattr(rec, self._linkFld.key, getattr(self._parentRec, self._parent_linkFld.key)) # type: ignore
                 session.merge(rec)
 
             # delete removed
             for rec in self._deleted_childRecs:
-                if getattr(rec, self._parentRecPK.key, None) is not None:
+                if getattr(rec, self._parent_linkFld.key, None) is not None: # type: ignore
                     obj = session.merge(rec)
                     session.delete(obj)
 
@@ -2345,7 +2361,7 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
     def add_row(self):
         """Add a new empty row to the subform table."""
         row = self._ORMmodel()
-        setattr(row, self._parentFK.key, getattr(self._parentRec, self._parentRecPK.key, None))
+        setattr(row, self._linkFld.key, getattr(self._parentRec, self._parent_linkFld.key, None)) # type: ignore
         self.Tblmodel.insertRow(row)
     # add_row
 
@@ -2426,6 +2442,9 @@ class cSimpRecSbFmRecord(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         rtnDict['layoutFormPages'] = layoutFormPages
         rtnDict['layoutFormFixedBottom'] = layoutFormFixedBottom
         rtnDict['statusBar'] = self._statusBar
+        # this is only being returned becxause parent class expects it
+        # but subrecord forms don't have action buttons
+        rtnDict['layoutButtons'] = QHBoxLayout()  # dummy
 
         self._newrecFlag = QLabel("New Rec", self)
         fontNewRec = QFont()
@@ -2546,7 +2565,8 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
     # NEXT: make viewClass QListWidget (was QTableView)
     def __init__(self,
         ORMmodel: Type[Any]|None = None,
-        parentFK: Any = None,
+        linkFld: Any = None,
+        parent_linkFld: Any = None,
         session_factory: sessionmaker[Session] | None = None,
         viewClass: Type[QListWidget] = QListWidget,
         parent=None
@@ -2567,15 +2587,42 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         self.vwClass = viewClass
         super().__init__(model=ORMmodel, ssnmaker=session_factory, parent=parent)
 
-        pfk = parentFK if parentFK else getattr(self, '_parentFK', None)
-        if not self._parentFK:
-            if not parentFK:
-                raise ValueError("A parent FK must be provided either in the constructor or as a class attribute")
-        # you wrote the setter, so use it!!
-        self._parentFK = getattr(self._ORMmodel, pfk) if isinstance(pfk, str) else parentFK # type: ignore
+        if not self._ORMmodel:
+            if not ORMmodel:
+                raise ValueError("A model class must be provided either in the constructor or as a class attribute")
+            self._ORMmodel = ORMmodel
+        self._primary_key = get_primary_key_column(self._ORMmodel)
+
+        if getattr(self, '_linkFld', None) is not None:
+            # nothing to do - already set as class attribute
+            pass
+        else:
+            if linkFld is not None:
+                self._linkFld = getattr(self._ORMmodel, linkFld) if isinstance(linkFld, str) else linkFld # type: ignore
+            else:                
+                raise ValueError("A linkFld must be provided either in the constructor or as a class attribute")
+            # endif linkFld is not None
+        # endif self._linkFld is not None
+
+        self.setParentLinkFromIncoming = False      # if True, when loading from parent record, set parent link field to parent's PK
+        if getattr(self, '_parent_linkFld', None) is not None:
+            # nothing to do - already set as class attribute
+            pass
+        else:
+            if parent_linkFld is not None:
+                self._parent_linkFld = getattr(self._ORMmodel, parent_linkFld) if isinstance(parent_linkFld, str) else parent_linkFld # type: ignore
+            else:
+                self._parent_linkFld = None     # set later to incoming record's PK
+                self.setParentLinkFromIncoming = True
+            # endif parent_linkFld is not None
+        # endif self._parent_linkFld is not None
+
+        if not self._ssnmaker:
+            if not session_factory:
+                raise ValueError("A sessionmaker must be provided either in the constructor or as a class attribute")
+            self._ssnmaker = session_factory
 
         self._parentRec = None  # set by parent form when loading
-        self._parentRecPK: Any  # set by parent form when loading
         self._childRecs:list = []
         self._deleted_childRecs:list = []
 
@@ -2584,30 +2631,31 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
     ######################################################
     ########    property and key widget getters/setters
 
-    def parentFK(self):
+    def linkFld(self):
         """Get the parent foreign key field."""
-        return self._parentFK
+        return self._linkFld
     
-    def setparentFK(self, pfk):
+    def setlinkFld(self, linkFld):
         """Set the parent foreign key field."""
         modl = self.ORMmodel()
         if not modl:
             raise ValueError("ORMmodel must be set before setting parentFK")
-        self._parentFK = getattr(modl, pfk) if isinstance(pfk, str) else pfk
+        self._linkFld = getattr(modl, linkFld) if isinstance(linkFld, str) else linkFld
     # get/set parentFK
 
     def parentRec(self):
         """Get the parent record."""
         return self._parentRec
     
-    def parentRecPK(self):
+    def parent_linkFld(self):
         """Get the parent record primary key."""
-        return self._parentRecPK
+        return self._parent_linkFld
     
     def setparentRec(self, rec):
         """Set the parent record and extract its primary key."""
         self._parentRec = rec
-        self._parentRecPK = get_primary_key_column(rec.__class__)
+        if self.setParentLinkFromIncoming:
+            self._parent_linkFld = get_primary_key_column(rec.__class__)
     # get/set parentFK
 
 
@@ -2729,7 +2777,7 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         modl = self.ORMmodel()
         assert modl is not None, "ORMmodel must be set before deleting record"
         row = modl()
-        setattr(row, self.parentFK().key, getattr(self.parentRec(), self.parentRecPK().key, None))
+        setattr(row, self.linkFld().key, getattr(self.parentRec(), self.parent_linkFld().key, None)) # type: ignore
 
         self._childRecs.append(row)
         self._addDisplayRow(row)
@@ -2750,12 +2798,12 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         assert ssnmkr is not None, "Sessionmaker must be set before touching the database"
         modl = self.ORMmodel()
         assert modl is not None, "ORMmodel must be set before deleting record"
-        pfk = self.parentFK()
-        prikey = self.primary_key()
+        linkFld = self.linkFld()
+        parnt_linkFld = self.parent_linkFld()
         with ssnmkr() as session:
             rows = session.scalars(
                 select(modl)
-                .filter(pfk == getattr(rec, prikey.key))
+                .filter(linkFld == getattr(rec, parnt_linkFld.key)) # type: ignore
                 ).all()
             for r in rows:
                 session.expunge(r)
@@ -2787,16 +2835,16 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         assert ssnmkr is not None, "Sessionmaker must be set before touching the database"
         modl = self.ORMmodel()
         assert modl is not None, "ORMmodel must be set before deleting record"
-        pfk = self.parentFK()
+        linkFld = self.linkFld()
         with ssnmkr() as session:
             # reattach new/edited
             for rec in self._childRecs:
-                setattr(rec, pfk, getattr(pRec, self.parentRecPK().key))
+                setattr(rec, linkFld, getattr(pRec, self.parent_linkFld().key)) # type: ignore
                 session.merge(rec)
 
             # delete removed
             for rec in self._deleted_childRecs:
-                if getattr(rec, pfk.key, None) is not None:
+                if getattr(rec, linkFld.key, None) is not None:
                     obj = session.merge(rec)
                     session.delete(obj)
 
