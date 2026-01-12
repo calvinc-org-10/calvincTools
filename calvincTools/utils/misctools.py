@@ -95,17 +95,19 @@ def show_fns(path_:str):
 
     # get all fns and classes
     result = {'classes':[], 'functions':[]}
-    functions = [n for n in node.body if isinstance(n, ast.FunctionDef)]
+    functions = [n for n in node.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
     classes = [n for n in node.body if isinstance(n, ast.ClassDef)]
 
     for function in functions:
-        result['functions'].append(f'def {show_fninfo(function)}')
+        prefix = 'async def' if isinstance(function, ast.AsyncFunctionDef) else 'def'
+        result['functions'].append(f'{prefix} {show_fninfo(function)}')
 
     for class_ in classes:
         result['classes'].append(f'class {class_.name}({[NN.id for NN in class_.bases]}) {dividerchar} lines {class_.lineno} to {class_.end_lineno}') # type: ignore
-        methods = [n for n in class_.body if isinstance(n, ast.FunctionDef)]
+        methods = [n for n in class_.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
         for method in methods:
-            result['classes'].append(f'    def {class_.name}.{show_fninfo(method)}')
+            prefix = 'async def' if isinstance(method, ast.AsyncFunctionDef) else 'def'
+            result['classes'].append(f'    {prefix} {class_.name}.{show_fninfo(method)}')
 
     return result
     # print(', '.join(result))
