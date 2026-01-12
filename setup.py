@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 # from calvincTools import (__version__, __author__, __email__, )
 # sorry, build will fail with the above line, so manually set them here
-__version__ = "1.6.2"
+__version__ = "1.6.3"
 __author__ = "Calvin C"
 __email__ = "calvinc404@gmail.com"
 
@@ -25,13 +25,11 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
     ],
-    python_requires=">=3.9",
+    python_requires=">=3.10",
     install_requires=[
         # Add your package dependencies here
         # e.g., "numpy>=1.20.0",

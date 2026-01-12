@@ -5,7 +5,7 @@ calvincTools - A Python package
 _pkgname='Calvin C Tools'
 _base_ver_major=1
 _base_ver_minor=6
-_base_ver_patch='2'
+_base_ver_patch='3'
 _ver_date='2026-01-11'
 _base_ver = f'{_base_ver_major}.{_base_ver_minor}.{_base_ver_patch}'
 __version__ = _base_ver
@@ -21,6 +21,7 @@ __author__ = "Calvin C"
 __email__ = "calvinc404@gmail.com"
 
 # Change Log:
+# 1.6.3 - 2026-01-11 - require python 3.10+; fixed code so pytest finally passes
 # 1.6.2 - 2026-01-11 - modifications made to calvincTools/utils/misctools.py and corresponding tests
 # 1.6.1c - 2026-01-11 - corrected linkFld getters/setters in cQdbFormWidgets.py
 # 1.6.1b - 2026-01-11 - fixed issue in cQdbFormWidgets.py where parent_linkFld was not being set properly in __init__
