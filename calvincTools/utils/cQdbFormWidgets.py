@@ -2415,7 +2415,7 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
     def setparentRec(self, rec):
         """Set the parent record and extract its primary key."""
         self._parentRec = rec
-        if self.setParentLinkFromIncoming:
+        if self.setParentLinkFromIncoming and rec is not None:
             self._parent_linkFld = get_primary_key_column(rec.__class__)
     # get/set parentFK
 
@@ -2902,7 +2902,9 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         modl = self.ORMmodel()
         assert modl is not None, "ORMmodel must be set before deleting record"
         row = modl()
-        setattr(row, self.linkFld(), getattr(self.parentRec(), self.parent_linkFld_keystr(), None)) # type: ignore
+        linkFld = self.linkFld()
+        if self.parentRec() is not None:
+            setattr(row, linkFld.key, getattr(self.parentRec(), self.parent_linkFld_keystr(), None)) # type: ignore
 
         self._childRecs.append(row)
         self._addDisplayRow(row)
@@ -2914,7 +2916,7 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
     ########    Read
 
     def loadFromRecord(self, rec):
-        """Load subrecords for the given parent record."""
+        """Load subrecords for a parent record, or all records when parent is None."""
         self.setparentRec(rec)
         self._childRecs.clear()
         self._deleted_childRecs.clear()
@@ -2924,12 +2926,12 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         modl = self.ORMmodel()
         assert modl is not None, "ORMmodel must be set before deleting record"
         linkFld = self.linkFld()
-        parnt_linkFldKey = self.parent_linkFld_keystr(rec)
         with ssnmkr() as session:
-            rows = session.scalars(
-                select(modl)
-                .filter(linkFld == getattr(rec, parnt_linkFldKey)) # type: ignore
-                ).all()
+            qry = select(modl)
+            if rec is not None:
+                parnt_linkFldKey = self.parent_linkFld_keystr(rec)
+                qry = qry.filter(linkFld == getattr(rec, parnt_linkFldKey)) # type: ignore
+            rows = session.scalars(qry).all()
             for r in rows:
                 session.expunge(r)
             self._childRecs.extend(rows)
@@ -2949,11 +2951,14 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
     ########    Update
 
     def saveToRecord(self, rec):
-        """Save subrecords back to database."""
+        """Save subrecords back to database.
+
+        If a parent record context is active, each child record's link field is
+        updated from the parent key before merge. Without a parent context,
+        records are persisted as-is.
+        """
         pRec = self.parentRec()
-        if not pRec:
-            return
-        if pRec != rec:
+        if pRec is not None and pRec != rec:
             raise ValueError("Parent record mismatch on saveToRecord")
 
         ssnmkr = self.ssnmaker()
@@ -2964,12 +2969,13 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         with ssnmkr() as session:
             # reattach new/edited
             for rec in self._childRecs:
-                setattr(rec, linkFld.key, getattr(pRec, self.parent_linkFld_keystr())) # type: ignore
+                if pRec is not None:
+                    setattr(rec, linkFld.key, getattr(pRec, self.parent_linkFld_keystr())) # type: ignore
                 session.merge(rec)
 
             # delete removed
             for rec in self._deleted_childRecs:
-                if getattr(rec, linkFld.key, None) is not None:
+                if getattr(rec, self.primary_key().key, None) is not None:
                     obj = session.merge(rec)
                     session.delete(obj)
 
