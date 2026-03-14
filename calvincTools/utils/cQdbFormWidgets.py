@@ -2900,7 +2900,7 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
     def add_row(self):
         """Add a new subrecord row to the list."""
         modl = self.ORMmodel()
-        assert modl is not None, "ORMmodel must be set before deleting record"
+        assert modl is not None, "ORMmodel must be set before adding a row"
         row = modl()
         linkFld = self.linkFld()
         if self.parentRec() is not None:
