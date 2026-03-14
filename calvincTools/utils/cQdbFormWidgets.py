@@ -2924,7 +2924,7 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         ssnmkr = self.ssnmaker()
         assert ssnmkr is not None, "Sessionmaker must be set before touching the database"
         modl = self.ORMmodel()
-        assert modl is not None, "ORMmodel must be set before deleting record"
+        assert modl is not None, "ORMmodel must be set before loading records"
         linkFld = self.linkFld()
         with ssnmkr() as session:
             qry = select(modl)
