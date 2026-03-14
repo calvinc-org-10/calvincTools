@@ -2765,7 +2765,7 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
     def setparentRec(self, rec):
         """Set the parent record and extract its primary key."""
         self._parentRec = rec
-        if self.setParentLinkFromIncoming:
+        if self.setParentLinkFromIncoming and rec is not None:
             self._parent_linkFld = get_primary_key_column(rec.__class__)
     def parent_linkFld(self):
         """Get the parent record primary key."""
