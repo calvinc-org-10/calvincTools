@@ -28,6 +28,7 @@ from .cQModels import (SQLAlchemyTableModel, )
 from .cQWidgets import (cDataList, cComboBoxFromDict, cstdTabWidget, cGridWidget, )
 from .messageBoxes import (areYouSure, )
 from .SQLAlcTools import (get_primary_key_column, )
+from .strings import (str2, )
 
 # from app.database import (get_app_sessionmaker, get_app_session, )
 
@@ -369,7 +370,7 @@ class cQFmFldWidg(cSimpRecFmElement_Base):
         """If the widget has a setText method, call it with a string."""
         setter = getattr(widget, "setText", None)
         if callable(setter):
-            setter('' if text is None else str(text))  # cast to str to be safe
+            setter(str2(text))  # cast to str to be safe
     # _setTextstring
 
     def _setup_datalist_behavior(self, wdgt: cDataList|QWidget, lblText: str) -> None:
@@ -2380,7 +2381,7 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
         if rec is None:
             rec = self.parentRec()
         PLFkey = self.parent_linkFld()
-        return str(getattr(PLFkey, 'key', PLFkey))
+        return str2(getattr(PLFkey, 'key', PLFkey))
     # get parent_linkFld, parent_linkFld_keystr
     
     def linkFld(self):
@@ -2414,8 +2415,7 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
 
 
     # --- Lifecycle hooks ---
-    RESTARTHERERESTARTHERERESTARTHERE
-    def loadFromRecord(self, rec):
+    def loadFromRecord(self, rec, *caller_conditions):
         """Load subrecords for the given parent record."""
         self.setparentRec(rec)
         self._childRecs.clear()
@@ -2423,24 +2423,30 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
 
         PLFkey = self.parent_linkFld_keystr(rec)
 
+        # implement later - verify that caller_conditions are valid SQLAlchemy expressions
+        # from sqlalchemy.sql.elements import ColumnElement
+
+        # for c in caller_conditions:
+        #     if not isinstance(c, ColumnElement):
+        #         raise TypeError(f"Invalid condition: {c!r}")
+        conditions = list(caller_conditions)
+        if rec is not None:
+            conditions.append(self._linkFld == getattr(rec, PLFkey))
+
         with self._ssnmaker() as session:
-            rows = session.scalars(
-                select(self._ORMmodel)
-                .filter(self._linkFld == getattr(rec, PLFkey)) # type: ignore
-                ).all()
+            stmt = select(self._ORMmodel).where(*conditions)
+            rows = session.scalars(stmt).all()
             for r in rows:
                 session.expunge(r)
             self._childRecs.extend(rows)
 
-            self.Tblmodel.refresh(filter=(self._linkFld == getattr(rec, PLFkey))) # type: ignore
+            self.Tblmodel.refresh(filter=conditions) # type: ignore
         #endwith
     # loadFromRecord
 
     def saveToRecord(self, rec):
         """Save subrecords back to database."""
         parntRec = self.parentRec()
-        if not parntRec:
-            return
         if parntRec != rec:
             raise ValueError("Parent record mismatch on saveToRecord")
 
@@ -2449,12 +2455,13 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
         with self._ssnmaker() as session:
             # reattach new/edited
             for rec in self._childRecs:
-                setattr(rec, self._linkFld.key, getattr(parntRec, PLFkey)) # type: ignore
+                if parntRec is not None:
+                    setattr(rec, self._linkFld.key, getattr(parntRec, PLFkey)) # type: ignore
                 session.merge(rec)
 
             # delete removed
             for rec in self._deleted_childRecs:
-                if getattr(rec, PLFkey, None) is not None: # type: ignore
+                if getattr(rec, PLFkey, None) is not None or parntRec is None: # type: ignore
                     obj = session.merge(rec)
                     session.delete(obj)
 
@@ -2469,7 +2476,8 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
     def add_row(self):
         """Add a new empty row to the subform table."""
         row = self.ORMmodel()
-        setattr(row, self.linkFld().key, getattr(self.parentRec(), self.parent_linkFld_keystr(), None)) # type: ignore
+        if self.parentRec() is not None:
+            setattr(row, self.linkFld().key, getattr(self.parentRec(), self.parent_linkFld_keystr(), None)) # type: ignore
         self.Tblmodel.insertRow(row)
     # add_row
 
@@ -2643,28 +2651,22 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
     child record in its own form widget within a list. This provides more detailed
     editing capabilities for complex child records.
     
+    Generic subform widget to handle a one-to-many relationship.
+    Ex: parts_needed for a WorkOrder.
+
+    Presents records in cSimpRecSbFmRec's
+
     Attributes:
-        _parentFK: Foreign key field linking to the parent record.
-        _parentRec: Reference to the parent record.
-        _parentRecPK: Primary key of the parent record.
+        _parentFK: Foreign key field linking to the parent record. May be none if no parent record. 
+        _parentRec: Reference to the parent record. May be None if not set or if parent record is deleted.
+        _parentRecPK: Primary key of the parent record. May be None if parent record is new and not yet saved or if no parent record.
         _childRecs (list): List of child records.
         _deleted_childRecs (list): List of child records pending deletion.
         dispArea: QListWidget containing the child record forms.
     
     Args:
         ORMmodel (Type[Any]): ORM model for the subrecords
-        parentFK (InstrumentedAttribute): relationship FK field in the parent model
-        session_factory (sessionmaker): SQLAlchemy sessionmaker
-        parent (QWidget | None): parent widget
-    """
-    """
-    Generic subform widget to handle a one-to-many relationship.
-    Ex: parts_needed for a WorkOrder.
-
-    Presents records in cSimpRecSbFmRec's
-    Args:
-        ORMmodel (Type[Any]): ORM model for the subrecords
-        parentFK (InstrumentedAttribute): relationship FK field in the parent model
+        parentFK (InstrumentedAttribute): relationship FK field in the parent model. May be None if no parent record.
         session_factory (sessionmaker): SQLAlchemy sessionmaker
         parent (QWidget | None): parent widget
     """
@@ -2683,7 +2685,8 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         
         Args:
             ORMmodel (Type[Any] | None, optional): ORM model for subrecords. Defaults to None.
-            parentFK (Any, optional): Parent foreign key field. Defaults to None.
+            linkFld: Any = None,
+            parent_linkFld: Any = None,
             session_factory (sessionmaker[Session] | None, optional): Database session factory. Defaults to None.
             viewClass (Type[QListWidget], optional): List view class. Defaults to QListWidget.
             parent (optional): Parent widget. Defaults to None.
@@ -2707,8 +2710,8 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         else:
             if linkFld is not None:
                 self._linkFld = getattr(self._ORMmodel, linkFld) if isinstance(linkFld, str) else linkFld # type: ignore
-            else:                
-                raise ValueError("A linkFld must be provided either in the constructor or as a class attribute")
+            # else:                
+            #     raise ValueError("A linkFld must be provided either in the constructor or as a class attribute")
             # endif linkFld is not None
         # endif self._linkFld is not None
 
@@ -2774,7 +2777,7 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         if rec is None:
             rec = self.parentRec()
         PLFkey = self.parent_linkFld()
-        return str(getattr(PLFkey, 'key', PLFkey))
+        return str2(getattr(PLFkey, 'key', PLFkey))
     # get/set parentFK
 
 
@@ -2905,11 +2908,10 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
     # add_row
 
 
-
     ##########################################
     ########    Read
 
-    def loadFromRecord(self, rec):
+    def loadFromRecord(self, rec, *caller_conditions):
         """Load subrecords for a parent record, or all records when parent is None."""
         self.setparentRec(rec)
         self._childRecs.clear()
@@ -2920,11 +2922,17 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         modl = self.ORMmodel()
         assert modl is not None, "ORMmodel must be set before loading records"
         linkFld = self.linkFld()
+        parnt_linkFldKey = self.parent_linkFld_keystr(rec)
+
+        # for c in caller_conditions:
+        #     if not isinstance(c, ColumnElement):
+        #         raise TypeError(f"Invalid condition: {c!r}")
+        conditions = list(caller_conditions)
+        if rec is not None:
+            conditions.append(linkFld == getattr(rec, parnt_linkFldKey))
+
         with ssnmkr() as session:
-            qry = select(modl)
-            if rec is not None:
-                parnt_linkFldKey = self.parent_linkFld_keystr(rec)
-                qry = qry.filter(linkFld == getattr(rec, parnt_linkFldKey)) # type: ignore
+            qry = select(modl).where(*conditions)
             rows = session.scalars(qry).all()
             for r in rows:
                 session.expunge(r)
@@ -2952,13 +2960,13 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         records are persisted as-is.
         """
         pRec = self.parentRec()
-        if pRec is not None and pRec != rec:
+        if pRec != rec:
             raise ValueError("Parent record mismatch on saveToRecord")
 
         ssnmkr = self.ssnmaker()
         assert ssnmkr is not None, "Sessionmaker must be set before touching the database"
         modl = self.ORMmodel()
-        assert modl is not None, "ORMmodel must be set before deleting record"
+        assert modl is not None, "ORMmodel must be set before saving record"
         linkFld = self.linkFld()
         with ssnmkr() as session:
             # reattach new/edited
@@ -2969,7 +2977,7 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
 
             # delete removed
             for rec in self._deleted_childRecs:
-                if getattr(rec, self.primary_key().key, None) is not None:
+                if pRec is None or getattr(rec, self.primary_key().key, None) is not None:
                     obj = session.merge(rec)
                     session.delete(obj)
 
