@@ -2194,35 +2194,27 @@ class cSimpleRecordForm(cSimpleRecordForm_Base):
 class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
     # does not need to inherit from cSimpleRecordForm_Base
     # since this is mainly wrapping a table with multiple records
-    """Generic subform widget to handle a one-to-many relationship using a table view.
+    """
+    Generic subform widget to handle a one-to-many relationship using a table view.
     
     This widget displays related records in a table format with add/delete functionality.
     It manages the relationship between a parent record and multiple child records.
+    Ex: parts_needed for a WorkOrder.
+    
+    Presents subrecords as a Table
     
     Attributes:
         _ORMmodel (Type[Any]): ORM model for the subrecords.
         _primary_key: Primary key of the subrecord model.
-        _parentFK: Foreign key field linking to the parent record.
+        _parentFK: Foreign key field linking to the parent record. May be none if no parent record.
         _ssnmaker: Database session factory.
-        _parentRec: Reference to the parent record.
+        _parentRec: Reference to the parent record. May be None
         _childRecs (list): List of child records.
         _deleted_childRecs (list): List of child records pending deletion.
     
     Args:
         ORMmodel (Type[Any]): ORM model for the subrecords
-        parentFK (InstrumentedAttribute): relationship FK field in the parent model
-        session_factory (sessionmaker): SQLAlchemy sessionmaker
-        parent (QWidget | None): parent widget
-    """
-    """
-    Generic subform widget to handle a one-to-many relationship.
-    Ex: parts_needed for a WorkOrder.
-    
-    Presents subrecords as a Table
-
-    Args:
-        ORMmodel (Type[Any]): ORM model for the subrecords
-        parentFK (InstrumentedAttribute): relationship FK field in the parent model
+        parentFK (InstrumentedAttribute): relationship FK field in the parent model. May be None
         session_factory (sessionmaker): SQLAlchemy sessionmaker
         parent (QWidget | None): parent widget
     """
@@ -2239,7 +2231,8 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
         
         Args:
             ORMmodel (Type[Any] | None, optional): ORM model for subrecords. Defaults to None.
-            parentFK (Any, optional): Parent foreign key field. Defaults to None.
+            linkFld: Any = None 
+            parent_linkFld: Any = None
             session_factory (sessionmaker[Session] | None, optional): Database session factory. Defaults to None.
             viewClass (Type[QTableView], optional): Table view class. Defaults to QTableView.
             parent (optional): Parent widget. Defaults to None.
@@ -2261,8 +2254,8 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
         else:
             if linkFld is not None:
                 self._linkFld = getattr(self._ORMmodel, linkFld) if isinstance(linkFld, str) else linkFld # type: ignore
-            else:                
-                raise ValueError("A linkFld must be provided either in the constructor or as a class attribute")
+            # else:                
+            #     raise ValueError("A linkFld must be provided either in the constructor or as a class attribute")
             # endif linkFld is not None
         # endif self._linkFld is not None
 
@@ -2421,6 +2414,7 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
 
 
     # --- Lifecycle hooks ---
+    RESTARTHERERESTARTHERERESTARTHERE
     def loadFromRecord(self, rec):
         """Load subrecords for the given parent record."""
         self.setparentRec(rec)
