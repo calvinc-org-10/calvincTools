@@ -1,3 +1,4 @@
 from .cQFormWidgets import *
 from .cQdbFormWidgets import *
-from .cQdbSubFormWidgets import *
+from .cQdbSimpleRecordFormWidgets import *
+from .cQdbSimpleRecordSubFormWidgets import *
