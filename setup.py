@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 # from calvincTools import (__version__, __author__, __email__, )
 # sorry, build will fail with the above line, so manually set them here
-__version__ = "1.7.0"
+__version__ = "1.8.0"
 __author__ = "Calvin C"
 __email__ = "calvinc404@gmail.com"
 
