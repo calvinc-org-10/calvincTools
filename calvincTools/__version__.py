@@ -22,6 +22,7 @@ __email__ = "calvinc404@gmail.com"
 
 # Change Log:
 # 1.8.0 - 2026-03-17 - split cQdbFormWidgets into separate files for better organization; other minor bug fixes and code cleanup
+#       - introduce cSimpleMultiRecordSubFmWrapperForm to handle multiple record subforms with no parent record;
 # 1.7.0 - 2026-03-14 
 #       - cSimpleRecordSubForm1 and cSimpleRecordForm2 - parent record not required anymore, but will be used if provided; 
 #       - added optional caller_conditions to loadFromRecord to allow for more flexible loading of subrecords; 
