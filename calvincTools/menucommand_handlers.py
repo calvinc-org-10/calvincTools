@@ -20,6 +20,10 @@ from openpyxl import Workbook
 from sqlalchemy import (inspect, select, Engine, ) 
 from sqlalchemy.orm.session import make_transient
 
+from .utils.forms.cQdbSimpleRecordFormWidgets import cSimpleRecordForm_Base
+
+from .utils.forms.cQFormWidgets import cQFmConstants
+
 
 # there's no need to import cMenu, plus it's a circular ref - cMenu depends heavily on this module
 # from .kls_cMenu import cMenu 
@@ -35,8 +39,7 @@ from .menucommand_constants import MENUCOMMANDS, COMMANDNUMBER
 from .models import (menuItems, menuGroups, )
 from .utils import (
     recordsetList,
-    cSimpleRecordForm_Base, cSimpleRecordForm, cQFmConstants,
-    cComboBoxFromDict, 
+    cSimpleRecordForm, cComboBoxFromDict, 
     cstdTabWidget, cGridWidget,
     areYouSure, 
     cQFmNameLabel, 
