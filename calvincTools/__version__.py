@@ -21,7 +21,10 @@ __author__ = "Calvin C"
 __email__ = "calvinc404@gmail.com"
 
 # Change Log:
-# 1.8.1 - 2026-03-19 - fixed issue in cQdbSimpleRecordSubFormWidgets where loadFromRecord was not accepting optional caller_conditions, and loadRecords method was added to handle loading with caller_conditions without parent record; other minor bug fixes and code cleanup
+# 1.8.1 - 2026-03-19 - fixed issue in cQdbSimpleRecordSubFormWidgets where loadFromRecord was not accepting optional caller_conditions, 
+#       - loadRecords methods added to handle loading with caller_conditions without parent record; 
+#       - cSimpleMultiRecordSubFmWrapperForm: upon loading subform, call loadRecords if possible
+#       - other minor bug fixes and code cleanup
 # 1.8.0 - 2026-03-17 - split cQdbFormWidgets into separate files for better organization; other minor bug fixes and code cleanup
 #       - introduce cSimpleMultiRecordSubFmWrapperForm to handle multiple record subforms with no parent record;
 # 1.7.0 - 2026-03-14 

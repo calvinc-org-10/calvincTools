@@ -253,6 +253,8 @@ class cSimpleMultiRecordSubFmWrapperForm(QWidget):
                 widget = SubFormCls(parent=self)
                 if not isinstance(widget, cSimpRecFmElement_Base):
                     raise TypeError(f'class {SubFormCls.__name__} must inherit from cSimpRecFmElement_Base')
+                if hasattr(widget, "loadRecords") and callable(widget.loadRecords): #type: ignore
+                    widget.loadRecords()    #type: ignore
             # --- Scalar case ---
             elif isLookup:
                 if lookupsAllowed:
