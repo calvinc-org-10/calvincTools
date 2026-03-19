@@ -264,9 +264,32 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
                 session.expunge(r)
             self._childRecs.extend(rows)
 
-            self.Tblmodel.refresh(filter=conditions) # type: ignore
+            self.Tblmodel.refresh(filter=*conditions) # type: ignore
         #endwith
     # loadFromRecord
+    def loadRecords(self, *caller_conditions):
+        """Load records - assumes no parent record """
+        self._childRecs.clear()
+        self._deleted_childRecs.clear()
+
+        # implement later - verify that caller_conditions are valid SQLAlchemy expressions
+        # from sqlalchemy.sql.elements import ColumnElement
+
+        # for c in caller_conditions:
+        #     if not isinstance(c, ColumnElement):
+        #         raise TypeError(f"Invalid condition: {c!r}")
+        conditions = list(caller_conditions)
+
+        with self._ssnmaker() as session:
+            stmt = select(self._ORMmodel).where(*conditions)
+            rows = session.scalars(stmt).all()
+            for r in rows:
+                session.expunge(r)
+            self._childRecs.extend(rows)
+
+            self.Tblmodel.refresh(filter=*conditions) # type: ignore
+        #endwith
+    # loadRecords
 
     def saveToRecord(self, rec):
         """Save subrecords back to database."""
