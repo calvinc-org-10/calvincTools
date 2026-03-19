@@ -258,7 +258,9 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
             conditions.append(self._linkFld == getattr(rec, PLFkey))
 
         with self._ssnmaker() as session:
-            stmt = select(self._ORMmodel).where(*conditions)
+            stmt = select(self._ORMmodel)
+            if conditions:
+                stmt = stmt.where(*conditions)
             rows = session.scalars(stmt).all()
             for r in rows:
                 session.expunge(r)
@@ -761,7 +763,9 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
             conditions.append(linkFld == getattr(rec, parnt_linkFldKey))
 
         with ssnmkr() as session:
-            qry = select(modl).where(*conditions)
+            qry = select(modl)
+            if conditions:
+                qry = qry.where(*conditions)
             rows = session.scalars(qry).all()
             for r in rows:
                 session.expunge(r)

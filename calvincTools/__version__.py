@@ -5,7 +5,7 @@ calvincTools - A Python package
 _pkgname='Calvin C Tools'
 _base_ver_major=1
 _base_ver_minor=8
-_base_ver_patch='1'
+_base_ver_patch='2'
 _ver_date='2026-03-19'
 _base_ver = f'{_base_ver_major}.{_base_ver_minor}.{_base_ver_patch}'
 __version__ = _base_ver
@@ -21,6 +21,7 @@ __author__ = "Calvin C"
 __email__ = "calvinc404@gmail.com"
 
 # Change Log:
+# 1.8.2 - 2026-03-19 - bug fixes
 # 1.8.1 - 2026-03-19 - fixed issue in cQdbSimpleRecordSubFormWidgets where loadFromRecord was not accepting optional caller_conditions, 
 #       - loadRecords methods added to handle loading with caller_conditions without parent record; 
 #       - cSimpleMultiRecordSubFmWrapperForm: upon loading subform, call loadRecords if possible
