@@ -266,7 +266,7 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
                 session.expunge(r)
             self._childRecs.extend(rows)
 
-            self.Tblmodel.refresh(filter=*conditions) # type: ignore
+            self.Tblmodel.refresh(filter=conditions)
         #endwith
     def loadRecords(self, *caller_conditions):
         """Load records - assumes no parent record """
