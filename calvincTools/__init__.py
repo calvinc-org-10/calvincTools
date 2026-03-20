@@ -1,4 +1,4 @@
-from __version__ import (
+from .__version__ import (
     _pkgname,
     _ver_date,
     _base_ver, __version__, sysver, sysver_key,
