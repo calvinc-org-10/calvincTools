@@ -266,11 +266,11 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
                 session.expunge(r)
             self._childRecs.extend(rows)
 
-            self.Tblmodel.refresh(filter=conditions if conditions!=[] else None) # type: ignore
+            self.Tblmodel.refresh(filter=*conditions) # type: ignore
         #endwith
     def loadRecords(self, *caller_conditions):
         """Load records - assumes no parent record """
-        return self.loadFromRecord(None, caller_conditions)
+        return self.loadFromRecord(None, *caller_conditions)
     # loadFromRecord
 
     def saveToRecord(self, rec):
@@ -780,7 +780,7 @@ class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
 
         # self.Tblmodel.refresh(filter=(self._parentFK == getattr(rec, self._parentRecPK.key)))
     def loadRecords(self, *caller_conditions):
-        return self.loadFromRecord(None, caller_conditions)
+        return self.loadFromRecord(None, *caller_conditions)
     # loadFromRecord
 
 

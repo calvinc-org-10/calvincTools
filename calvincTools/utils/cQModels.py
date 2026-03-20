@@ -135,10 +135,10 @@ class SQLAlchemyTableModel(QAbstractTableModel):
         """Reload data from the database"""
         with self.session_factory() as session:
             stmt = select(self.model_class)
-            if filter is not None:
-                stmt = stmt.where(filter)
+            if filter:
+                stmt = stmt.where(*filter)
             if orderby is not None:
-                stmt = stmt.order_by(orderby)
+                stmt = stmt.order_by(*orderby)
             rows = session.execute(stmt).scalars().all()
             for row in rows:
                 session.expunge(row)  # detach from session
