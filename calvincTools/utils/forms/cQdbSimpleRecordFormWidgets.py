@@ -1111,7 +1111,7 @@ class cSimpleRecordForm(cSimpleRecordForm_Base):
 
     # init
 
-    def _buildFormLayout(self) -> Dict[str, QWidget|QLayout|None]:
+    def _buildFormLayout(self) -> cQFormLayout:
         """Build the form layout for cSimpleRecordForm.
 
         Returns:
@@ -1119,8 +1119,6 @@ class cSimpleRecordForm(cSimpleRecordForm_Base):
             tuple: (layoutMain, layoutForm, layoutButtons) containing the main layout,
                 tabbed form layout, and button layout.
         """
-
-        rtnDict: Dict[str, QWidget|QLayout|None] = {}
 
         layoutMain = QVBoxLayout(self)
         layoutFormHdr = QHBoxLayout()
@@ -1130,15 +1128,6 @@ class cSimpleRecordForm(cSimpleRecordForm_Base):
         layoutFormFixedBottom = QGridLayout()
         layoutButtons = QHBoxLayout()  # may get redefined in _addActionButtons
         statusBar = QStatusBar(self)
-
-        rtnDict['layoutMain'] = layoutMain
-        rtnDict['layoutFormHdr'] = layoutFormHdr
-        rtnDict['layoutForm'] = layoutForm
-        rtnDict['layoutFormFixedTop'] = layoutFormFixedTop
-        rtnDict['layoutFormPages'] = layoutFormPages
-        rtnDict['layoutFormFixedBottom'] = layoutFormFixedBottom
-        rtnDict['layoutButtons'] = layoutButtons
-        rtnDict['statusBar'] = statusBar
 
         # should this be in _finalizeMainLayout instead?
         layoutForm.addLayout(layoutFormFixedTop, 0, 0)
@@ -1159,12 +1148,23 @@ class cSimpleRecordForm(cSimpleRecordForm_Base):
         layoutFormHdr.addWidget(newrecFlag)
         # self.showNewRecordFlag() # done when record displayed
 
-        rtnDict['lblFormName'] = lblFormName
-        rtnDict['newrecFlag'] = newrecFlag
-
         self.setWindowTitle(self.tr(self._formname))
 
-        return rtnDict
+        rtnval = cQFormLayout(
+            main=layoutMain,
+            header=layoutFormHdr,
+            form=layoutForm,
+            fixed_top=layoutFormFixedTop,
+            pages=layoutFormPages,
+            fixed_bottom=layoutFormFixedBottom,
+            buttons=layoutButtons,
+            status_bar=statusBar,
+            
+            lblFormName = lblFormName,
+            newrecFlag = newrecFlag,
+            )
+
+        return rtnval
     # _buildFormLayout
 
     import qtawesome
