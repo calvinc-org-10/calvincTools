@@ -1115,7 +1115,7 @@ class cEditMenu(cSimpleRecordForm):
 
     def _addActionButtons(self, layoutButtons: QBoxLayout | None = None, layoutHorizontal: bool = True, NavActions: List[Tuple[str, QIcon]] | None = None, CRUDActions: List[Tuple[str, QIcon]] | None = None) -> None:
         # there is no button line on this form
-        self.btnCommit = self.fieldDefs['+Commit'].get('widget')
+        self.btnCommit = self.OLDfieldDefs['+Commit'].get('widget')
         return
     # _addActionButtons
     
@@ -1191,10 +1191,10 @@ class cEditMenu(cSimpleRecordForm):
 
         self.fldmenuGroupName.setValue(GpName) # type: ignore
         self.lblnummenuID.display(menuID)
-        fldmenuID = self.fieldDefs['@MenuID'].get('widget')        
+        fldmenuID = self.OLDfieldDefs['@MenuID'].get('widget')        
         fldmenuID.replaceDict(self.dictmenus(menuGroup))  # type: ignore
         fldmenuID.setValue(menuID) # type: ignore
-        fldmenuName = self.fieldDefs['OptionText'].get('widget')  # self.fldmenuID.replaceDict(dict(d))
+        fldmenuName = self.OLDfieldDefs['OptionText'].get('widget')  # self.fldmenuID.replaceDict(dict(d))
         fldmenuName.setValue(menuHdrRec.OptionText) # type: ignore
 
         for bNum in range(_NUM_menuBUTTONS):

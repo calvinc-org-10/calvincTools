@@ -5,6 +5,8 @@ from calvincTools.utils.SQLAlcTools import get_primary_key_column
 from calvincTools.utils.cQWidgets import cComboBoxFromDict, cDataList, cGridWidget, cstdTabWidget
 from calvincTools.utils.forms.cQFormWidgets import cQFmConstants, cQFmNameLabel
 from calvincTools.utils.forms.cQdbFormWidgets import cQFmFldWidg, cQFmLookupWidg, cSimpRecFmElement_Base
+from calvincTools.utils.forms.cQFormFieldDef import cQFormFieldDef, cQFormFieldInstance
+from calvincTools.utils.forms.cQFormLayout import cQFormLayout
 from calvincTools.utils.messageBoxes import areYouSure
 
 from PySide6.QtCore import Qt, Slot
@@ -42,7 +44,13 @@ class cSimpleRecordForm_Base(QWidget):
     pages: List = []
     _tabindexTOtabname: dict[int, str] = {}
     _tabnameTOtabindex: dict[str, int] = {}
-    fieldDefs: Dict[str, Dict[str, Any]] = {}
+    _layouts: cQFormLayout
+
+    OLDfieldDefs: Dict[str, Dict[str, Any]] = {}
+    _field_defs: List[cQFormFieldDef] = []
+    _formWidgets: Dict[str, cSimpRecFmElement_Base] = {}    # make this QWidget instead of cSimpRecFmElement_Base to allow for lookup widgets and other special widgets that don't inherit from cSimpRecFmElement_Base - or maybe not - maybe just require that all widgets inherit from cSimpRecFmElement_Base for consistency and so that we can call loadFromRecord and other standard methods on them - lookup widgets can just implement these methods to handle their special behavior - this will make the code cleaner and more consistent, and we can still have special handling within those methods as needed for the lookup behavior - let's try it and see how it goes
+    _lookupFrmElements: Dict[str, cQFmLookupWidg] = {}
+
 
     def __init__(self,
         model: Type[Any]|None = None,
@@ -63,8 +71,8 @@ class cSimpleRecordForm_Base(QWidget):
         # super init
         super().__init__(parent)
 
-        self._formWidgets: Dict[str, QWidget] = {}
-        self._lookupFrmElements: Dict[str, QWidget] = {}
+        # self._formWidgets: Dict[str, QWidget] = {}
+        # self._lookupFrmElements: Dict[str, QWidget] = {}
 
         # set model, primary key
         if not self._ORMmodel:
@@ -206,9 +214,20 @@ class cSimpleRecordForm_Base(QWidget):
     # get/set currRec
 
     ######################################################
+    ########    Define form fields - to be implemented by subclass
+
+    def defineFields(self):
+        """Define the form fields.
+
+        This method should be implemented by subclasses to define the form fields
+        and their properties. It should populate self._field_defs with cQFormFieldDef instances.
+        """
+        raise NotImplementedError
+
+    ######################################################
     ########    Layout and field and Widget placement
 
-    def _buildFormLayout(self) -> Dict[str, QWidget|QLayout|None]:
+    def _buildFormLayout(self) -> cQFormLayout:
         """
         Build the main layout, form layout, and button layout. Must be implemented by subclasses.
         Creates and configures:
@@ -216,7 +235,7 @@ class cSimpleRecordForm_Base(QWidget):
         2. layoutForm: the grid layout for the form fields  (QTabWidget)
         3. layoutButtons: the layout for the action buttons (QHBoxLayout or QVBoxLayout)
 
-        Form elements created here, but not returned:
+        other Form elements created here:
         4. _statusBar: the status bar for the form (QStatusBar)
         5. _newrecFlag: the "New Record" flag label (QLabel)
         6. layoutFormHdr: the header layout for the form (QHBoxLayout)
@@ -224,7 +243,7 @@ class cSimpleRecordForm_Base(QWidget):
         8. Set the window title to the form name
 
         Returns:
-            tuple (layoutMain:QBoxLayout, layoutForm:QTabWidget, layoutButtons:QBoxLayout|None)
+            cQFormLayout: A structure containing the created layouts and widgets.
 
         """
         raise NotImplementedError
@@ -316,7 +335,7 @@ class cSimpleRecordForm_Base(QWidget):
         mdl = self.ORMmodel()
         assert mdl is not None, "ORMmodel must be set before placing fields"
 
-        for fldNameKey, fldDef in self.fieldDefs.items():
+        for fldNameKey, fldDef in self.OLDfieldDefs.items():
             widget = None
 
             # fldNameKey indicates a lookup field if the field name starts with '@'
@@ -418,7 +437,7 @@ class cSimpleRecordForm_Base(QWidget):
             #endif isinstance(widget, (cQFmFldWidg, cQFmLookupWidg)):
 
             # Register field and connect to changeField
-            self.fieldDefs[fldNameKey]['widget'] = widget
+            self.OLDfieldDefs[fldNameKey]['widget'] = widget
             if not isLookup:  # or isInternalVarField ??
                 self._formWidgets[fldNameKey] = widget
 
@@ -858,7 +877,7 @@ class cSimpleRecordForm_Base(QWidget):
 
         try:
             # Push data from form -> ORM object, except for subforms - they must come after the main record is saved
-            for fldName, fldDef in self.fieldDefs.items():
+            for fldName, fldDef in self.OLDfieldDefs.items():
                 isSubFormElmnt = "subform_class" in fldDef
                 if not isSubFormElmnt:      # subforms handled after main record is saved
                     widget = self._formWidgets.get(fldName)
@@ -884,7 +903,7 @@ class cSimpleRecordForm_Base(QWidget):
             # endwith session
 
             # now handle subforms
-            for fldName, fldDef in self.fieldDefs.items():
+            for fldName, fldDef in self.OLDfieldDefs.items():
                 isSubFormElmnt = "subform_class" in fldDef
                 if isSubFormElmnt:
                     widget = self._formWidgets.get(fldName)

@@ -352,7 +352,7 @@ class cSimpRecSbFmRecord(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         if not self._ssnmaker:
             raise ValueError(f"A sessionmaker must be provided defined in the parent form {parent}")
 
-        self.fieldDefs = getattr(parent, 'fieldDefs', {})
+        self.OLDfieldDefs = getattr(parent, 'fieldDefs', {})
 
         super().__init__(parent=parent)
 
