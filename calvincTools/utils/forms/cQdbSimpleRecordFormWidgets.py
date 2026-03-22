@@ -42,13 +42,11 @@ class cSimpleRecordForm_Base(QWidget):
     _ssnmaker:sessionmaker[Session]|None = None
 
     pages: List = []
-    _tabindexTOtabname: dict[int, str] = {}
-    _tabnameTOtabindex: dict[str, int] = {}
     _layouts: cQFormLayout
 
     OLDfieldDefs: Dict[str, Dict[str, Any]] = {}
     _field_defs: List[cQFormFieldDef] = []
-    _formWidgets: Dict[str, cSimpRecFmElement_Base] = {}    # make this QWidget instead of cSimpRecFmElement_Base to allow for lookup widgets and other special widgets that don't inherit from cSimpRecFmElement_Base - or maybe not - maybe just require that all widgets inherit from cSimpRecFmElement_Base for consistency and so that we can call loadFromRecord and other standard methods on them - lookup widgets can just implement these methods to handle their special behavior - this will make the code cleaner and more consistent, and we can still have special handling within those methods as needed for the lookup behavior - let's try it and see how it goes
+    _formWidgets: Dict[str, cQFormFieldInstance] = {}    # make this QWidget instead of cSimpRecFmElement_Base to allow for lookup widgets and other special widgets that don't inherit from cSimpRecFmElement_Base - or maybe not - maybe just require that all widgets inherit from cSimpRecFmElement_Base for consistency and so that we can call loadFromRecord and other standard methods on them - lookup widgets can just implement these methods to handle their special behavior - this will make the code cleaner and more consistent, and we can still have special handling within those methods as needed for the lookup behavior - let's try it and see how it goes
     _lookupFrmElements: Dict[str, cQFmLookupWidg] = {}
 
 
@@ -114,7 +112,7 @@ class cSimpleRecordForm_Base(QWidget):
         # rtnDict['newrecFlag'] = newrecFlag
         self._newrecFlag = self.dictFormLayouts.get('newrecFlag')
 
-        self._buildPages(self.layoutFormPages)
+        self._buildPages()
 
         # Let subclass build its widgets into self.layoutForm
         self._placeFields(self.layoutFormPages, self.layoutFormFixedTop, self.layoutFormFixedBottom)
@@ -253,48 +251,35 @@ class cSimpleRecordForm_Base(QWidget):
 
     # _buildFormLayout
 
-    def _buildPages(self, layoutFormPages: QTabWidget) -> None:
+    def _buildPages(self) -> None:
         """Build the pages (tabs) for the form based on self.pages."""
         if self.numPages() < 1:
             # single page form
             self.pages = ['Main']
-            self._tabindexTOtabname[0] = 'Main'
-            self._tabnameTOtabindex['Main'] = 0
         # endif numPages
+        
+        self._page_map = {}
 
         for n, pg in enumerate(self.pages):
             pgnm = str(pg)
-            self._tabindexTOtabname[n] = pg
-            self._tabnameTOtabindex[pg] = n
-
             widg, grid = QWidget(), QGridLayout()
             widg.setLayout(grid)
-            layoutFormPages.addTab(widg, self.tr(pgnm))
-        # endfor enum pages
+            
+            self._layouts.pages.addTab(widg, self.tr(pgnm))
+            self._page_map[pgnm] = grid
+            self._page_map[n] = grid
+        # endfor page in self.pages
     # _buildPages
     def FormPage(self, idx:int|str) -> QGridLayout|None:
         """Return the QGridLayout for the given page index or name."""
-        if isinstance(idx, str):
-            tabidx = self._tabnameTOtabindex.get(idx)
-            if tabidx is None:
-                return None
-        else:
-            tabidx = idx
-        #endif idx type
-
         # is idx one of the special values?
-        if tabidx == cQFmConstants.pageFixedTop.value:
-            return self.layoutFormFixedTop if isinstance(self.layoutFormFixedTop, QGridLayout) else None
-        elif tabidx == cQFmConstants.pageFixedBottom.value:
-            return self.layoutFormFixedBottom if isinstance(self.layoutFormFixedBottom, QGridLayout) else None
+        if idx == cQFmConstants.pageFixedTop.value:
+            return self._layouts.fixed_top
+        elif idx == cQFmConstants.pageFixedBottom.value:
+            return self._layouts.fixed_bottom
         # endif special values
 
-        assert isinstance(self.layoutFormPages, QTabWidget), "layoutFormPages must be a QTabWidget"
-        widg = self.layoutFormPages.widget(tabidx)
-        if widg is None:
-            return None
-        L = widg.layout()
-        return L if isinstance(L, QGridLayout) else None
+        return self._page_map.get(idx, None)
     # FormPage
     def numPages(self) -> int:
         """Return the number of pages/tabs in the form.
@@ -305,6 +290,71 @@ class cSimpleRecordForm_Base(QWidget):
         return len(self.pages)
         # or return self.layoutForm.count() # mebbe not - see _buildPages
     # numPages
+
+    def _build_fields(self):
+        for defn in self._field_defs:
+            widget = self._create_widget(defn)
+            self._configure_widget(widget, defn)
+            self._connect_widget(widget, defn)
+            self._place_widget(widget, defn)
+
+            self._formWidgets[defn.name] = cQFormFieldInstance(defn, widget)
+        # endfor defn in self._field_defs
+    # _build_fields
+    def _create_widget(self, defn: cQFormFieldDef) -> QWidget:
+        def _create_subform_widget(defn: cQFormFieldDef) -> QWidget:
+            if defn.subform_class:
+                widget = defn.subform_class(parent=self)
+                return widget
+            else:
+                raise ValueError("subform_class must be specified for subform fields")
+        def _create_lookup_widget(defn: cQFormFieldDef) -> QWidget:
+            ...
+        def _create_scalar_widget(defn: cQFormFieldDef) -> QWidget:
+            widget_type = defn.widget_type or QLineEdit
+
+            return cQFmFldWidg(
+                widgType=widget_type,
+                lblText=defn.label or defn.name,
+                alignlblText=defn.label_alignment,
+                modlFld=defn.name,
+                lblChkBxYesNo=defn.lblChkBxYesNo,
+                choices=defn.choices,
+                initval=defn.initval,
+                parent=self
+                )
+
+        if defn.subform_class:
+            return _create_subform_widget(defn)
+        
+        if defn.lookup_handler:
+            return _create_lookup_widget(defn)
+        
+        return _create_scalar_widget(defn)
+    # _create_widget
+    def _configure_widget(self, widget: QWidget, defn: cQFormFieldDef):
+        if defn.readonly and hasattr(widget, "setReadOnly"):
+            widget.setReadOnly(True)    # type: ignore
+
+        if defn.tooltip:
+            widget.setToolTip(defn.tooltip)
+
+        if defn.bg_color:
+            widget.setStyleSheet(f"background-color: {defn.bg_color};")
+
+        if defn.focus_policy:
+            widget.setFocusPolicy(defn.focus_policy)
+    # _configure_widget
+    def _connect_widget(self, widget: QWidget, defn: cQFormFieldDef):
+        if hasattr(widget, "signalFldChanged"):
+            widget.signalFldChanged.connect(                                    # type: ignore
+                lambda *_, w=widget, d=defn: self._on_field_changed(w, d)
+            )
+    # _connect_widget
+    def _place_widget(self, widget: QWidget, defn: cQFormFieldDef):
+        layout = self.FormPage(defn.page)
+        layout.addWidget(widget, *defn.position)    # type: ignore
+    # _place_widget
 
     def _placeFields(self, layoutFormPages:QTabWidget, layoutFormFixedTop: QGridLayout|None, layoutFormFixedBottom: QGridLayout|None, lookupsAllowed: bool = True) -> None:
         """
@@ -799,6 +849,15 @@ class cSimpleRecordForm_Base(QWidget):
     ##########################################
     ########    Update
 
+    def _on_field_changed(self, widget, defn: cQFormFieldDef):
+        value = widget.Value()
+
+        if defn.transform:
+            value = defn.transform(value)
+
+        if defn.on_change:
+            defn.on_change(value)
+        
     @Slot()
     def changeFieldSlot(self, widget: QWidget | None = None):
         # sender() returns the widget that triggered the signal

@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
-from typing import Any, Callable, Type
+from typing import Any, Callable, Type, Dict
+from enum import Enum
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget
 
 from .cQdbFormWidgets import cQFmFldWidg
@@ -9,7 +11,13 @@ from .cQdbFormWidgets import cQFmFldWidg
 class cQFormFieldDef:
     name: str
     label: str | None = None
+    label_alignment: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignLeft
     widget_type: Type | None = None
+    
+    choices: Dict | None = None
+    initval: str = ''
+    lblChkBxYesNo: dict[bool, str] | None = None
+    
     page: int | str = 0
     position: tuple[int, int, int, int] | tuple[int, int] = (0, 0)
 
@@ -21,20 +29,22 @@ class cQFormFieldDef:
     readonly: bool = False
     tooltip: str | None = None
     bg_color: str | None = None
-    focus_policy: Any = None
+    focus_policy: Qt.FocusPolicy | None = None  # default focus policy will be ClickFocus for lookup and subform fields, None (i.e. inherit) for others
 
     # special
+    lookup_handler: Callable[[Any], Any] | None = None
     subform_class: Type | None = None
-
+# cQFormFieldDef
 
 # runtime class to hold field definition and widget instance
 class cQFormFieldInstance:
-    def __init__(self, definition: cQFormFieldDef, widget: cQFmFldWidg):
+    def __init__(self, definition: cQFormFieldDef, widget: QWidget):
         self.defn = definition
         self.widget = widget
 
     def get_value(self):
-        return self.widget.Value()
+        return self.widget.Value()  # type: ignore
 
     def set_value(self, val):
-        self.widget.setValue(val)
+        self.widget.setValue(val)   # type: ignore
+# cQFormFieldInstance
