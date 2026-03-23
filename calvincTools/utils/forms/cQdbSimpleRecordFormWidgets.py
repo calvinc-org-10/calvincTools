@@ -21,7 +21,6 @@ from calvincTools.utils.messageBoxes import areYouSure
 
 
 
-# TODO: Handle fields that need special massaging   - let the children do the heavy lifting ??
 # TODO: pretty up NEW RECORD FLAG
 class cSimpleRecordForm_Base(QWidget):
     """Base class for simple record forms with CRUD operations.
@@ -41,13 +40,11 @@ class cSimpleRecordForm_Base(QWidget):
     # TODO: be more careful with class attributes vs instance attributes
     _ORMmodel:Type[Any]|None = None
     _primary_key: Any
-    _currRec: Any
+    _currRecs: Any      # will be a single ORMRecord for SingleForm, List[ORMRecord] for MultiForm
 
     _ssnmaker:sessionmaker[Session]|None = None
 
     pages: List = []
-
-    OLDfieldDefs: Dict[str, Dict[str, Any]] = {}
 
 
     def __init__(self,
@@ -91,8 +88,6 @@ class cSimpleRecordForm_Base(QWidget):
         self._field_defs: List[cQFormFieldDef] = self.defineFields()
         self._validate_field_defs()
         self._field_defs_by_name = {d.name: d for d in self._field_defs}
-        self._formWidgets: Dict[str, cQFormFieldInstance] = {}    # make this QWidget instead of cSimpRecFmElement_Base to allow for lookup widgets and other special widgets that don't inherit from cSimpRecFmElement_Base - or maybe not - maybe just require that all widgets inherit from cSimpRecFmElement_Base for consistency and so that we can call loadFromRecord and other standard methods on them - lookup widgets can just implement these methods to handle their special behavior - this will make the code cleaner and more consistent, and we can still have special handling within those methods as needed for the lookup behavior - let's try it and see how it goes
-        self._lookupFrmElements: Dict[str, cQFmLookupWidg] = {}
 
         self._layouts: cQFormLayout= self._buildFormLayout()
 
@@ -100,106 +95,12 @@ class cSimpleRecordForm_Base(QWidget):
         self._buildPages()
 
         # Let subclass build its widgets into self.layoutForm
+        self._formWidgets: Dict[str, cQFormFieldInstance] = {}
+        self._lookupFrmElements: Dict[str, cQFmLookupWidg] = {}
         self._build_fields()
 
         # Add buttons
-        self._addActionButtons(self.layoutButtons)
-
-        # Finalize layout
-        # do this way or assemble the main layout in _buildFormLayout and just add the sub-layouts to it there ???
-        # self._finalizeMainLayout(
-        #     layoutMain=layoutMain,
-        #     items=[
-        #         layoutFormHdr,
-        #         layoutForm,
-        #         self.layoutButtons,
-        #         self._statusBar
-        #     ]
-        # )
-
-        self.initialdisplay()
-
-    # __init__
-    def OLD__init__(self,
-        model: Type[Any]|None = None,
-        ssnmaker: sessionmaker[Session] | None = None,
-
-        parent: QWidget | None = None
-        ):
-        """Initialize the base record form.
-
-        Args:
-            model (Type[Any] | None, optional): ORM model class. Defaults to None.
-            ssnmaker (sessionmaker[Session] | None, optional): Session factory. Defaults to None.
-            parent (QWidget | None, optional): Parent widget. Defaults to None.
-
-        Raises:
-            ValueError: If model or ssnmaker not provided and not set as class attributes.
-        """
-        # super init
-        super().__init__(parent)
-
-        # self._formWidgets: Dict[str, QWidget] = {}
-        # self._lookupFrmElements: Dict[str, QWidget] = {}
-
-        # set model, primary key
-        if not self._ORMmodel:
-            if not model:
-                raise ValueError("A model class must be provided either in the constructor or as a class attribute")
-            self.setORMmodel(model)
-        self.setPrimary_key()
-
-        # set ssnmaker
-        if not self._ssnmaker:
-            if not ssnmaker:
-                raise ValueError("A sessionmaker must be provided either in the constructor or as a class attribute")
-            self.setssnmaker(ssnmaker)
-
-        dictFormLayouts = self._buildFormLayout()
-        assert isinstance(dictFormLayouts, dict), "_buildFormLayout must return a dict of layouts"
-        self.dictFormLayouts = dictFormLayouts
-        layoutMain = dictFormLayouts.get('layoutMain')
-        assert isinstance(layoutMain, (QVBoxLayout, )), "layoutMain must be a QVBoxLayout"
-        layoutFormHdr = dictFormLayouts.get('layoutFormHdr')
-        # assert isinstance(layoutFormHdr, (QGridLayout, )), "layoutFormHdr must be a QGridLayout"
-        layoutForm = dictFormLayouts.get('layoutForm')
-        # assert isinstance(layoutForm, QTabWidget), "layoutForm must be a QTabWidget"
-        self.layoutFormFixedTop = dictFormLayouts.get('layoutFormFixedTop')
-        if self.layoutFormFixedTop is not None:
-            assert isinstance(self.layoutFormFixedTop, QGridLayout), "layoutFormFixedTop must be a QGridLayout"
-        self.layoutFormPages = dictFormLayouts.get('layoutFormPages')
-        assert isinstance(self.layoutFormPages, QTabWidget), "layoutFormPages must be a QTabWidget"
-        self.layoutFormFixedBottom = dictFormLayouts.get('layoutFormFixedBottom')
-        if self.layoutFormFixedBottom is not None:
-            assert isinstance(self.layoutFormFixedBottom, QGridLayout), "layoutFormFixedBottom must be a QGridLayout"
-        self.layoutButtons = dictFormLayouts.get('layoutButtons')
-        assert isinstance(self.layoutButtons, (QHBoxLayout, QVBoxLayout)), "layoutButtons must be a QHBoxLayout or QVBoxLayout"
-        # rtnDict['statusBar'] = statusBar
-        self._statusBar = dictFormLayouts.get('statusBar')
-        if self._statusBar is not None:
-            assert isinstance(self._statusBar, QStatusBar), "statusBar must be a QStatusBar"
-        # rtnDict['lblFormName'] = lblFormName
-        # rtnDict['newrecFlag'] = newrecFlag
-        self._newrecFlag = self.dictFormLayouts.get('newrecFlag')
-
-        self._buildPages()
-
-        # Let subclass build its widgets into self.layoutForm
-        self._placeFields(self.layoutFormPages, self.layoutFormFixedTop, self.layoutFormFixedBottom)
-
-        # Add buttons
-        self._addActionButtons(self.layoutButtons)
-
-        # Finalize layout
-        self._finalizeMainLayout(
-            layoutMain=layoutMain,
-            items=[
-                layoutFormHdr,
-                layoutForm,
-                self.layoutButtons,
-                self._statusBar
-            ]
-        )
+        self._addActionButtons()
 
         self.initialdisplay()
 
@@ -270,7 +171,7 @@ class cSimpleRecordForm_Base(QWidget):
         Returns:
             Current ORM record object.
         """
-        return self._currRec
+        return self._currRecs
 
     def setcurrRec(self, rec):
         """Set the current record.
@@ -278,7 +179,7 @@ class cSimpleRecordForm_Base(QWidget):
         Args:
             rec: ORM record object to set as current.
         """
-        self._currRec = rec
+        self._currRecs = rec
     # get/set currRec
 
     ######################################################
@@ -324,6 +225,15 @@ class cSimpleRecordForm_Base(QWidget):
 
         """
         raise NotImplementedError
+        # self._finalizeMainLayout(
+        #     layoutMain=layoutMain,
+        #     items=[
+        #         layoutFormHdr,
+        #         layoutForm,
+        #         self.layoutButtons,
+        #         self._statusBar
+        #     ]
+        # )
 
         ## see cSimpRecForm for an example implementation
         ##
@@ -345,24 +255,40 @@ class cSimpleRecordForm_Base(QWidget):
             widg.setLayout(grid)
             
             self._layouts.pages.addTab(widg, self.tr(pgnm))
-    # TODO: consider _page_map keys being only strings (i.e. page names) and not allowing integer indexes as keys - this will make it more consistent and less error-prone, and we can always look up the page name from the index if needed using self.pages - let's try it and see how it goes
             self._page_map[str(pgnm)] = grid
             # self._page_map[n] = grid
         # endfor page in self.pages
     # _buildPages
-    def FormPage(self, idx:int|str|Enum) -> QGridLayout|None:
-        """Return the QGridLayout for the given page index or name."""
-        if isinstance(idx, Enum):
-            idx = idx.value
-    
-        # is idx one of the special values?
-        if idx == cQFmConstants.pageFixedTop:
-            return self._layouts.fixed_top
-        elif idx == cQFmConstants.pageFixedBottom:
-            return self._layouts.fixed_bottom
-        # endif special values
+    def FormPage(self, idx: int | str | Enum) -> QGridLayout | None:
+        def FormPageByName(name: str):
+            return self._page_map.get(name, None)
+        def FormPageByIndex(idx: int):
+            if 0 <= idx < len(self.pages):
+                idx = self.pages[idx]
+            else:
+                return None
+            return self._page_map.get(idx, None)
+        def FormPageSpecial(enum: cQFmConstants):
+            if enum is cQFmConstants.pageFixedTop:
+                return self._layouts.fixed_top
+            elif enum is cQFmConstants.pageFixedBottom:
+                return self._layouts.fixed_bottom
+            return None  # other enum values not valid pages
+        ####################################
+        ####################################
+        # --- Enum handling ---
+        if isinstance(idx, cQFmConstants):
+            return FormPageSpecial(idx)
 
-        return self._page_map.get(idx, None)
+        # --- int index handling ---
+        if isinstance(idx, int):
+            return FormPageByIndex(idx)
+        
+        # --- str lookup ---
+        if isinstance(idx, str):
+            return FormPageByName(idx)
+
+        return None
     # FormPage
     def numPages(self) -> int:
         """Return the number of pages/tabs in the form.
@@ -659,14 +585,14 @@ class cSimpleRecordForm_Base(QWidget):
         # # endfor fldDef in self.fieldDefs
     # _placeFields
 
-    # def _addActionButtons(self, layoutButtons:QBoxLayout|None = None) -> None:
-    def _addActionButtons(self, layoutButtons:QBoxLayout|None) -> None:
+    def _addActionButtons(self) -> None:
         """Add action buttons to the form.
 
         Raises:
             NotImplementedError: Must be implemented by subclasses.
         """
         raise NotImplementedError
+        layoutButtons = self._layouts.buttons
     # _addActionButtons
 
     def _handleActionButton(self, action: str) -> None:
@@ -1085,8 +1011,8 @@ class cSimpleRecordForm_Base(QWidget):
 
         try:
             # Push data from form -> ORM object, except for subforms - they must come after the main record is saved
-            for fldName, fldDef in self.OLDfieldDefs.items():
-                isSubFormElmnt = "subform_class" in fldDef
+            for fldName, fldDef in self._field_defs_by_name.items():
+                isSubFormElmnt = fldDef.field_type == cQFormFieldDef.cQFormFieldType.SUBFORM
                 if not isSubFormElmnt:      # subforms handled after main record is saved
                     widget = self._formWidgets.get(fldName)
                     if isinstance(widget, cSimpRecFmElement_Base):
@@ -1111,8 +1037,8 @@ class cSimpleRecordForm_Base(QWidget):
             # endwith session
 
             # now handle subforms
-            for fldName, fldDef in self.OLDfieldDefs.items():
-                isSubFormElmnt = "subform_class" in fldDef
+            for fldName, fldDef in self._field_defs_by_name.items():
+                isSubFormElmnt = fldDef.field_type == cQFormFieldDef.cQFormFieldType.SUBFORM
                 if isSubFormElmnt:
                     widget = self._formWidgets.get(fldName)
                     if isinstance(widget, cSimpRecFmElement_Base):
