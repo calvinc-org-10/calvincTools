@@ -549,16 +549,6 @@ class cSimpleSingleRecordForm(cSimpleRecordForm_Base):
         btnCommit.setEnabled(self.isDirty())
     # showCommitButton
 
-    def repopLookups(self) -> None:
-        """Repopulate all lookup widgets (e.g., after a save).
-
-        Note:
-            Currently not implemented.
-        """
-        return
-        for lookupWidget in self._lookupFrmElements.values():
-            lookupWidget.repopulateChoices()
-
     ##################################################
     ########    Navigation 
 
@@ -782,7 +772,7 @@ class cSimpleSingleRecordForm(cSimpleRecordForm_Base):
     ##########################################
     ########    Update
 
-    @Slot
+    @Slot()
     def _on_field_changed(self, widget, defn: cQFormFieldDef):
         value = widget.Value()
 
@@ -990,7 +980,7 @@ class cSimpleSingleRecordForm(cSimpleRecordForm_Base):
 
 
 
-class cSimpleRecordForm(cSimpleRecordForm_Base):
+# class cSimpleRecordForm(cSimpleRecordForm_Base):
     """A concrete implementation of cSimpleRecordForm_Base with standard layout.
 
     This class provides a complete single-record form with navigation buttons,
@@ -1212,5 +1202,11 @@ class cSimpleRecordForm(cSimpleRecordForm_Base):
         for lkupwdgt in self._lookupFrmElements.values():
             lkupwdgt.refreshChoices()   # type: ignore
     # isDirty
-# cSimpleRecordForm
+# cSimpleSingleRecordForm
 
+###############################################################
+###############################################################
+###############################################################
+
+class cSimpleMultipleRecordForm(cSimpleRecordForm_Base):
+    ...
