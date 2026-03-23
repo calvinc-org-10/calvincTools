@@ -321,6 +321,7 @@ class cSimpleRecordForm_Base(QWidget):
             else:
                 raise ValueError("subform_class must be specified for subform fields")
         def _create_lookup_widget(defn: cQFormFieldDef) -> QWidget:
+            # TODO: cQFmLookupWidg gets ssnmkr, mdl the same way a cQFmFldWidg does
             ssnmkr = self.ssnmaker()
             mdl = self.ORMmodel()
             assert ssnmkr is not None, "ssnmkr must be set before placing fields"
@@ -429,162 +430,6 @@ class cSimpleRecordForm_Base(QWidget):
         layout.addWidget(widget, *defn.position)    # type: ignore
     # _place_widget
 
-    def _placeFields(self, layoutFormPages:QTabWidget, layoutFormFixedTop: QGridLayout|None, layoutFormFixedBottom: QGridLayout|None, lookupsAllowed: bool = True) -> None:
-        """
-        Build widgets and wrap them into _cSimpRecFmElmnt_Base adapters.
-        Args:
-            lookupsAllowed (bool, optional): Whether to create lookup widgets for fields prefixed with '@'. Defaults to True.
-        """
-
-        raise DeprecationWarning("This method is deprecated and will be removed in a future version. Please use _build_fields instead, which creates widgets based on cQFormFieldDef instances and places them according to their defined properties.") 
-        # def _apply_optional_attrib(widget, attr, value):
-        #     """
-        #     helper function for setting optional attributes
-
-        #     Args:
-        #         widget (_type_): _description_
-        #         attr (_type_): _description_
-        #         value (_type_): _description_
-        #     """
-        #     if value is None: return
-        #     if hasattr(widget, attr):
-        #         getattr(widget, attr)(value)
-        #     else:
-        #         widget.setProperty(attr, value)
-        # # _apply_opt_attr
-
-        # ssnmkr = self.ssnmaker()
-        # assert ssnmkr is not None, "ssnmkr must be set before placing fields"
-        # # ssnmkr = ssnmkr if ssnmkr else get_app_sessionmaker()
-        # mdl = self.ORMmodel()
-        # assert mdl is not None, "ORMmodel must be set before placing fields"
-
-        # for fldNameKey, fldDef in self.OLDfieldDefs.items():
-        #     widget = None
-
-        #     # fldNameKey indicates a lookup field if the field name starts with '@'
-        #     # lookup will be the boolean flag
-        #     # fldName is the actual field name
-        #     isLookup = (fldNameKey.startswith(cQFmConstants.flagLookupField.value))
-        #     isInternalVarField = (fldNameKey.startswith(cQFmConstants.flagInternalVarField.value))
-        #     fldName = fldNameKey if not isLookup else fldNameKey[1:]      # TODO: offset by length of flagLookupField instead of constant 1
-
-        #     SubFormCls = fldDef.get("subform_class", None)
-        #     isSubFormElmnt = (SubFormCls is not None)
-
-        #     lookupHandler = fldDef.get('lookupHandler', None)
-        #     lblText = fldDef.get('label', fldName)
-        #     widgType = fldDef.get('widgetType', QLineEdit)
-        #     alignlblText = fldDef.get('align', Qt.AlignmentFlag.AlignLeft)
-        #     choices = fldDef.get('choices', None)
-        #     initval = fldDef.get('initval', '')
-        #     lblChkBxYesNo = fldDef.get('lblChkBxYesNo', None)
-        #     focusPolicy = fldDef.get('focusPolicy', Qt.FocusPolicy.ClickFocus if (isLookup or isSubFormElmnt) else None)
-        #     modlFld = fldName
-        #     fmPg_indef = fldDef.get('page', 0)
-        #     fmPg = fmPg_indef if isinstance(fmPg_indef, int) else self._tabnameTOtabindex.get(fmPg_indef, 0)
-        #     pos = fldDef.get('position', None)
-
-        #     # --- Subform case ---
-        #     if isSubFormElmnt:
-        #         widget = SubFormCls(session_factory=ssnmkr, parent=self)
-        #         if not isinstance(widget, cSimpRecFmElement_Base):
-        #             raise TypeError(f'class {SubFormCls.__name__} must inherit from cSimpRecFmElement_Base')
-        #     # --- Scalar case ---
-        #     elif isLookup:
-        #         if lookupsAllowed:
-        #             if widgType not in (cDataList, cComboBoxFromDict):
-        #                 widgType = cDataList  # force it to be a cDataList
-        #             widget = cQFmLookupWidg(
-        #                 session_factory=ssnmkr,
-        #                 model=mdl,
-        #                 lookup_field=modlFld,
-        #                 lblText=lblText,
-        #                 alignlblText=alignlblText,
-        #                 lookupWidgType=widgType,
-        #                 choices=choices,
-        #                 parent=self
-        #             )
-        #             if lookupHandler:
-        #                 if isinstance(lookupHandler, str):
-        #                     if not hasattr(self, lookupHandler):
-        #                         raise AttributeError(f"lookupHandler method '{lookupHandler}' not found in {self.__class__.__name__}")
-        #                     lookupHandler = getattr(self, lookupHandler)
-        #                 if not callable(lookupHandler):
-        #                     raise TypeError("lookupHandler must be a callable function or a string name of a method")
-        #                 widget.signalLookupSelected.connect(lookupHandler)
-        #             self._lookupFrmElements[fldNameKey] = widget
-        #             # endif lookupHandler
-        #         # endif lookupsAllowed
-        #     else:
-        #         widget = cQFmFldWidg(
-        #             widgType=widgType,
-        #             lblText=lblText,
-        #             lblChkBxYesNo=lblChkBxYesNo,
-        #             alignlblText=alignlblText,
-        #             modlFld=modlFld,
-        #             choices=choices,
-        #             initval=initval,
-        #             parent=self
-        #         )
-        #     #endif subform vs scalar
-        #     if widget is None:
-        #         raise ValueError(f"Failed to create widget for field '{fldName}'")
-        #     if focusPolicy:
-        #         widget.setFocusPolicy(focusPolicy)
-
-        #     if isinstance(widget, (cQFmFldWidg, cQFmLookupWidg)):
-        #         # TODO: convert this to use _apply_opt_attr
-        #         # optional field attributes
-        #         W = widget._wdgt
-        #         optAttributes = [
-        #             ('noedit', 'setProperty', W.setProperty),                                                                   # type: ignore
-        #             ('readonly', 'setReadOnly', W.setReadOnly if hasattr(W, 'setReadOnly') else W.setProperty),                 # type: ignore
-        #             ('frame', 'setFrame', W.setFrame if hasattr(W, 'setFrame') else W.setProperty),                             # type: ignore
-        #             ('maximumWidth', 'setMaximumWidth', W.setMaximumWidth if hasattr(W, 'setMaximumWidth') else W.setProperty), # type: ignore
-        #             ('focusPolicy', 'setFocusPolicy', W.setFocusPolicy if hasattr(W, 'setFocusPolicy') else W.setProperty),     # type: ignore
-        #             ('tooltip', 'setToolTip', W.setToolTip if hasattr(W, 'setToolTip') else W.setProperty),                     # type: ignore
-        #         ]
-        #         for attr, method_name, method in optAttributes:
-        #             attrVal = fldDef.get(attr, None)
-        #             if method_name == 'setProperty' or method is W.setProperty:
-        #                 W.setProperty(attr, attrVal) if attrVal is not None else None
-        #             elif attrVal is not None:
-        #                 method(attrVal) if hasattr(W, method_name) else W.setProperty(attr, attrVal) # type: ignore
-        #             #endif attrVal
-        #         #endfor attr, method_name, method in optAttributes
-
-        #         # other optional attributes
-        #         attrVal = fldDef.get('bgColor', None)
-        #         if attrVal is not None:
-        #             W.setStyleSheet(f"background-color: {attrVal};") if hasattr(W, 'setStyleSheet') else W.setProperty('bgColor', attrVal) # type: ignore
-        #     #endif isinstance(widget, (cQFmFldWidg, cQFmLookupWidg)):
-
-        #     # Register field and connect to changeField
-        #     self.OLDfieldDefs[fldNameKey]['widget'] = widget
-        #     if not isLookup:  # or isInternalVarField ??
-        #         self._formWidgets[fldNameKey] = widget
-
-        #     # remove - this was done in the constructor
-        #     # if isinstance(widget, cQFmFldWidg) and not isLookup and not isSubFormElmnt:
-        #     #     widget.setModelField(fldName)
-
-        #     if isinstance(widget, cQFmFldWidg):
-        #         widget.signalFldChanged.connect(lambda *_, w=widget: self.changeFieldSlot(w))
-        #     elif isinstance(widget, cQFmLookupWidg):
-        #         widget.signalLookupSelected.connect(lambda *_, w=widget: self.changeFieldSlot(w))
-        #     #endif isinstance(widget)
-
-        #     # Place in layout
-        #     if isinstance(pos, tuple) and len(pos) >= 2:
-        #         fmLayout = self.FormPage(fmPg)
-        #         if fmLayout is None:
-        #             raise ValueError(f"Form page {fmPg_indef} not found for field '{fldName}'")
-        #         fmLayout.addWidget(widget, *pos)
-
-        # # endfor fldDef in self.fieldDefs
-    # _placeFields
-
     def _addActionButtons(self) -> None:
         """Add action buttons to the form.
 
@@ -607,42 +452,16 @@ class cSimpleRecordForm_Base(QWidget):
         raise NotImplementedError
     # _handleActionButton
 
-    def _finalizeMainLayout(self, layoutMain:QVBoxLayout, items:List|tuple) -> None:
-        # do I need this ???
-        """Add all sub-layouts to the main layout in the correct order."""
-        assert isinstance(layoutMain, QBoxLayout), 'layoutMain must be a Box Layout'
-
-        for itm in items:
-            if itm is None:
-                continue
-            elif isinstance(itm, QLayout):
-                layoutMain.addLayout(itm)
-            elif isinstance(itm, QWidget):
-                layoutMain.addWidget(itm)
-            elif isinstance(itm, (tuple, list)):
-                L = QVBoxLayout()
-                self._finalizeMainLayout(L, itm)
-                layoutMain.addLayout(L)
-            else:
-                raise TypeError('items must be QLayout, QWidget, or tuple/list of these')
-            # endif itm
-        # endfor itm in items
-
-        # self.setLayout(layoutMain)
-
-    # _finalizeMainLayout
-
     ######################################################
     ########    Display 
 
     def initialdisplay(self):
-        """Initialize and display the first record.
+        """Initialize and display the first record or recordset
 
         Initializes a new record and loads the first record from the database.
         """
-        self.initializeRec()
-        self.on_loadfirst_clicked()
-    # initialdisplay()
+        raise NotImplementedError
+    # initialdisplay
 
     def statusBar(self) -> QStatusBar|None:
         """Get the status bar."""
@@ -658,6 +477,45 @@ class cSimpleRecordForm_Base(QWidget):
 
         # TODO: choose whether to messageBox or status bar or both
     # showError
+
+
+    ##########################################
+    ########    Create
+
+    ##########################################
+    ########    Read
+
+    ##########################################
+    ########    Update
+
+    def _on_field_changed(self, widget, defn: cQFormFieldDef):
+        value = widget.Value()
+
+        if defn.transform:
+            value = defn.transform(value)
+
+        if defn.on_change:
+            defn.on_change(value)
+    # _on_field_changed
+
+    ##########################################
+    ########    Delete
+
+# cSimpleRecordForm_Base
+
+class cSimpleSingleRecordForm(cSimpleRecordForm_Base):
+
+    ######################################################
+    ########    Display 
+
+    def initialdisplay(self):
+        """Initialize and display the first record.
+
+        Initializes a new record and loads the first record from the database.
+        """
+        self.initializeRec()
+        self.on_loadfirst_clicked()
+    # initialdisplay()
 
     def fillFormFromcurrRec(self):
         """Load the current record into all form fields.
@@ -1192,7 +1050,6 @@ class cSimpleRecordForm_Base(QWidget):
     def beforeSave(self): pass
     def afterSave(self): pass
 
-# cSimpleRecordForm_Base
 
 
 class cSimpleRecordForm(cSimpleRecordForm_Base):
