@@ -782,6 +782,7 @@ class cSimpleSingleRecordForm(cSimpleRecordForm_Base):
     ##########################################
     ########    Update
 
+    @Slot
     def _on_field_changed(self, widget, defn: cQFormFieldDef):
         value = widget.Value()
 
@@ -791,72 +792,9 @@ class cSimpleSingleRecordForm(cSimpleRecordForm_Base):
         if defn.on_change:
             defn.on_change(value)
         
-    @Slot()
-    def changeFieldSlot(self, widget: QWidget | None = None):
-        # sender() returns the widget that triggered the signal
-        if isinstance(widget, cQFmFldWidg):
-            self.changeField(widget, widget.modelField(), widget.Value())
-        if isinstance(widget, cQFmLookupWidg):
-            self.changeField(widget, widget._lookup_field, widget.Value())
-    def changeField(self, wdgt, dbField, wdgt_value, force=False):
-        """
-        Called when a widget changes.
-        This no longer writes directly into the ORM object — adapters own that.
-        Neither does it Marks the widget/adapter dirty
-        Instead, it:
-          - Applies optional transforms
-          - Updates form-level dirty flag
-        """
-        # I don't wanna change the code below, which refers to 'widget'
-        widget = wdgt
-
-        if isinstance(widget, cQFmFldWidg) and widget.isInternalVarField():
-            self.changeInternalVarField(widget, dbField, wdgt_value)
-            # raise NotImplementedError("Internal variable fields not yet supported in changeField")
-
-        # Ignore if noedit
-        if getattr(widget, "property", lambda x: False)("noedit"):
-            return
-
-        # Apply transformation hook if subclass defines one
-        transform_func = getattr(self, f"_transform_{dbField}", None)
-        if callable(transform_func):
-            wdgt_value = transform_func(wdgt_value)
-
-        # Update form dirty state
-        # self.setDirty(widget, True)  # doesn't the widget itself do this?
         self.showCommitButton()
-        # endif wdgt_value
-    # changeField
-
-    def changeInternalVarField(self, wdgt, intVarField, wdgt_value):
-    # def changeInternalVarField(self, wdgt):
-        """
-        Called when an internal variable field widget changes.
-        Updates the internal variable field value.
-
-        Args:
-            wdgt: The widget that changed.
-            intVarField: The internal variable field name.
-            wdgt_value: The new value from the widget.
-            force (bool, optional): Whether to force the change even if the value is the same. Defaults to False.
-        """
-
-        # to be implemented by subclass if needed
-        raise NotImplementedError("changeInternalVarField not implemented")
-
-        # # Ignore if noedit
-        # if getattr(wdgt, "property", lambda x: False)("noedit"):
-        #     return
-
-        # current_value = getattr(self, intVarField, None)
-        # if current_value == wdgt_value:
-        #     return  # No change
-
-        # setattr(self, intVarField, wdgt_value)
-
-    # changeInternalVarField
-
+    # _on_field_changed
+        
     @Slot()
     def on_save_clicked(self, *_):
         """
