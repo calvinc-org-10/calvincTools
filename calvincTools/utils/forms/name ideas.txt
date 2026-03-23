@@ -1,0 +1,6 @@
+cSimpleRecordForm_Base
+cSimpleSingleRecordForm
+cSimpleMultipleRecordTablePresentationForm
+cSimpleMultipleRecordFormPresentationForm
+cSimpleRecordSubFormTablePresentation
+cSimpleRecordSubFormFormPresentation
