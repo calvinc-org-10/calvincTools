@@ -20,7 +20,7 @@ from openpyxl import Workbook
 from sqlalchemy import (inspect, select, Engine, ) 
 from sqlalchemy.orm.session import make_transient
 
-from .utils.forms.cQdbSimpleRecordFormWidgets import cSimpleRecordForm_Base
+from .utils.forms.cQdbSimpleRecordFormWidgets import cSRF_Base
 
 from .utils.forms.cQFormWidgets import cQFmConstants
 
@@ -409,7 +409,7 @@ class cMRunSQL(QWidget):
 #############################################
 #############################################
 
-class cWidgetMenuItem(cSimpleRecordForm_Base):
+class cWidgetMenuItem(cSRF_Base):
     """
     cWidgetMenuItem_tst
     -------------------

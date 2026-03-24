@@ -4,7 +4,7 @@ from calvincTools.utils.SQLAlcTools import get_primary_key_column
 from calvincTools.utils.cQModels import SQLAlchemyTableModel
 from calvincTools.utils.cQWidgets import cGridWidget, cstdTabWidget
 from calvincTools.utils.forms.cQdbFormWidgets import cSimpRecFmElement_Base
-from calvincTools.utils.forms.cQdbSimpleRecordFormWidgets import cSimpleRecordForm_Base
+from calvincTools.utils.forms.cQdbSimpleRecordFormWidgets import cSRF_Base
 from calvincTools.utils.strings import str2
 
 
@@ -323,7 +323,7 @@ class cSimpleRecordSubForm1(cSimpRecFmElement_Base):
     # del_row
 # cSimpleRecordSubForm1
 
-class cSimpRecSbFmRecord(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
+class cSimpRecSbFmRecord(cSimpRecFmElement_Base, cSRF_Base):
     """A form element representing a single subrecord.
 
     This class wraps a single child record in a form-like interface for use
@@ -475,7 +475,7 @@ class cSimpRecSbFmRecord(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
         return
     # setDirty
 # cSimpRecSbFmRecord
-class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSimpleRecordForm_Base):
+class cSimpleRecordSubForm2(cSimpRecFmElement_Base, cSRF_Base):
     """Generic subform widget to handle a one-to-many relationship using individual record forms.
 
     Unlike cSimpleRecordSubForm1 which uses a table view, this class presents each

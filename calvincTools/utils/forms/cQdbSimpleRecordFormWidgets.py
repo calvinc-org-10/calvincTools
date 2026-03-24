@@ -16,13 +16,17 @@ from calvincTools.utils.cQWidgets import cComboBoxFromDict, cDataList, cGridWidg
 from calvincTools.utils.forms.cQFormWidgets import cQFmConstants, cQFmNameLabel
 from calvincTools.utils.forms.cQdbFormWidgets import cQFmFldWidg, cQFmLookupWidg, cSimpRecFmElement_Base
 from calvincTools.utils.forms.cQFormFieldDef import cQFormFieldDef, cQFormFieldInstance
+from calvincTools.utils.forms.cQFormBtnDef import cQFormBtnDef
 from calvincTools.utils.forms.cQFormLayout import cQFormLayout
 from calvincTools.utils.messageBoxes import areYouSure
 
+#################################################
+# cSRF = calvincTools Simple Record Form classes
+#################################################
 
 
 # TODO: pretty up NEW RECORD FLAG
-class cSimpleRecordForm_Base(QWidget):
+class cSRF_Base(QWidget):
     """Base class for simple record forms with CRUD operations.
 
     This abstract base class provides the foundation for creating database-backed
@@ -203,7 +207,7 @@ class cSimpleRecordForm_Base(QWidget):
     # _validate_field_defs
     
     ######################################################
-    ########    Layout and field and Widget placement
+    ########    Layout construction
 
     def _buildFormLayout(self) -> cQFormLayout:
         """
@@ -225,15 +229,6 @@ class cSimpleRecordForm_Base(QWidget):
 
         """
         raise NotImplementedError
-        # self._finalizeMainLayout(
-        #     layoutMain=layoutMain,
-        #     items=[
-        #         layoutFormHdr,
-        #         layoutForm,
-        #         self.layoutButtons,
-        #         self._statusBar
-        #     ]
-        # )
 
         ## see cSimpRecForm for an example implementation
         ##
@@ -299,6 +294,9 @@ class cSimpleRecordForm_Base(QWidget):
         return len(self.pages)
         # or return self.layoutForm.count() # mebbe not - see _buildPages
     # numPages
+
+    ######################################################
+    ########    field and Widget placement
 
     def _build_fields(self):
         for defn in self._field_defs:
@@ -440,18 +438,6 @@ class cSimpleRecordForm_Base(QWidget):
         layoutButtons = self._layouts.buttons
     # _addActionButtons
 
-    def _handleActionButton(self, action: str) -> None:
-        """Handle action button clicks.
-
-        Args:
-            action (str): Action name (e.g., 'save', 'delete').
-
-        Raises:
-            NotImplementedError: Must be implemented by subclasses.
-        """
-        raise NotImplementedError
-    # _handleActionButton
-
     ######################################################
     ########    Display 
 
@@ -503,7 +489,193 @@ class cSimpleRecordForm_Base(QWidget):
 
 # cSimpleRecordForm_Base
 
-class cSimpleSingleRecordForm(cSimpleRecordForm_Base):
+class cSRFSingleRecordForm(cSRF_Base):
+
+    # no initialization other than super().__init__ needed
+
+    ######################################################
+    ########    children must implement:
+    ########    Define form fields - to be implemented by subclass
+
+    # def defineFields(self):
+        # """Define the form fields.
+
+        # This method should be implemented by subclasses to define the form fields
+        # and their properties. It should populate self._field_defs with a list of cQFormFieldDef instances.
+        # """
+    #     raise NotImplementedError
+    # defineFields
+
+    ######################################################
+    ########    Layout construction
+
+    def _buildFormLayout(self) -> cQFormLayout:
+        """Build the form layout for cSimpleRecordForm.
+
+        Returns:
+            FIX ME!!
+            tuple: (layoutMain, layoutForm, layoutButtons) containing the main layout,
+                tabbed form layout, and button layout.
+        """
+
+        layoutMain = QVBoxLayout(self)
+        layoutFormHdr = QHBoxLayout()
+        layoutForm = cGridWidget(scrollable=True)
+        layoutFormFixedTop = QGridLayout()
+        layoutFormPages = cstdTabWidget()
+        layoutFormFixedBottom = QGridLayout()
+        layoutButtons = QHBoxLayout()  # may get redefined in _addActionButtons
+        statusBar = QStatusBar(self)
+
+        # should this be in _finalizeMainLayout instead?
+        layoutForm.addLayout(layoutFormFixedTop, 0, 0)
+        layoutForm.addWidget(layoutFormPages, 1, 0)
+        layoutForm.addLayout(layoutFormFixedBottom, 2, 0)
+
+        assert isinstance(self._formname, str), "_formname must be set before building form layout"
+        lblFormName = cQFmNameLabel(self.tr(self._formname), self)
+        layoutFormHdr.addWidget(lblFormName)
+
+        newrecFlag = QLabel("New Record", self)
+        fontNewRec = QFont()
+        fontNewRec.setBold(True)
+        fontNewRec.setPointSize(10)
+        fontNewRec.setItalic(True)
+        newrecFlag.setFont(fontNewRec)
+        newrecFlag.setStyleSheet("color: red;")
+        layoutFormHdr.addWidget(newrecFlag)
+
+        # put it together
+        layoutMain.addLayout(layoutFormHdr)
+        layoutMain.addWidget(layoutForm)
+        layoutMain.addLayout(layoutButtons)
+        layoutMain.addWidget(statusBar)
+
+        self.setWindowTitle(self.tr(self._formname))
+
+        rtnval = cQFormLayout(
+            main=layoutMain,
+            header=layoutFormHdr,
+            form=layoutForm,
+            fixed_top=layoutFormFixedTop,
+            pages=layoutFormPages,
+            fixed_bottom=layoutFormFixedBottom,
+            buttons=layoutButtons,
+            status_bar=statusBar,
+            
+            lblFormName = lblFormName,
+            newrecFlag = newrecFlag,
+            )
+
+        return rtnval
+    # _buildFormLayout
+
+    ######################################################
+    ########    field and Widget placement
+
+    def _defaultActions(self):
+        _iconlib = qtawesome.icon
+        return [
+            cQFormBtnDef("first", label='First',
+                icon=_iconlib('mdi.page-first'),
+                action=self.on_loadfirst_clicked,
+                ),
+            cQFormBtnDef('nextone')  RESTARTHERE
+        ]
+
+    def _addActionButtons(self,
+            layoutButtons:QBoxLayout|None = None,
+            layoutHorizontal: bool = True,
+            NavActions: list[tuple[str, QIcon]]|None = None,
+            CRUDActions: list[tuple[str, QIcon]]|None = None,
+            ) -> None:
+        """Add action buttons to the form.
+        """
+
+        _iconlib = qtawesome.icon
+        dfltNavActions = [
+                ("First", _iconlib("mdi.page-first")),
+                ("Previous", _iconlib("mdi.arrow-left-bold")),
+                ("Next", _iconlib("mdi.arrow-right-bold")),
+                ("Last", _iconlib("mdi.page-last")),
+        ]
+        dfltCRUDActionsMain = [
+                ("Add", _iconlib("mdi.plus")),
+                ("Save", _iconlib("mdi.content-save")),
+                ("Delete", _iconlib("mdi.delete")),
+                ("Cancel", _iconlib("mdi.cancel")),
+        ]
+        dfltCRUDActionsSub = [
+                ("Add", _iconlib("mdi.plus")),
+                ("Save", _iconlib("mdi.content-save")),
+                ("Delete", _iconlib("mdi.delete")),
+        ]
+
+        NavActns = NavActions if NavActions is not None else dfltNavActions
+        CRUDActns = CRUDActions if CRUDActions is not None else dfltCRUDActionsMain
+
+        if layoutHorizontal:
+            self.layoutButtons = QHBoxLayout()
+        else:
+            self.layoutButtons = QVBoxLayout()
+
+        # Navigation
+        innerNavLayout = QHBoxLayout()
+        for label, icon in NavActns:
+            btn = QPushButton(label, self)
+            btn.setIcon(icon)
+            btn.clicked.connect(lambda _, l=label: self._handleActionButton(l))
+            innerNavLayout.addWidget(btn)
+
+            if label == "Save":
+                self.btnCommit = btn
+        # CRUD
+        innerCRUDLayout = QHBoxLayout()
+        for label, icon in CRUDActns:
+            btn = QPushButton(label, self)
+            btn.setIcon(icon)
+            btn.clicked.connect(lambda _, l=label: self._handleActionButton(l))
+            innerCRUDLayout.addWidget(btn)
+
+            if label == "Save":
+                self.btnCommit = btn
+
+        self.layoutButtons.addLayout(innerNavLayout)
+        if layoutHorizontal:
+            self.layoutButtons.addSpacing(20)
+        self.layoutButtons.addLayout(innerCRUDLayout)
+    # _addNavButtons
+
+    # TODO: do structure similar to _addActionButtons to allow custom button sets and define Action handlers
+    #   like - duh - a dictionary
+    def _handleActionButton(self, action: str) -> None:
+        """Dispatch action button clicks to appropriate handler methods.
+
+        Args:
+            action (str): Action name (case-insensitive), e.g., 'first', 'save', 'delete'.
+        """
+        # Generic action dispatch — override if needed
+        action_dict = {     # keys should be lowercase for consistency!!
+            "first": self.on_loadfirst_clicked,
+            "previous": self.on_loadprev_clicked,
+            "next": self.on_loadnext_clicked,
+            "last": self.on_loadlast_clicked,
+            "add": self.on_add_clicked,
+            "save": self.on_save_clicked,
+            "delete": self.on_delete_clicked,
+            "cancel": self.on_cancel_clicked,
+        }
+        action = action.lower()
+        if action in action_dict:
+            action_dict[action]()
+        else:
+            print(f"Unknown action: {action}")
+            self.showError(f"Unknown action: {action}")
+        #endif action
+    # _handleAction
+    ######################################################
+    ########    button responders
+
 
     ######################################################
     ########    Display 
@@ -1039,154 +1211,6 @@ class cSimpleSingleRecordForm(cSimpleRecordForm_Base):
 
     # init
 
-    def _buildFormLayout(self) -> cQFormLayout:
-        """Build the form layout for cSimpleRecordForm.
-
-        Returns:
-            FIX ME!!
-            tuple: (layoutMain, layoutForm, layoutButtons) containing the main layout,
-                tabbed form layout, and button layout.
-        """
-
-        layoutMain = QVBoxLayout(self)
-        layoutFormHdr = QHBoxLayout()
-        layoutForm = cGridWidget(scrollable=True)
-        layoutFormFixedTop = QGridLayout()
-        layoutFormPages = cstdTabWidget()
-        layoutFormFixedBottom = QGridLayout()
-        layoutButtons = QHBoxLayout()  # may get redefined in _addActionButtons
-        statusBar = QStatusBar(self)
-
-        # should this be in _finalizeMainLayout instead?
-        layoutForm.addLayout(layoutFormFixedTop, 0, 0)
-        layoutForm.addWidget(layoutFormPages, 1, 0)
-        layoutForm.addLayout(layoutFormFixedBottom, 2, 0)
-
-        assert isinstance(self._formname, str), "_formname must be set before building form layout"
-        lblFormName = cQFmNameLabel(self.tr(self._formname), self)
-        layoutFormHdr.addWidget(lblFormName)
-
-        newrecFlag = QLabel("New Record", self)
-        fontNewRec = QFont()
-        fontNewRec.setBold(True)
-        fontNewRec.setPointSize(10)
-        fontNewRec.setItalic(True)
-        newrecFlag.setFont(fontNewRec)
-        newrecFlag.setStyleSheet("color: red;")
-        layoutFormHdr.addWidget(newrecFlag)
-        # self.showNewRecordFlag() # done when record displayed
-
-        self.setWindowTitle(self.tr(self._formname))
-
-        rtnval = cQFormLayout(
-            main=layoutMain,
-            header=layoutFormHdr,
-            form=layoutForm,
-            fixed_top=layoutFormFixedTop,
-            pages=layoutFormPages,
-            fixed_bottom=layoutFormFixedBottom,
-            buttons=layoutButtons,
-            status_bar=statusBar,
-            
-            lblFormName = lblFormName,
-            newrecFlag = newrecFlag,
-            )
-
-        return rtnval
-    # _buildFormLayout
-
-    import qtawesome
-    def _addActionButtons(self,
-            layoutButtons:QBoxLayout|None = None,
-            layoutHorizontal: bool = True,
-            NavActions: list[tuple[str, QIcon]]|None = None,
-            CRUDActions: list[tuple[str, QIcon]]|None = None,
-            ) -> None:
-        """Add action buttons to the form.
-        """
-
-        _iconlib = qtawesome.icon
-        dfltNavActions = [
-                ("First", _iconlib("mdi.page-first")),
-                ("Previous", _iconlib("mdi.arrow-left-bold")),
-                ("Next", _iconlib("mdi.arrow-right-bold")),
-                ("Last", _iconlib("mdi.page-last")),
-        ]
-        dfltCRUDActionsMain = [
-                ("Add", _iconlib("mdi.plus")),
-                ("Save", _iconlib("mdi.content-save")),
-                ("Delete", _iconlib("mdi.delete")),
-                ("Cancel", _iconlib("mdi.cancel")),
-        ]
-        dfltCRUDActionsSub = [
-                ("Add", _iconlib("mdi.plus")),
-                ("Save", _iconlib("mdi.content-save")),
-                ("Delete", _iconlib("mdi.delete")),
-        ]
-
-        NavActns = NavActions if NavActions is not None else dfltNavActions
-        CRUDActns = CRUDActions if CRUDActions is not None else dfltCRUDActionsMain
-
-        if layoutHorizontal:
-            self.layoutButtons = QHBoxLayout()
-        else:
-            self.layoutButtons = QVBoxLayout()
-
-        # Navigation
-        innerNavLayout = QHBoxLayout()
-        for label, icon in NavActns:
-            btn = QPushButton(label, self)
-            btn.setIcon(icon)
-            btn.clicked.connect(lambda _, l=label: self._handleActionButton(l))
-            innerNavLayout.addWidget(btn)
-
-            if label == "Save":
-                self.btnCommit = btn
-        # CRUD
-        innerCRUDLayout = QHBoxLayout()
-        for label, icon in CRUDActns:
-            btn = QPushButton(label, self)
-            btn.setIcon(icon)
-            btn.clicked.connect(lambda _, l=label: self._handleActionButton(l))
-            innerCRUDLayout.addWidget(btn)
-
-            if label == "Save":
-                self.btnCommit = btn
-
-        self.layoutButtons.addLayout(innerNavLayout)
-        if layoutHorizontal:
-            self.layoutButtons.addSpacing(20)
-        self.layoutButtons.addLayout(innerCRUDLayout)
-    # _addNavButtons
-
-    # TODO: do structure similar to _addActionButtons to allow custom button sets and define Action handlers
-    #   like - duh - a dictionary
-    def _handleActionButton(self, action: str) -> None:
-        """Dispatch action button clicks to appropriate handler methods.
-
-        Args:
-            action (str): Action name (case-insensitive), e.g., 'first', 'save', 'delete'.
-        """
-        # Generic action dispatch — override if needed
-        action_dict = {     # keys should be lowercase for consistency!!
-            "first": self.on_loadfirst_clicked,
-            "previous": self.on_loadprev_clicked,
-            "next": self.on_loadnext_clicked,
-            "last": self.on_loadlast_clicked,
-            "add": self.on_add_clicked,
-            "save": self.on_save_clicked,
-            "delete": self.on_delete_clicked,
-            "cancel": self.on_cancel_clicked,
-        }
-        action = action.lower()
-        if action in action_dict:
-            action_dict[action]()
-        else:
-            print(f"Unknown action: {action}")
-            self.showError(f"Unknown action: {action}")
-        #endif action
-    # _handleAction
-
     def on_cancel_clicked(self):
         """Handle the Cancel button click by closing the form.
 
@@ -1208,5 +1232,5 @@ class cSimpleSingleRecordForm(cSimpleRecordForm_Base):
 ###############################################################
 ###############################################################
 
-class cSimpleMultipleRecordForm(cSimpleRecordForm_Base):
+class cSimpleMultipleRecordForm(cSRF_Base):
     ...
