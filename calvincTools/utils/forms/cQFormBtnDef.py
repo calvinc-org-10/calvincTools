@@ -7,12 +7,13 @@ from PySide6.QtGui import QIcon
 
 @dataclass(frozen=True)
 class cQFormBtnDef:
-    class SpacingFlag(Enum):
+    class ButtonType(Enum):
+        NORMAL = '(!normal=)'
         NEW_HSECTION = ')*(newH'
         NEW_VSECTION = '=&&newV'
-    name: str | SpacingFlag
-    label: str = 'Button'
-    label_alignment: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignCenter
+    type: ButtonType = ButtonType.NORMAL
+    text: str = 'Button'
+    # text_alignment: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignCenter   # nope, can't set button text alignments
     icon: QIcon | None = None
     action: Callable | None = None
 

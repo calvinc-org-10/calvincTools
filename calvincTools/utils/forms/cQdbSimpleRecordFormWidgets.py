@@ -428,6 +428,13 @@ class cSRF_Base(QWidget):
         layout.addWidget(widget, *defn.position)    # type: ignore
     # _place_widget
 
+
+    def defineActionButtons(self) -> List[cQFormBtnDef] | None:
+        """
+        Define Action Buttons to be added to Form
+        """
+        return None
+    
     def _addActionButtons(self) -> None:
         """Add action buttons to the form.
 
@@ -573,19 +580,24 @@ class cSRFSingleRecordForm(cSRF_Base):
     ######################################################
     ########    field and Widget placement
 
-    def _defaultActions(self):
+    def defineActionButtons(self):
         _iconlib = qtawesome.icon
-        return [
-            cQFormBtnDef("first", label='First',
-                icon=_iconlib('mdi.page-first'),
-                action=self.on_loadfirst_clicked,
-                ),
-            cQFormBtnDef('nextone')  RESTARTHERE
-        ]
+        r = [
+            cQFormBtnDef(text="First", icon=_iconlib("mdi.page-first"), action=self.on_loadfirst_clicked),
+            cQFormBtnDef(text="Previous", icon= _iconlib("mdi.arrow-left-bold"), action=self.on_loadprev_clicked),
+            cQFormBtnDef(text="Next", icon=_iconlib("mdi.arrow-right-bold"), action=self.on_loadnext_clicked),
+            cQFormBtnDef(text="Last", icon=_iconlib("mdi.page-last"), action=self.on_loadlast_clicked),
+            cQFormBtnDef(type=cQFormBtnDef.ButtonType.NEW_HSECTION),
+            cQFormBtnDef(text="Add", icon=_iconlib("mdi.plus"), action=self.on_add_clicked),
+            cQFormBtnDef(text="Save", icon=_iconlib("mdi.content-save"), action=self.on_save_clicked),
+            cQFormBtnDef(text="Delete", icon=_iconlib("mdi.delete"), action=self.on_delete_clicked),
+            cQFormBtnDef(text="Cancel", icon=_iconlib("mdi.cancel"), action=self.on_cancel_clicked),
+            ]
 
     def _addActionButtons(self,
             layoutButtons:QBoxLayout|None = None,
             layoutHorizontal: bool = True,
+            ActionButtons:List[cQFormBtnDef]|None = None,
             NavActions: list[tuple[str, QIcon]]|None = None,
             CRUDActions: list[tuple[str, QIcon]]|None = None,
             ) -> None:
@@ -614,11 +626,34 @@ class cSRFSingleRecordForm(cSRF_Base):
         NavActns = NavActions if NavActions is not None else dfltNavActions
         CRUDActns = CRUDActions if CRUDActions is not None else dfltCRUDActionsMain
 
+        Actns = ActionButtons if ActionButtons is not None else self.defineActionButtons()
+        if Actns is None:
+            return
+        
         if layoutHorizontal:
             self.layoutButtons = QHBoxLayout()
         else:
             self.layoutButtons = QVBoxLayout()
 
+        innerLayout = QHBoxLayout()
+
+        for btndef in Actns:
+            if btndef.type == cQFormBtnDef.ButtonType.NEW_VSECTION:
+                ...
+            elif btndef.type == cQFormBtnDef.ButtonType.NEW_HSECTION:
+                ...
+            elif btndef.type != cQFormBtnDef.ButtonType.NORMAL:
+                raise ValueError(f"unknown button type {btndef.type}")
+            else:
+                btn = QPushButton(btndef.text)
+                if btndef.icon is not None:
+                    btn.setIcon(btndef.icon)
+                if callable(btndef.action):
+                    btn.clicked.connect(btndef.action)
+            # endif button type
+        # endfor btndef om Actns
+        
+        RESTARTHERE    
         # Navigation
         innerNavLayout = QHBoxLayout()
         for label, icon in NavActns:
