@@ -498,8 +498,6 @@ class cSRF_Base(QWidget):
 
 class cSRFSingleRecordForm(cSRF_Base):
 
-    # no initialization other than super().__init__ needed
-
     ######################################################
     ########    children must implement:
     ########    Define form fields - to be implemented by subclass
@@ -512,6 +510,28 @@ class cSRFSingleRecordForm(cSRF_Base):
         # """
     #     raise NotImplementedError
     # defineFields
+
+
+    def __init__(self,
+        model: Type[Any]|None = None,
+        formname: str|None = None,
+        ssnmaker: sessionmaker[Session] | None = None,
+        parent: QWidget | None = None
+        ):
+        """
+        Initialize the form with a record and optional name.
+
+        Args:
+            rec (SQLAlchemy Model Class Instance): The record to edit.
+            formname (str | None, optional): The name of the form. Defaults to None.
+            parent (QWidget | None, optional): The parent widget. Defaults to None.
+        """
+        self._formname = getattr(self, '_formname', None)
+        if not self._formname:
+            self._formname = formname if formname else 'Form'
+
+        super().__init__(model=model, ssnmaker=ssnmaker, parent=parent)
+    # init
 
     ######################################################
     ########    Layout construction
@@ -531,7 +551,7 @@ class cSRFSingleRecordForm(cSRF_Base):
         layoutFormFixedTop = QGridLayout()
         layoutFormPages = cstdTabWidget()
         layoutFormFixedBottom = QGridLayout()
-        layoutButtons = QHBoxLayout()  # may get redefined in _addActionButtons
+        layoutButtons = QVBoxLayout()  # may get redefined in _addActionButtons
         statusBar = QStatusBar(self)
 
         # should this be in _finalizeMainLayout instead?
@@ -589,59 +609,31 @@ class cSRFSingleRecordForm(cSRF_Base):
             cQFormBtnDef(text="Last", icon=_iconlib("mdi.page-last"), action=self.on_loadlast_clicked),
             cQFormBtnDef(type=cQFormBtnDef.ButtonType.NEW_HSECTION),
             cQFormBtnDef(text="Add", icon=_iconlib("mdi.plus"), action=self.on_add_clicked),
-            cQFormBtnDef(text="Save", icon=_iconlib("mdi.content-save"), action=self.on_save_clicked),
+            cQFormBtnDef(text="Save", icon=_iconlib("mdi.content-save"), commitBtn=True, action=self.on_save_clicked),
             cQFormBtnDef(text="Delete", icon=_iconlib("mdi.delete"), action=self.on_delete_clicked),
             cQFormBtnDef(text="Cancel", icon=_iconlib("mdi.cancel"), action=self.on_cancel_clicked),
             ]
 
     def _addActionButtons(self,
-            layoutButtons:QBoxLayout|None = None,
-            layoutHorizontal: bool = True,
             ActionButtons:List[cQFormBtnDef]|None = None,
-            NavActions: list[tuple[str, QIcon]]|None = None,
-            CRUDActions: list[tuple[str, QIcon]]|None = None,
             ) -> None:
         """Add action buttons to the form.
         """
 
-        _iconlib = qtawesome.icon
-        dfltNavActions = [
-                ("First", _iconlib("mdi.page-first")),
-                ("Previous", _iconlib("mdi.arrow-left-bold")),
-                ("Next", _iconlib("mdi.arrow-right-bold")),
-                ("Last", _iconlib("mdi.page-last")),
-        ]
-        dfltCRUDActionsMain = [
-                ("Add", _iconlib("mdi.plus")),
-                ("Save", _iconlib("mdi.content-save")),
-                ("Delete", _iconlib("mdi.delete")),
-                ("Cancel", _iconlib("mdi.cancel")),
-        ]
-        dfltCRUDActionsSub = [
-                ("Add", _iconlib("mdi.plus")),
-                ("Save", _iconlib("mdi.content-save")),
-                ("Delete", _iconlib("mdi.delete")),
-        ]
-
-        NavActns = NavActions if NavActions is not None else dfltNavActions
-        CRUDActns = CRUDActions if CRUDActions is not None else dfltCRUDActionsMain
-
         Actns = ActionButtons if ActionButtons is not None else self.defineActionButtons()
         if Actns is None:
             return
-        
-        if layoutHorizontal:
-            self.layoutButtons = QHBoxLayout()
-        else:
-            self.layoutButtons = QVBoxLayout()
+
+        layoutButtons = self._layouts.buttons
 
         innerLayout = QHBoxLayout()
 
         for btndef in Actns:
             if btndef.type == cQFormBtnDef.ButtonType.NEW_VSECTION:
-                ...
+                layoutButtons.addLayout(innerLayout)
+                innerLayout = QHBoxLayout()
             elif btndef.type == cQFormBtnDef.ButtonType.NEW_HSECTION:
-                ...
+                innerLayout.addSpacing(20)
             elif btndef.type != cQFormBtnDef.ButtonType.NORMAL:
                 raise ValueError(f"unknown button type {btndef.type}")
             else:
@@ -650,67 +642,12 @@ class cSRFSingleRecordForm(cSRF_Base):
                     btn.setIcon(btndef.icon)
                 if callable(btndef.action):
                     btn.clicked.connect(btndef.action)
+                if btndef.commitBtn:
+                    self.btnCommit = btn
+                innerLayout.addWidget(btn)
             # endif button type
         # endfor btndef om Actns
-        
-        RESTARTHERE    
-        # Navigation
-        innerNavLayout = QHBoxLayout()
-        for label, icon in NavActns:
-            btn = QPushButton(label, self)
-            btn.setIcon(icon)
-            btn.clicked.connect(lambda _, l=label: self._handleActionButton(l))
-            innerNavLayout.addWidget(btn)
-
-            if label == "Save":
-                self.btnCommit = btn
-        # CRUD
-        innerCRUDLayout = QHBoxLayout()
-        for label, icon in CRUDActns:
-            btn = QPushButton(label, self)
-            btn.setIcon(icon)
-            btn.clicked.connect(lambda _, l=label: self._handleActionButton(l))
-            innerCRUDLayout.addWidget(btn)
-
-            if label == "Save":
-                self.btnCommit = btn
-
-        self.layoutButtons.addLayout(innerNavLayout)
-        if layoutHorizontal:
-            self.layoutButtons.addSpacing(20)
-        self.layoutButtons.addLayout(innerCRUDLayout)
     # _addNavButtons
-
-    # TODO: do structure similar to _addActionButtons to allow custom button sets and define Action handlers
-    #   like - duh - a dictionary
-    def _handleActionButton(self, action: str) -> None:
-        """Dispatch action button clicks to appropriate handler methods.
-
-        Args:
-            action (str): Action name (case-insensitive), e.g., 'first', 'save', 'delete'.
-        """
-        # Generic action dispatch — override if needed
-        action_dict = {     # keys should be lowercase for consistency!!
-            "first": self.on_loadfirst_clicked,
-            "previous": self.on_loadprev_clicked,
-            "next": self.on_loadnext_clicked,
-            "last": self.on_loadlast_clicked,
-            "add": self.on_add_clicked,
-            "save": self.on_save_clicked,
-            "delete": self.on_delete_clicked,
-            "cancel": self.on_cancel_clicked,
-        }
-        action = action.lower()
-        if action in action_dict:
-            action_dict[action]()
-        else:
-            print(f"Unknown action: {action}")
-            self.showError(f"Unknown action: {action}")
-        #endif action
-    # _handleAction
-    ######################################################
-    ########    button responders
-
 
     ######################################################
     ########    Display 
@@ -1128,21 +1065,7 @@ class cSRFSingleRecordForm(cSRF_Base):
     @Slot()
     def setDirty(self, dirty: bool|None = None):
         """Poll children for dirty state and update save button."""
-        # rethink - adapters handle their own dirty state
-        # so all that needs to be set here is self.dirty
-        # right?
-
-        # better yet, self doesn't need to track its dirty state
-        # since  isDirty will poll children
-
-        # keep an eye on the time the polling takes
-        # if it's excessive, find the best way to record child dirty states
-
-        # is this really the right way to handle this?
-        if isinstance(dirty, bool):
-            for el in self._formWidgets.values():
-                if isinstance(el, cSimpRecFmElement_Base):
-                    el.setDirty(dirty)
+        # removed code to set dirty state of children, since each adapter handles its own dirty state internally and the form's dirty state is determined by polling the children when needed
 
         # Enable save button if anything is dirty
         btnCommit = getattr(self, 'btnCommit', None)
@@ -1150,101 +1073,11 @@ class cSRFSingleRecordForm(cSRF_Base):
             btnCommit.setEnabled(self.isDirty()) # type: ignore
     # setFormDirty
 
-    # the old code
-    # def isDirty(self, widg = None) -> bool:
-    #     """Check if any form element is dirty.
-
-    #     Returns:
-    #         bool: True if any child element has been modified, False otherwise.
-    #     """
-    #     target_widget = widg if widg is not None else self
-    #     if not hasattr(target_widget, '_formWidgets'):
-    #         return False
-
-    #     # poll cQFmWidget children; if one is Dirty, form is Dirty
-    #     for FmElement in target_widget._formWidgets.values():
-    #         if not isinstance(FmElement, cSimpRecFmElement_Base):
-    #             if self.isDirty(FmElement):
-    #                 return True
-    #         elif FmElement.isDirty():
-    #             return True
-    #     #endfor FmElement in self.children():
-
-    #     return False
-    # I'm rewriting isDirty to use any() and a generator expression
     def isDirty(self) -> bool:
         """Check if any form element is dirty."""
         # any() stops and returns True as soon as it finds the first True
         return any(el.isDirty() for el in self._formWidgets.values())       # type: ignore
-
-    ###############################################
-    ###############################################
-    # TO BE ADDED LATER:
-    def beforeLoad(self, rec): pass
-    def afterLoad(self, rec): pass
-    def beforeSave(self): pass
-    def afterSave(self): pass
-
-
-
-# class cSimpleRecordForm(cSimpleRecordForm_Base):
-    """A concrete implementation of cSimpleRecordForm_Base with standard layout.
-
-    This class provides a complete single-record form with navigation buttons,
-    CRUD operations, and a tabbed interface for organizing fields across multiple pages.
-
-    Attributes:
-        _formname: Name/title of the form.
-    """
-    """
-    UPDATE THIS DOCUMENTATION!! UPDATE ME!!
-    A simple record form for editing database records.
-
-    Args:
-        rec (SQLAlchemy Model Class Instance): The record to edit.
-        formname (str | None, optional): The name of the form. Defaults to None.
-        parent (QWidget | None, optional): The parent widget. Defaults to None.
-
-    Properties and Methods implemented by child classes:
-        _buildForm(self) -> None: where the subclass lays out its widgets.
-        changeField(self, fld: cQFmFldWidg) -> None: what to do when a field changes.
-        bindField(self, fld: cQFmFldWidg, get_value: Callable[[], Any], set_value: Callable[[Any], None]) -> None: bind a field to a record attribute.
-        loadRecord(self) -> None: load the current record into the form fields.
-        saveRecord(self) -> None: save the form field values back to the current record.
-
-    Properties:
-        formFields (dict[str, cQFmFldWidg]): The form fields in the record.
-        currRec (Any): The current record being edited.
-
-    Methods:
-        getValue(self, fld: cQFmFldWidg) -> Any: Get the value of a form field.
-        setValue(self, fld: cQFmFldWidg, value: Any) -> None: Set the value of a form field.
-
-    Returns:
-        _type_: _description_
-    """
-
-    def __init__(self,
-        model: Type[Any]|None = None,
-        formname: str|None = None,
-        ssnmaker: sessionmaker[Session] | None = None,
-        parent: QWidget | None = None
-        ):
-        """
-        Initialize the form with a record and optional name.
-
-        Args:
-            rec (SQLAlchemy Model Class Instance): The record to edit.
-            formname (str | None, optional): The name of the form. Defaults to None.
-            parent (QWidget | None, optional): The parent widget. Defaults to None.
-        """
-        self._formname = getattr(self, '_formname', None)
-        if not self._formname:
-            self._formname = formname if formname else 'Form'
-
-        super().__init__(model=model, ssnmaker=ssnmaker, parent=parent)
-
-    # init
+    # isDirty
 
     def on_cancel_clicked(self):
         """Handle the Cancel button click by closing the form.
@@ -1260,12 +1093,21 @@ class cSRFSingleRecordForm(cSRF_Base):
         """Refresh all lookup widgets with current database values."""
         for lkupwdgt in self._lookupFrmElements.values():
             lkupwdgt.refreshChoices()   # type: ignore
-    # isDirty
+    # repopLookups
+
+    ###############################################
+    ###############################################
+    # TO BE ADDED LATER:
+    def beforeLoad(self, rec): pass
+    def afterLoad(self, rec): pass
+    def beforeSave(self): pass
+    def afterSave(self): pass
+
 # cSimpleSingleRecordForm
 
 ###############################################################
 ###############################################################
 ###############################################################
 
-class cSimpleMultipleRecordForm(cSRF_Base):
+class cSRFRecordGridForm(cSRF_Base):
     ...

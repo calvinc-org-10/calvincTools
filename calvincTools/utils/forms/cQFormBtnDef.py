@@ -15,6 +15,7 @@ class cQFormBtnDef:
     text: str = 'Button'
     # text_alignment: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignCenter   # nope, can't set button text alignments
     icon: QIcon | None = None
+    commitBtn: bool = False
     action: Callable | None = None
 
 # cQFormBtnDef
