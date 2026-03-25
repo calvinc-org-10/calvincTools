@@ -1108,6 +1108,274 @@ class cSRFSingleRecordForm(cSRF_Base):
 ###############################################################
 ###############################################################
 
+class cSRFRecordGridSubGrid(cSimpRecFmElement_Base):
+    # like cSimpleRecordSubForm1, but does not depend on a parent record
+    """
+    Generic subform widget to handle a one-to-many relationship using a table view.
+
+    This widget displays related records in a table format with add/delete functionality.
+
+    Presents subrecords as a Table
+
+    Attributes:
+        _ORMmodel (Type[Any]): ORM model for the subrecords.
+        _primary_key: Primary key of the subrecord model.
+        _parentFK: Foreign key field linking to the parent record. May be none if no parent record.
+        _ssnmaker: Database session factory.
+        _parentRec: Reference to the parent record. May be None
+        _childRecs (list): List of child records.
+        _deleted_childRecs (list): List of child records pending deletion.
+
+    Args:
+        ORMmodel (Type[Any]): ORM model for the subrecords
+        parentFK (InstrumentedAttribute): relationship FK field in the parent model. May be None
+        session_factory (sessionmaker): SQLAlchemy sessionmaker
+        parent (QWidget | None): parent widget
+    """
+
+    def __init__(self,
+        ORMmodel: Type[Any]|None = None,
+        session_factory: sessionmaker[Session] | None = None,
+        viewClass: Type[QTableView] = QTableView,
+        parent=None
+        ):
+        """Initialize a table-based subform.
+
+        Args:
+            ORMmodel (Type[Any] | None, optional): ORM model for subrecords. Defaults to None.
+            linkFld: Any = None 
+            parent_linkFld: Any = None
+            session_factory (sessionmaker[Session] | None, optional): Database session factory. Defaults to None.
+            viewClass (Type[QTableView], optional): Table view class. Defaults to QTableView.
+            parent (optional): Parent widget. Defaults to None.
+
+        Raises:
+            ValueError: If required parameters not provided.
+        """
+        super().__init__(parent)
+
+        if not self._ORMmodel:
+            if not ORMmodel:
+                raise ValueError("A model class must be provided either in the constructor or as a class attribute")
+            self._ORMmodel = ORMmodel
+        self._primary_key = get_primary_key_column(self._ORMmodel)
+
+        if not self._ssnmaker:
+            if not session_factory:
+                raise ValueError("A sessionmaker must be provided either in the constructor or as a class attribute")
+            self._ssnmaker = session_factory
+
+        self._childRecs:list = []
+        self._deleted_childRecs:list = []
+
+        self.layoutMain = QVBoxLayout(self)
+        self.table = viewClass(parent=self)
+        self.Tblmodel = SQLAlchemyTableModel(self._ORMmodel, self._ssnmaker, literal(False), parent=self)
+        self.table.setModel(self.Tblmodel)
+        self.layoutMain.addWidget(self.table)
+    # __init__
+
+
+    ######################################################
+    ########    property and key widget getters/setters
+
+    def ORMmodel(self):
+        """Get the ORM model class.
+
+        Returns:
+            Type[Any] | None: The SQLAlchemy ORM model class.
+        """
+        return self._ORMmodel
+    def setORMmodel(self, model):
+        """Set the ORM model class and update the primary key.
+
+        Args:
+            model: SQLAlchemy ORM model class.
+        """
+        self._ORMmodel = model
+        self.setPrimary_key()
+    def primary_key(self):
+        """Get the primary key column.
+
+        Returns:
+            Primary key column object.
+        """
+        return self._primary_key
+    def setPrimary_key(self):
+        """Set the primary key from the ORM model.
+
+        Raises:
+            Exception: If ORMmodel is not set.
+        """
+        model = self.ORMmodel()
+        if model is None:
+            raise Exception('ORMmodel must be set first')
+        # model is now narrowed to a non-None Type[Any]
+        self._primary_key = get_primary_key_column(model)
+    # get/set ORMmodel/primary_key
+
+    def ssnmaker(self):
+        """Get the session maker.
+
+        Returns:
+            sessionmaker[Session] | None: Database session factory.
+        """
+        return self._ssnmaker
+    def setssnmaker(self,ssnmaker):
+        """Set the session maker.
+
+        Args:
+            ssnmaker: SQLAlchemy session maker.
+        """
+        self._ssnmaker = ssnmaker
+    # get/set ssnmaker
+
+    def currRec(self):
+        """Get the current record.
+
+        Returns:
+            Current ORM record object.
+        """
+        return self._currRec
+    def setcurrRec(self, rec):
+        """Set the current record.
+
+        Args:
+            rec: ORM record object to set as current.
+        """
+        self._currRec = rec
+    # get/set currRec
+
+    def parent_linkFld(self):
+        """Get the parent record primary key."""
+        pRec = self.parentRec()
+        linkFld = self._parent_linkFld
+        if pRec:
+            retval = getattr(pRec.__class__, linkFld) if isinstance(linkFld, str) else linkFld
+        else:
+            retval = linkFld
+        return retval
+    def parent_linkFld_keystr(self, rec):
+        if rec is None:
+            rec = self.parentRec()
+        PLFkey = self.parent_linkFld()
+        return str2(getattr(PLFkey, 'key', PLFkey))
+    # get parent_linkFld, parent_linkFld_keystr
+
+    def linkFld(self):
+        """Get the parent foreign key field."""
+        # return self._linkFld
+        recKls = self.ORMmodel()
+        lFld = self._linkFld
+        if recKls:
+            retval = getattr(recKls, lFld) if isinstance(lFld, str) else lFld
+        else:
+            retval = lFld
+        return retval
+
+    def setlinkFld(self, linkFld):
+        """Set the parent foreign key field."""
+        modl = self.ORMmodel()
+        if not modl:
+            raise ValueError("ORMmodel must be set before setting parentFK")
+        self._linkFld = getattr(modl, linkFld) if isinstance(linkFld, str) else linkFld
+    # get/set parentFK
+
+    def parentRec(self):
+        """Get the parent record."""
+        return self._parentRec
+    def setparentRec(self, rec):
+        """Set the parent record and extract its primary key."""
+        self._parentRec = rec
+        if self.setParentLinkFromIncoming and rec is not None:
+            self._parent_linkFld = get_primary_key_column(rec.__class__)
+    # get/set parentFK
+
+
+    # --- Lifecycle hooks ---
+    def loadFromRecord(self, rec, *caller_conditions):
+        """Load subrecords for the given parent record."""
+        self.setparentRec(rec)
+        self._childRecs.clear()
+        self._deleted_childRecs.clear()
+
+        PLFkey = self.parent_linkFld_keystr(rec)
+
+        # implement later - verify that caller_conditions are valid SQLAlchemy expressions
+        # from sqlalchemy.sql.elements import ColumnElement
+
+        # for c in caller_conditions:
+        #     if not isinstance(c, ColumnElement):
+        #         raise TypeError(f"Invalid condition: {c!r}")
+        conditions = list(caller_conditions)
+        if rec is not None:
+            conditions.append(self._linkFld == getattr(rec, PLFkey))
+
+        with self._ssnmaker() as session:
+            stmt = select(self._ORMmodel)
+            if conditions:
+                stmt = stmt.where(*conditions)
+            rows = session.scalars(stmt).all()
+            for r in rows:
+                session.expunge(r)
+            self._childRecs.extend(rows)
+
+            self.Tblmodel.refresh(filter=conditions)
+        #endwith
+    def loadRecords(self, *caller_conditions):
+        """Load records - assumes no parent record """
+        return self.loadFromRecord(None, *caller_conditions)
+    # loadFromRecord
+
+    def saveToRecord(self, rec):
+        """Save subrecords back to database."""
+        parntRec = self.parentRec()
+        if parntRec != rec:
+            raise ValueError("Parent record mismatch on saveToRecord")
+
+        PLFkey = self.parent_linkFld_keystr(rec)
+
+        with self._ssnmaker() as session:
+            # reattach new/edited
+            for rec in self._childRecs:
+                if parntRec is not None:
+                    setattr(rec, self._linkFld.key, getattr(parntRec, PLFkey)) # type: ignore
+                session.merge(rec)
+
+            # delete removed
+            for rec in self._deleted_childRecs:
+                if getattr(rec, PLFkey, None) is not None or parntRec is None: # type: ignore
+                    obj = session.merge(rec)
+                    session.delete(obj)
+
+            session.commit()
+        # endwith
+
+        self._deleted_childRecs.clear()
+    # saveForParent
+
+    # --- Internal helpers ---
+
+    def add_row(self):
+        """Add a new empty row to the subform table."""
+        row = self.ORMmodel()
+        if self.parentRec() is not None:
+            setattr(row, self.linkFld().key, getattr(self.parentRec(), self.parent_linkFld_keystr(), None)) # type: ignore
+        self.Tblmodel.insertRow(row)
+    # add_row
+
+    def del_row(self):
+        """Delete the selected row(s) from the subform table."""
+        idxs = self.table.selectionModel().selectedRows()
+        for idx in sorted(idxs, key=lambda x: x.row(), reverse=True):
+            rec = self.Tblmodel.record(idx.row())
+            if rec in self._childRecs:
+                self._childRecs.remove(rec)
+                self._deleted_childRecs.append(rec)
+            self.Tblmodel.removeRow(idx.row())
+        # end for
+    # del_row
+# cSimpleRecordSubForm1
 class cSRFRecordGridForm(cSRF_Base):
     # borrow from cSimpleRecordSubForm1
     ...
