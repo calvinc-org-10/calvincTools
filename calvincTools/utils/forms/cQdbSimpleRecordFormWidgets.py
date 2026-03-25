@@ -313,8 +313,8 @@ class cSRF_Base(QWidget):
     # _build_fields
     def _create_widget(self, defn: cQFormFieldDef) -> QWidget:
         def _create_subform_widget(defn: cQFormFieldDef) -> QWidget:
-            if defn.subform_class:
-                widget = defn.subform_class(parent=self)
+            if defn.widget_type and issubclass(defn.widget_type, QWidget):
+                widget = defn.widget_type(parent=self)
                 return widget
             else:
                 raise ValueError("subform_class must be specified for subform fields")
@@ -404,12 +404,11 @@ class cSRF_Base(QWidget):
     # _configure_widget
     def _connect_widget(self, widget: QWidget, defn: cQFormFieldDef):
         if defn.field_type==cQFormFieldDef.cQFormFieldType.SCALAR and hasattr(widget, "signalFldChanged"):
-            widget.signalFldChanged.connect(                                    # type: ignore
-                partial(self._on_field_changed, widget, defn)
-            )
+            widget.signalFldChanged.connect(defn.on_change) if defn.on_change else None     # type: ignore
+            
         if defn.field_type==cQFormFieldDef.cQFormFieldType.LOOKUP and isinstance(widget, cQFmLookupWidg):
             # TODO: use signalFldChanged for lookup widgets as well, and pass the field definition to the handler so that it can handle different lookup fields differently if needed, instead of having separate handlers for each lookup field - this will make the code cleaner and more scalable as we add more lookup fields - we can still have special handling within the handler based on the field definition as needed            
-            lookupHandler = defn.lookup_handler
+            lookupHandler = defn.on_change
             if lookupHandler:
                 if isinstance(lookupHandler, str):
                     if not hasattr(widget, lookupHandler):
@@ -1110,4 +1109,10 @@ class cSRFSingleRecordForm(cSRF_Base):
 ###############################################################
 
 class cSRFRecordGridForm(cSRF_Base):
+    # borrow from cSimpleRecordSubForm1
     ...
+
+class cSRFRecordListForm(cSRF_Base):
+    # borrow from cSimpleRecordSubForm2
+    ...
+

@@ -17,6 +17,7 @@ class cQFormFieldDef:
     # cQFormFieldType
     
     name: str
+    field_type: cQFormFieldType = cQFormFieldType.SCALAR
     label: str | None = None
     label_alignment: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignLeft
     widget_type: Type | None = None
@@ -39,25 +40,6 @@ class cQFormFieldDef:
     maximum_height: int | None = None
     bg_color: str | None = None
     focus_policy: Qt.FocusPolicy | None = None  # default focus policy will be ClickFocus for lookup and subform fields, None (i.e. inherit) for others
-
-    # special
-    lookup_handler: Callable[[Any], Any] | None = None
-    subform_class: Type | None = None
-
-    @property
-    def field_type(self):
-         if self.subform_class:
-             return self.cQFormFieldType.SUBFORM
-         elif any([
-             callable(self.lookup_handler),
-             self.name.startswith(cQFmConstants.flagLookupField.value),
-             ]):
-             return self.cQFormFieldType.LOOKUP
-         elif self.name.startswith(cQFmConstants.flagInternalVarField.value):
-            return self.cQFormFieldType.INTERNAL
-         else:
-             return self.cQFormFieldType.SCALAR
-        # endif subform vs lookup vs scalar
 # cQFormFieldDef
 
 # runtime class to hold field definition and widget instance
