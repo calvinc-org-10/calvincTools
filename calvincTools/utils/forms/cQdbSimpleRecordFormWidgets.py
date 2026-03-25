@@ -4,21 +4,32 @@ from enum import Enum
 
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtGui import QFont, QIcon
-from PySide6.QtWidgets import QBoxLayout, QGridLayout, QHBoxLayout, QLabel, QLayout, QLineEdit, QMessageBox, QPushButton, QStatusBar, QTabWidget, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (QWidget,
+    QLayout, QBoxLayout, QHBoxLayout, QVBoxLayout, QGridLayout, 
+    QLabel, QLineEdit, QPushButton, 
+    QTableView,
+    QStatusBar, 
+    QMessageBox, 
+    )
 
-from sqlalchemy import func
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import func, literal, select
+from sqlalchemy.orm import (
+    Session, sessionmaker,
+    )
+from sqlalchemy.sql.elements import ColumnElement
 
 import qtawesome
 
-from calvincTools.utils.SQLAlcTools import get_primary_key_column
-from calvincTools.utils.cQWidgets import cComboBoxFromDict, cDataList, cGridWidget, cstdTabWidget
-from calvincTools.utils.forms.cQFormWidgets import cQFmConstants, cQFmNameLabel
-from calvincTools.utils.forms.cQdbFormWidgets import cQFmFldWidg, cQFmLookupWidg, cSimpRecFmElement_Base
-from calvincTools.utils.forms.cQFormFieldDef import cQFormFieldDef, cQFormFieldInstance
-from calvincTools.utils.forms.cQFormBtnDef import cQFormBtnDef
-from calvincTools.utils.forms.cQFormLayout import cQFormLayout
-from calvincTools.utils.messageBoxes import areYouSure
+from ..SQLAlcTools import get_primary_key_column
+from ..cQWidgets import cComboBoxFromDict, cDataList, cGridWidget, cstdTabWidget
+from ..messageBoxes import areYouSure
+from ..strings import str2
+from ..cQModels import SQLAlchemyTableModel
+from .cQFormWidgets import cQFmConstants, cQFmNameLabel
+from .cQdbFormWidgets import cQFmFldWidg, cQFmLookupWidg, cSimpRecFmElement_Base
+from .cQFormFieldDef import cQFormFieldDef, cQFormFieldInstance
+from .cQFormBtnDef import cQFormBtnDef
+from .cQFormLayout import cQFormLayout
 
 #################################################
 # cSRF = calvincTools Simple Record Form classes
@@ -1165,8 +1176,8 @@ class cSRFRecordGridSubGrid(cSimpRecFmElement_Base):
                 raise ValueError("A sessionmaker must be provided either in the constructor or as a class attribute")
             self._ssnmaker = session_factory
 
-        self._childRecs:list = []
-        self._deleted_childRecs:list = []
+        self._recordList:list = []
+        self._deleted_recordList:list = []
 
         self.layoutMain = QVBoxLayout(self)
         self.table = viewClass(parent=self)
@@ -1230,86 +1241,20 @@ class cSRFRecordGridSubGrid(cSimpRecFmElement_Base):
         self._ssnmaker = ssnmaker
     # get/set ssnmaker
 
-    def currRec(self):
-        """Get the current record.
-
-        Returns:
-            Current ORM record object.
-        """
-        return self._currRec
-    def setcurrRec(self, rec):
-        """Set the current record.
-
-        Args:
-            rec: ORM record object to set as current.
-        """
-        self._currRec = rec
-    # get/set currRec
-
-    def parent_linkFld(self):
-        """Get the parent record primary key."""
-        pRec = self.parentRec()
-        linkFld = self._parent_linkFld
-        if pRec:
-            retval = getattr(pRec.__class__, linkFld) if isinstance(linkFld, str) else linkFld
-        else:
-            retval = linkFld
-        return retval
-    def parent_linkFld_keystr(self, rec):
-        if rec is None:
-            rec = self.parentRec()
-        PLFkey = self.parent_linkFld()
-        return str2(getattr(PLFkey, 'key', PLFkey))
-    # get parent_linkFld, parent_linkFld_keystr
-
-    def linkFld(self):
-        """Get the parent foreign key field."""
-        # return self._linkFld
-        recKls = self.ORMmodel()
-        lFld = self._linkFld
-        if recKls:
-            retval = getattr(recKls, lFld) if isinstance(lFld, str) else lFld
-        else:
-            retval = lFld
-        return retval
-
-    def setlinkFld(self, linkFld):
-        """Set the parent foreign key field."""
-        modl = self.ORMmodel()
-        if not modl:
-            raise ValueError("ORMmodel must be set before setting parentFK")
-        self._linkFld = getattr(modl, linkFld) if isinstance(linkFld, str) else linkFld
-    # get/set parentFK
-
-    def parentRec(self):
-        """Get the parent record."""
-        return self._parentRec
-    def setparentRec(self, rec):
-        """Set the parent record and extract its primary key."""
-        self._parentRec = rec
-        if self.setParentLinkFromIncoming and rec is not None:
-            self._parent_linkFld = get_primary_key_column(rec.__class__)
-    # get/set parentFK
-
 
     # --- Lifecycle hooks ---
-    def loadFromRecord(self, rec, *caller_conditions):
+    def loadFromRecord(self, *caller_conditions):
         """Load subrecords for the given parent record."""
-        self.setparentRec(rec)
-        self._childRecs.clear()
-        self._deleted_childRecs.clear()
-
-        PLFkey = self.parent_linkFld_keystr(rec)
+        self._recordList.clear()
+        self._deleted_recordList.clear()
 
         # implement later - verify that caller_conditions are valid SQLAlchemy expressions
         # from sqlalchemy.sql.elements import ColumnElement
 
-        # for c in caller_conditions:
-        #     if not isinstance(c, ColumnElement):
-        #         raise TypeError(f"Invalid condition: {c!r}")
+        for c in caller_conditions:
+            if not isinstance(c, ColumnElement):
+                raise TypeError(f"Invalid condition: {c!r}")
         conditions = list(caller_conditions)
-        if rec is not None:
-            conditions.append(self._linkFld == getattr(rec, PLFkey))
 
         with self._ssnmaker() as session:
             stmt = select(self._ORMmodel)
@@ -1318,7 +1263,7 @@ class cSRFRecordGridSubGrid(cSimpRecFmElement_Base):
             rows = session.scalars(stmt).all()
             for r in rows:
                 session.expunge(r)
-            self._childRecs.extend(rows)
+            self._recordList.extend(rows)
 
             self.Tblmodel.refresh(filter=conditions)
         #endwith
@@ -1327,40 +1272,33 @@ class cSRFRecordGridSubGrid(cSimpRecFmElement_Base):
         return self.loadFromRecord(None, *caller_conditions)
     # loadFromRecord
 
-    def saveToRecord(self, rec):
+    def saveToRecord(self):
         """Save subrecords back to database."""
-        parntRec = self.parentRec()
-        if parntRec != rec:
-            raise ValueError("Parent record mismatch on saveToRecord")
-
-        PLFkey = self.parent_linkFld_keystr(rec)
-
         with self._ssnmaker() as session:
             # reattach new/edited
-            for rec in self._childRecs:
-                if parntRec is not None:
-                    setattr(rec, self._linkFld.key, getattr(parntRec, PLFkey)) # type: ignore
+            for rec in self._recordList:
                 session.merge(rec)
 
             # delete removed
-            for rec in self._deleted_childRecs:
-                if getattr(rec, PLFkey, None) is not None or parntRec is None: # type: ignore
-                    obj = session.merge(rec)
-                    session.delete(obj)
+            for rec in self._deleted_recordList:
+                obj = session.merge(rec)
+                session.delete(obj)
 
             session.commit()
         # endwith
 
-        self._deleted_childRecs.clear()
+        self._deleted_recordList.clear()
     # saveForParent
+    def saveRecords(self):
+        return self.saveToRecord()
+        ...
 
     # --- Internal helpers ---
 
     def add_row(self):
         """Add a new empty row to the subform table."""
         row = self.ORMmodel()
-        if self.parentRec() is not None:
-            setattr(row, self.linkFld().key, getattr(self.parentRec(), self.parent_linkFld_keystr(), None)) # type: ignore
+        self._recordList.append(row)
         self.Tblmodel.insertRow(row)
     # add_row
 
@@ -1369,9 +1307,9 @@ class cSRFRecordGridSubGrid(cSimpRecFmElement_Base):
         idxs = self.table.selectionModel().selectedRows()
         for idx in sorted(idxs, key=lambda x: x.row(), reverse=True):
             rec = self.Tblmodel.record(idx.row())
-            if rec in self._childRecs:
-                self._childRecs.remove(rec)
-                self._deleted_childRecs.append(rec)
+            if rec in self._recordList:
+                self._recordList.remove(rec)
+                self._deleted_recordList.append(rec)
             self.Tblmodel.removeRow(idx.row())
         # end for
     # del_row
