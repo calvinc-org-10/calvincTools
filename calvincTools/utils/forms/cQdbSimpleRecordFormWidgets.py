@@ -1315,10 +1315,11 @@ class cSRFRecordGridSubGrid(cSimpRecFmElement_Base):
     # del_row
 # cSimpleRecordSubForm1
 class cSRFRecordGridForm(cSRF_Base):
-    # borrow from cSimpleRecordSubForm1
     ...
 
-class cSRFRecordListForm(cSRF_Base):
+class cSRFRecordSubForm():
     # borrow from cSimpleRecordSubForm2
+    ...
+class cSRFRecordListForm(cSRF_Base):
     ...
 
