@@ -1117,7 +1117,7 @@ class OLDcSRFSingleRecordForm(OLDcSRF_Base):
 ###############################################################
 ###############################################################
 
-class cSRFRecordGridSubGrid(cSimpRecFmElement_Base):
+class OLDcSRFRecordGridSubGrid(cSimpRecFmElement_Base):
     # like cSimpleRecordSubForm1, but does not depend on a parent record
     """
     Generic subform widget to handle a one-to-many relationship using a table view.
