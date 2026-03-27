@@ -228,7 +228,7 @@ class cSRF_FormUI_Base(QWidget):
                 # chng cQFmLookupWidg to not get sessionmaker and model in __init__, but instead pass them in when reloading cxhoices, which is the only time they are actually needed, and will allow for more flexible use of the lookup widget in different contexts without having to worry about passing in the sessionmaker and model when creating the widget if they are not actually needed at that time - this will also make it easier to use the lookup widget in subforms where the sessionmaker and model may not be available at the time of widget creation, but can be passed in later when loading choices based on the parent record
                 # session_factory=ssnmkr,
                 # model=mdl,
-                lookup_field=defn.name,
+                # lookup_field=defn.name,
                 lblText=defn.label or defn.name,
                 alignlblText=defn.label_alignment,
                 lookupWidgType=widgType,

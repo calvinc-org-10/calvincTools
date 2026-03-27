@@ -539,9 +539,6 @@ class cQFmLookupWidg(cSimpRecFmElement_Base):
 
     def __init__(
         self,
-        session_factory: sessionmaker[Session],
-        model: type[Any],
-        lookup_field: str,
         lblText: str|None = None,
         alignlblText: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignLeft,
         lookupWidgType: Type[QWidget] = cDataList,
@@ -561,16 +558,17 @@ class cQFmLookupWidg(cSimpRecFmElement_Base):
             parent (QWidget | None, optional): Parent widget. Defaults to None.
         """
         super().__init__(parent)
-        self._session_factory = session_factory
-        self._model = model
-        self._lookup_field = lookup_field
-        if lblText is None:
-            lblText = lookup_field.replace('_', ' ').title()
+        # self._session_factory = session_factory
+        # self._model = model
+        # self._lookup_field = lookup_field
+        # if lblText is None:
+        #     lblText = lookup_field.replace('_', ' ').title()
 
         # Create the widget with proper typing
         if not issubclass(lookupWidgType, (cComboBoxFromDict, cDataList)):
             lookupWidgType = cDataList  # force it to be a cDataList
         self._wdgt = self.createWidget(lookupWidgType, choices)
+        lblText = str2(lblText, ValueTransforms={None:lambda:'UNKNOWN'})
         lblText = self.tr(lblText)
 
         # Set up widget-specific behaviors with proper type checking
@@ -707,13 +705,17 @@ class cQFmLookupWidg(cSimpRecFmElement_Base):
     # _setup_layout
 
     @Slot()
-    def refreshChoices(self) -> None:
+    def refreshChoices(self, 
+        session_factory: sessionmaker[Session],
+        model: type[Any],
+        lookup_field: str,
+        ) -> None:
         """Reload available values from the database.
 
         Fetches distinct values from the lookup field and updates the widget's choices.
         """
-        with self._session_factory() as session:
-            field = getattr(self._model, self._lookup_field)
+        with session_factory() as session:
+            field = getattr(model, lookup_field)
             values = session.scalars(select(field).distinct().order_by(field)).all()
 
         # Populate the list
@@ -732,9 +734,8 @@ class cQFmLookupWidg(cSimpRecFmElement_Base):
         """Best-effort retrieval based on widget type."""
         return self.Value()
 
-    def loadFromRecord(self, rec):
+    def loadFromRecord(self, val):
         """Load the ORM record value into the widget."""
-        val = getattr(rec, self._lookup_field, None) if rec else None
         self._setWidgetValue(val)
         # no setting dirty for lookups
 
