@@ -221,16 +221,13 @@ class cSRF_FormUI_Base(QWidget):
                 raise ValueError("subform_class must be specified for subform fields")
         def _create_lookup_widget(defn: cQFormFieldDef) -> QWidget:
             # TODO: cQFmLookupWidg gets ssnmkr, mdl the same way a cQFmFldWidg does
-            ssnmkr = self.ssnmaker()
-            mdl = self.ORMmodel()
-            assert ssnmkr is not None, "ssnmkr must be set before placing fields"
-            assert mdl is not None, "ORMmodel must be set before placing fields"
             widgType = defn.widget_type
             if widgType not in (cDataList, cComboBoxFromDict):
                 widgType = cDataList  # force it to be a cDataList
             widget = cQFmLookupWidg(
-                session_factory=ssnmkr,
-                model=mdl,
+                # chng cQFmLookupWidg to not get sessionmaker and model in __init__, but instead pass them in when reloading cxhoices, which is the only time they are actually needed, and will allow for more flexible use of the lookup widget in different contexts without having to worry about passing in the sessionmaker and model when creating the widget if they are not actually needed at that time - this will also make it easier to use the lookup widget in subforms where the sessionmaker and model may not be available at the time of widget creation, but can be passed in later when loading choices based on the parent record
+                # session_factory=ssnmkr,
+                # model=mdl,
                 lookup_field=defn.name,
                 lblText=defn.label or defn.name,
                 alignlblText=defn.label_alignment,
@@ -371,6 +368,30 @@ class cSRF_FormUI_Base(QWidget):
         # TODO: choose whether to messageBox or status bar or both
     # showError
 
+    ##########################################
+    ########    Create
+
+    ##########################################
+    ########    Read
+
+    ##########################################
+    ########    Update
+
+    # this is defined in the UI class because it needs to handle the field definitions and widgets, but it will likely call db methods defined in the db class to actually perform the updates. The field definitions can specify transform functions to handle any necessary transformations of the data before passing it to the db methods, and the on_change handlers can be used to trigger updates to other fields or UI elements as needed when a field value changes. Those functions can be defined in the UI class or the db class as needed, but the key point is that the field definitions allow for a lot of flexibility in how the form handles changes to field values, and the update logic can be distributed between the UI and db classes as needed to keep the code organized and maintainable.
+    def _on_field_changed(self, widget, defn: cQFormFieldDef):
+        value = widget.Value()
+
+        if defn.transform:
+            value = defn.transform(value)
+
+        if defn.on_change:
+            defn.on_change(value)
+    # _on_field_changed
+
+    ##########################################
+    ########    Delete
+
+
 # cSRF_FormUI_Base
 
 class cSRF_Formdb_Base(object):
@@ -487,6 +508,20 @@ class cSRF_Formdb_Base(object):
         """
         self._currRecs = rec
     # get/set currRec
+
+
+    ##########################################
+    ########    Create
+
+    ##########################################
+    ########    Read
+
+    ##########################################
+    ########    Update
+
+    ##########################################
+    ########    Delete
+
 
 # cSRF_Formdb_Base
         
