@@ -37,7 +37,7 @@ from .cQFormLayout import cQFormLayout
 
 
 # TODO: pretty up NEW RECORD FLAG
-class cSRF_Base(QWidget):
+class OLDcSRF_Base(QWidget):
     """Base class for simple record forms with CRUD operations.
 
     This abstract base class provides the foundation for creating database-backed
@@ -506,7 +506,7 @@ class cSRF_Base(QWidget):
 
 # cSimpleRecordForm_Base
 
-class cSRFSingleRecordForm(cSRF_Base):
+class OLDcSRFSingleRecordForm(OLDcSRF_Base):
 
     ######################################################
     ########    children must implement:
@@ -550,9 +550,7 @@ class cSRFSingleRecordForm(cSRF_Base):
         """Build the form layout for cSimpleRecordForm.
 
         Returns:
-            FIX ME!!
-            tuple: (layoutMain, layoutForm, layoutButtons) containing the main layout,
-                tabbed form layout, and button layout.
+            QFormLayout instance
         """
 
         layoutMain = QVBoxLayout(self)
@@ -1314,12 +1312,12 @@ class cSRFRecordGridSubGrid(cSimpRecFmElement_Base):
         # end for
     # del_row
 # cSimpleRecordSubForm1
-class cSRFRecordGridForm(cSRF_Base):
+class cSRFRecordGridForm(OLDcSRF_Base):
     ...
 
 class cSRFRecordSubForm():
     # borrow from cSimpleRecordSubForm2
     ...
-class cSRFRecordListForm(cSRF_Base):
+class cSRFRecordListForm(OLDcSRF_Base):
     ...
 
