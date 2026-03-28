@@ -734,7 +734,7 @@ class cQFmLookupWidg(cSimpRecFmElement_Base):
         """Best-effort retrieval based on widget type."""
         return self.Value()
 
-    def loadFromRecord(self, val):
+    def loadFromRecord(self, val):  # type: ignore
         """Load the ORM record value into the widget."""
         self._setWidgetValue(val)
         # no setting dirty for lookups

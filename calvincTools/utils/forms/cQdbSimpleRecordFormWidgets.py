@@ -339,9 +339,9 @@ class OLDcSRF_Base(QWidget):
             if widgType not in (cDataList, cComboBoxFromDict):
                 widgType = cDataList  # force it to be a cDataList
             widget = cQFmLookupWidg(
-                session_factory=ssnmkr,
-                model=mdl,
-                lookup_field=defn.name,
+                # session_factory=ssnmkr,
+                # model=mdl,
+                # lookup_field=defn.name,
                 lblText=defn.label or defn.name,
                 alignlblText=defn.label_alignment,
                 lookupWidgType=widgType,
@@ -1241,7 +1241,7 @@ class OLDcSRFRecordGridSubGrid(cSimpRecFmElement_Base):
 
 
     # --- Lifecycle hooks ---
-    def loadFromRecord(self, *caller_conditions):
+    def loadFromRecord(self, rec=None, *caller_conditions):
         """Load subrecords for the given parent record."""
         self._recordList.clear()
         self._deleted_recordList.clear()
@@ -1270,7 +1270,7 @@ class OLDcSRFRecordGridSubGrid(cSimpRecFmElement_Base):
         return self.loadFromRecord(None, *caller_conditions)
     # loadFromRecord
 
-    def saveToRecord(self):
+    def saveToRecord(self, rec=None):
         """Save subrecords back to database."""
         with self._ssnmaker() as session:
             # reattach new/edited

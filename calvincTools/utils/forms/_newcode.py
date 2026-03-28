@@ -508,7 +508,7 @@ class cSRF_Formdb_Base(object):
         """
         self._currRecs = rec
     # get/set currRec
-
+    
 
     ##########################################
     ########    Create
@@ -1281,7 +1281,7 @@ class cSRFMultiRecordWrapper(cSRF_FormUI_Base):
 
 # cSRFSingleRecordForm
         
-class cSFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
+class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
     """
     Base class for record grid subforms. Should be used as a subform within a cSRFMultiRecordWrapper. Inherits from cSRF_Formdb_Base to provide db functionality
     The UI functionality is provided by an SQLAlchemyTableModel and a QTableView.
@@ -1336,11 +1336,13 @@ class cSFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
         if not self._ssnmaker:
             self.setssnmaker(session_factory)
 
+        ORMmdl = self.ORMmodel()
+        ssnmkr = self.ssnmaker()
         if all([
-            self._ORMmodel is not None,
-            self._ssnmaker is not None,
+            ORMmdl is not None,
+            ssnmkr is not None,
             ]):
-            super().__init__(model=self.ORMmodel(), ssnmaker=self.ssnmaker(), parent=parent)
+            super().__init__(model=ORMmdl, ssnmaker=ssnmkr, parent=parent)
         else:
             super(cSimpRecFmElement_Base, self).__init__(parent=parent)
         # endif for super() call
@@ -1350,7 +1352,11 @@ class cSFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
 
         self.layoutMain = QVBoxLayout(self)
         self.table = viewClass(parent=self)
-        self.Tblmodel = SQLAlchemyTableModel(self._ORMmodel, self._ssnmaker, literal(False), parent=self)
+        if ORMmdl is None:
+            raise ValueError("ORMmodel must be provided")
+        if ssnmkr is None:
+            raise ValueError("session_factory must be provided")
+        self.Tblmodel = SQLAlchemyTableModel(ORMmdl, ssnmkr, literal(False), parent=self)
         self.table.setModel(self.Tblmodel)
         self.layoutMain.addWidget(self.table)
     # __init__
@@ -1412,7 +1418,7 @@ class cSFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
 
 
     # --- Lifecycle hooks ---
-    def loadFromRecord(self, *caller_conditions):
+    def loadFromRecord(self, rec=None, *caller_conditions):
         """Load subrecords for the given parent record."""
         self._recordList.clear()
         self._deleted_recordList.clear()
@@ -1425,8 +1431,13 @@ class cSFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
                 raise TypeError(f"Invalid condition: {c!r}")
         conditions = list(caller_conditions)
 
-        with self._ssnmaker() as session:
-            stmt = select(self._ORMmodel)
+
+        ssnmkr = self.ssnmaker()
+        assert ssnmkr is not None, "Sessionmaker must be set before touching the database"
+        ORMmdl = self.ORMmodel()
+        assert ORMmdl is not None, "ORMmodel must be set before loading records"
+        with ssnmkr() as session:
+            stmt = select(ORMmdl)
             if conditions:
                 stmt = stmt.where(*conditions)
             rows = session.scalars(stmt).all()
@@ -1441,9 +1452,11 @@ class cSFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
         return self.loadFromRecord(None, *caller_conditions)
     # loadFromRecord
 
-    def saveToRecord(self):
+    def saveToRecord(self, rec = None):
         """Save subrecords back to database."""
-        with self._ssnmaker() as session:
+        ssnmkr = self.ssnmaker()
+        assert ssnmkr is not None, "Sessionmaker must be set before touching the database"
+        with ssnmkr() as session:
             # reattach new/edited
             for rec in self._recordList:
                 session.merge(rec)
