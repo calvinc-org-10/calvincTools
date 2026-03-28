@@ -529,18 +529,15 @@ class cSRF_Formdb_Base(object):
 class cSRFSingleRecordForm(cSRF_FormUI_Base, cSRF_Formdb_Base):
     """
     Base class for single record forms. Inherits from both cSRF_FormUI_Base and cSRF_Formdb_Base to combine UI and db functionality.
-    ######################################################
-    ########    children must implement:
-    ########    Define form fields - to be implemented by subclass
+    
+    children must implement:
+    Define form fields - to be implemented by subclass
 
-    # def defineFields(self):
-        # Define the form fields.
+    def defineFields(self):
+        Define the form fields.
 
-        # This method should be implemented by subclasses to define the form fields
-        # and their properties. It should populate self._field_defs with a list of cQFormFieldDef instances.
-        # 
-    # defineFields
-
+        This method should be implemented by subclasses to define the form fields
+        and their properties. It should populate self._field_defs with a list of cQFormFieldDef instances.
 
     """
     def __init__(self, 
@@ -1148,7 +1145,7 @@ class cSRFMultiRecordWrapper(cSRF_FormUI_Base):
             self._formname = formname if formname else 'Form'
 
         super().__init__(field_defs=field_defs, parent=parent, *args, **kwargs)
-# __init__
+    # __init__
 
     ######################################################
     ########    Layout construction
@@ -1347,6 +1344,25 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
             super(cSimpRecFmElement_Base, self).__init__(parent=parent)
         # endif for super() call
 
+        if getattr(self, '_linkFld', None) is not None:
+            # nothing to do - already set as class attribute
+            pass
+        else:
+            if linkFld is not None:
+                self._linkFld = getattr(self._ORMmodel, linkFld) if isinstance(linkFld, str) else linkFld # type: ignore
+            # else:                
+            #     raise ValueError("A linkFld must be provided either in the constructor or as a class attribute")
+            # endif linkFld is not None
+        # endif self._linkFld is not None
+
+        if getattr(self, '_parent_linkFld', None) is not None:
+            # nothing to do - already set as class attribute
+            pass
+        else:
+            self._parent_linkFld = parent_linkFld
+        # endif self._parent_linkFld is not None
+        self.setParentLinkFromIncoming = self.parent_linkFld() is None      # if True, when loading from parent record, set parent link field to parent's PK
+
         self._recordList:list = []
         self._deleted_recordList:list = []
 
@@ -1416,10 +1432,56 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
         self._ssnmaker = ssnmaker
     # get/set ssnmaker
 
+    def parent_linkFld(self):
+        """Get the parent record primary key."""
+        pRec = self.parentRec()
+        linkFld = self._parent_linkFld
+        if pRec:
+            retval = getattr(pRec.__class__, linkFld) if isinstance(linkFld, str) else linkFld
+        else:
+            retval = linkFld
+        return retval
+    def parent_linkFld_keystr(self, rec):
+        if rec is None:
+            rec = self.parentRec()
+        PLFkey = self.parent_linkFld()
+        return str2(getattr(PLFkey, 'key', PLFkey))
+    # get parent_linkFld, parent_linkFld_keystr
+
+    def linkFld(self):
+        """Get the parent foreign key field."""
+        # return self._linkFld
+        recKls = self.ORMmodel()
+        lFld = self._linkFld
+        if recKls:
+            retval = getattr(recKls, lFld) if isinstance(lFld, str) else lFld
+        else:
+            retval = lFld
+        return retval
+
+    def setlinkFld(self, linkFld):
+        """Set the parent foreign key field."""
+        modl = self.ORMmodel()
+        if not modl:
+            raise ValueError("ORMmodel must be set before setting parentFK")
+        self._linkFld = getattr(modl, linkFld) if isinstance(linkFld, str) else linkFld
+    # get/set parentFK
+
+    def parentRec(self):
+        """Get the parent record."""
+        return self._parentRec
+    def setparentRec(self, rec):
+        """Set the parent record and extract its primary key."""
+        self._parentRec = rec
+        if self.setParentLinkFromIncoming and rec is not None:
+            self._parent_linkFld = get_primary_key_column(rec.__class__)
+    # get/set parentFK
+
 
     # --- Lifecycle hooks ---
     def loadFromRecord(self, rec=None, *caller_conditions):
         """Load subrecords for the given parent record."""
+        self.setparentRec(rec)
         self._recordList.clear()
         self._deleted_recordList.clear()
 
@@ -1430,7 +1492,9 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
             if not isinstance(c, ColumnElement):
                 raise TypeError(f"Invalid condition: {c!r}")
         conditions = list(caller_conditions)
-
+        PLFkey = self.parent_linkFld_keystr(rec)
+        if PLFkey and self.linkFld():
+            conditions.append(self.linkFld() == PLFkey)
 
         ssnmkr = self.ssnmaker()
         assert ssnmkr is not None, "Sessionmaker must be set before touching the database"
@@ -1454,11 +1518,19 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
 
     def saveToRecord(self, rec = None):
         """Save subrecords back to database."""
+        parntRec = self.parentRec()
+        if parntRec != rec:
+            raise ValueError("Parent record mismatch on saveToRecord")
+
+        PLFkey = self.parent_linkFld_keystr(rec)
+
         ssnmkr = self.ssnmaker()
         assert ssnmkr is not None, "Sessionmaker must be set before touching the database"
         with ssnmkr() as session:
             # reattach new/edited
             for rec in self._recordList:
+                if parntRec is not None:
+                    setattr(rec, self.linkFld().key, getattr(parntRec, PLFkey)) # type: ignore
                 session.merge(rec)
 
             # delete removed
@@ -1495,20 +1567,146 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
             self.Tblmodel.removeRow(idx.row())
         # end for
     # del_row
-# cSimpleRecordSubForm1
+# cRFRecordGrid
 
+class cSRFRecordList_Record(
+    cSRF_Formdb_Base,
+    cSimpRecFmElement_Base,
+    QWidget,
+    ):
+    """
+    A single record form to be used as the item widget in a cSRFRecordList. Inherits from both cSRF_Formdb_Base and cSimpRecFmElement_Base to provide both UI and db functionality.
+    The UI functionality is provided by a simple form layout with field widgets.
+
+    Args:
+        rec (Any): ORM record to display.
+        parent (QWidget | None, optional): Parent widget. Defaults to None.
+    """
+
+    def __init__(self, 
+        rec = None,
+        parent:QWidget|None=None,
+        *args, **kwargs):
         
-class cSRFRecordList(cSRFSingleRecordForm, cSRF_Formdb_Base):
+        super().__init__(parent=parent)
+        
+        if rec is not None:
+            self._ORMmodel = rec.__class__  # cannot use setORMmodel here because super not yet initialized
+
+        self._ssnmaker = getattr(parent, '_ssnmaker', None)
+        if not self._ssnmaker:
+            raise ValueError(f"A sessionmaker must be provided defined in the parent form {parent}")
+
+        self.OLDfieldDefs = getattr(parent, 'fieldDefs', {})
+
+
+        # initialdisplay(self):
+        self.setcurrRec(rec)
+        self.loadFromRecord(rec)
+        # self.showNewRecordFlag(self.isNewRecord())
+    # __init__
+# cSRFRecordList_Record
+class cSRFRecordList(cSRFSingleRecordForm):
     """
     Base class for record list subforms. Should be used as a subform within a cSRFMultiRecordWrapper. Inherits from both cSRF_FormUI_Base and cSRF_Formdb_Base to provide both UI and db functionality.
     The UI functionality is provided by a QListWidget.
 
-    Args:
-        cSRF_FormUI_Base (_type_): _description_
-        cSRF_Formdb_Base (_type_): _description_
+        Args:
+            rec (Any): ORM record to display.
+            parent (QWidget | None, optional): Parent widget. Defaults to None.
+
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+
+    def __init__(self, 
+        rec = None,
+        parent:QWidget|None=None,
+        *args, **kwargs):
+        
+        super().__init__(parent=parent)
+        
+        if rec is not None:
+            self._ORMmodel = rec.__class__  # cannot use setORMmodel here because super not yet initialized
+
+        self._ssnmaker = getattr(parent, '_ssnmaker', None)
+        if not self._ssnmaker:
+            raise ValueError(f"A sessionmaker must be provided defined in the parent form {parent}")
+
+        self.OLDfieldDefs = getattr(parent, 'fieldDefs', {})
+
+
+        # initialdisplay(self):
+        self.setcurrRec(rec)
+        self.loadFromRecord(rec)
+        # self.showNewRecordFlag(self.isNewRecord())
+    # __init__
+
+    ######################################################
+    ########    property and key widget getters/setters
+
+    ######################################################
+    ########    Layout construction
+
+    def _buildFormLayout(self) -> Dict[str, QWidget|QLayout|None]:
+        """Build the layout for a subrecord form element.
+
+        Returns:
+            tuple: (layoutMain, layoutForm, layoutButtons) where layoutButtons is None.
+        """
+
+        rtnDict: Dict[str, QWidget|QLayout|None] = {}
+
+        layoutMain = QVBoxLayout(self)
+        layoutForm = cGridWidget(scrollable=True)
+        layoutFormFixedTop = QGridLayout()
+        layoutFormPages = cstdTabWidget()
+        layoutFormFixedBottom = QGridLayout()
+        self._statusBar = QStatusBar(self)
+
+        # should this be in _finalizeMainLayout instead?
+        layoutForm.addLayout(layoutFormFixedTop, 0, 0)
+        layoutForm.addWidget(layoutFormPages, 1, 0)
+        layoutForm.addLayout(layoutFormFixedBottom, 2, 0)
+
+        rtnDict['layoutMain'] = layoutMain
+        rtnDict['layoutForm'] = layoutForm
+        rtnDict['layoutFormFixedTop'] = layoutFormFixedTop
+        rtnDict['layoutFormPages'] = layoutFormPages
+        rtnDict['layoutFormFixedBottom'] = layoutFormFixedBottom
+        rtnDict['statusBar'] = self._statusBar
+        # this is only being returned becxause parent class expects it
+        # but subrecord forms don't have action buttons
+        rtnDict['layoutButtons'] = QHBoxLayout()  # dummy
+
+        self._newrecFlag = QLabel("New Rec", self)
+        fontNewRec = QFont()
+        fontNewRec.setBold(True)
+        fontNewRec.setPointSize(10)
+        fontNewRec.setItalic(True)
+        self._newrecFlag.setFont(fontNewRec)
+        self._newrecFlag.setStyleSheet("color: red;")
+        layoutMain.addWidget(self._newrecFlag) # at top for visibility - different from main form
+
+        rtnDict['newrecFlag'] = self._newrecFlag
+
+        return rtnDict
+    # _buildFormLayout
+
+    ######################################################
+    ########    field and Widget placement
+
+    def defineActionButtons(self):
+        return None
+    
+    ######################################################
+    ########    Display 
+
+    def initialdisplay(self):
+        """Initialize display (no-op for subrecord forms since record is passed in constructor)."""
+        # this is a noop here since record is passed in constructor
+        return
+    # initialdisplay()
+
+    
 
 # other form classes can be added here as needed, following the same pattern of inheriting from the appropriate base classes to combine UI and db functionality as needed.
 # Note that a cSRFRecordGridForm = cSRFMultiRecordWrapper + cSRFRecordGrid is not necessary, as the cSRFRecordGrid can simply be used as a subform within the cSRFMultiRecordWrapper, and the cSRFMultiRecordWrapper can be used on its own as a wrapper for any number of subforms, including cSRFRecordGrids and cSRFRecordLists.
