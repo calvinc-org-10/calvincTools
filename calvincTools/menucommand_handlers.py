@@ -1179,6 +1179,7 @@ class cEditMenu(cSRFSingleRecordForm):
         r = [
             cQFormFieldDef(
                 name='@MenuGroup_id',
+                field_type=cQFormFieldDef.cQFormFieldType.LOOKUP,
                 label='Menu Group',
                 widget_type=cComboBoxFromDict,
                 on_change=self.loadMenuWithGroupID,
@@ -1187,6 +1188,7 @@ class cEditMenu(cSRFSingleRecordForm):
             ),
             cQFormFieldDef(
                 name='@MenuID',
+                field_type=cQFormFieldDef.cQFormFieldType.LOOKUP,
                 label='Menu ID',
                 widget_type=cComboBoxFromDict,
                 on_change=self.loadMenuWithMenuID,
@@ -1195,6 +1197,7 @@ class cEditMenu(cSRFSingleRecordForm):
             ),
             cQFormFieldDef(
                 name='+GroupName',
+                field_type=cQFormFieldDef.cQFormFieldType.INTERNAL,
                 label='Menu Group Name',
                 widget_type=QLineEdit,
                 page=cQFmConstants.pageFixedTop.value,
@@ -1209,6 +1212,7 @@ class cEditMenu(cSRFSingleRecordForm):
             ),
             cQFormFieldDef(
                 name='+RmvMenu',
+                field_type=cQFormFieldDef.cQFormFieldType.INTERNAL,
                 label='Remove Menu',
                 widget_type=QPushButton,
                 on_change=self.rmvMenu,
@@ -1217,6 +1221,7 @@ class cEditMenu(cSRFSingleRecordForm):
             ),
             cQFormFieldDef(
                 name='+NewMenuGroup',
+                field_type=cQFormFieldDef.cQFormFieldType.INTERNAL,
                 label='New Menu Group',
                 widget_type=QPushButton,
                 on_change=self.createNewMenuGroup,
@@ -1225,6 +1230,7 @@ class cEditMenu(cSRFSingleRecordForm):
             ),
             cQFormFieldDef(
                 name='+CopyMenu',
+                field_type=cQFormFieldDef.cQFormFieldType.INTERNAL,
                 label='Copy/Move Menu',
                 widget_type=QPushButton,
                 on_change=self.copyMenu,
@@ -1233,6 +1239,7 @@ class cEditMenu(cSRFSingleRecordForm):
             ),
             cQFormFieldDef(
                 name='+Commit',
+                field_type=cQFormFieldDef.cQFormFieldType.INTERNAL,
                 label='\nSave\nChanges\n',
                 widget_type=QPushButton,
                 on_change=self.writeRecord,
