@@ -668,6 +668,7 @@ class cSRFSingleRecordForm(cSRF_FormUI_Base, cSRF_Formdb_Base):
                 innerLayout.addWidget(btn)
             # endif button type
         # endfor btndef om Actns
+        layoutButtons.addLayout(innerLayout)
     # _addNavButtons
 
     ######################################################
@@ -2062,3 +2063,10 @@ class cSRFRecordList(cSRFSingleRecordForm):     # is cSRFSingleRecordForm = cSRF
 # other form classes can be added here as needed, following the same pattern of inheriting from the appropriate base classes to combine UI and db functionality as needed.
 # Note that a cSRFRecordGridForm = cSRFMultiRecordWrapper + cSRFRecordGrid is not necessary, as the cSRFRecordGrid can simply be used as a subform within the cSRFMultiRecordWrapper, and the cSRFMultiRecordWrapper can be used on its own as a wrapper for any number of subforms, including cSRFRecordGrids and cSRFRecordLists.
 # similarly, a cSRFRecordListForm = cSRFMultiRecordWrapper + cSRFRecordList is not necessary, as the cSRFRecordList can simply be used as a subform within the cSRFMultiRecordWrapper, and the cSRFMultiRecordWrapper can be used on its own as a wrapper for any number of subforms, including cSRFRecordGrids and cSRFRecordLists.
+
+class cSRFRecordGridForm(cSRFMultiRecordWrapper):
+    ...
+
+class cSRFRecordListForm(cSRFMultiRecordWrapper):
+    ...
+

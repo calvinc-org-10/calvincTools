@@ -39,6 +39,7 @@ class cQFormFieldDef:
     maximum_width: int | None = None
     maximum_height: int | None = None
     bg_color: str | None = None
+    frame: bool = True
     focus_policy: Qt.FocusPolicy | None = None  # default focus policy will be ClickFocus for lookup and subform fields, None (i.e. inherit) for others
 # cQFormFieldDef
 

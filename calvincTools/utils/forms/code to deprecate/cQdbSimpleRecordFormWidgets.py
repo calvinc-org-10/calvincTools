@@ -1312,12 +1312,4 @@ class OLDcSRFRecordGridSubGrid(cSimpRecFmElement_Base):
         # end for
     # del_row
 # cSimpleRecordSubForm1
-class cSRFRecordGridForm(OLDcSRF_Base):
-    ...
-
-class cSRFRecordSubForm():
-    # borrow from cSimpleRecordSubForm2
-    ...
-class cSRFRecordListForm(OLDcSRF_Base):
-    ...
 

@@ -2,6 +2,7 @@ from typing import (Dict, List, Mapping, Tuple, Any, )
 import copy
 
 import webbrowser
+import qtawesome
 
 from PySide6.QtCore import (Qt, QObject,
     Signal, Slot, 
@@ -13,17 +14,13 @@ from PySide6.QtWidgets import ( QBoxLayout, QLayout, QStyle, QTabWidget,
     QDialog, QMessageBox, QFileDialog, QDialogButtonBox,
     QLabel, QLCDNumber, QLineEdit, QTextEdit, QPlainTextEdit, QPushButton, QCheckBox, QComboBox, QDateEdit,
     QRadioButton, QGroupBox, QButtonGroup, 
+    QStatusBar,
     QSizePolicy, 
     )
 
 from openpyxl import Workbook
 from sqlalchemy import (inspect, select, Engine, ) 
 from sqlalchemy.orm.session import make_transient
-
-from .utils.forms.cQdbSimpleRecordFormWidgets import OLDcSRF_Base
-
-from .utils.forms.cQFormWidgets import cQFmConstants
-
 
 # there's no need to import cMenu, plus it's a circular ref - cMenu depends heavily on this module
 # from .kls_cMenu import cMenu 
@@ -39,7 +36,8 @@ from .menucommand_constants import MENUCOMMANDS, COMMANDNUMBER
 from .models import (menuItems, menuGroups, )
 from .utils import (
     recordsetList,
-    cSimpleRecordForm, cComboBoxFromDict, 
+    cSRFSingleRecordForm, cSRFRecordList_Record, cQFormFieldDef, cQFormLayout, cQFormBtnDef, cQFmConstants,
+    cComboBoxFromDict, 
     cstdTabWidget, cGridWidget,
     areYouSure, 
     cQFmNameLabel, 
@@ -409,7 +407,7 @@ class cMRunSQL(QWidget):
 #############################################
 #############################################
 
-class cWidgetMenuItem(OLDcSRF_Base):
+class cWidgetMenuItem(cSRFRecordList_Record):
     """
     cWidgetMenuItem_tst
     -------------------
@@ -536,15 +534,6 @@ class cWidgetMenuItem(OLDcSRF_Base):
     """
     _ORMmodel = menuItems
     _ssnmaker = get_cMenu_sessionmaker()
-    fieldDefs = {
-        'OptionNumber': {'label': 'Option Number', 'widgetType': QLineEdit, 'position': (0,0), 'noedit': True, 'readonly': True, 'frame': False, 'maximumWidth': 25, 'focusPolicy': Qt.FocusPolicy.NoFocus, 'focusable': Qt.FocusPolicy.NoFocus, },
-        'OptionText': {'label': 'OptionText', 'widgetType': QLineEdit, 'position': (0,1,1,2)},
-        'TopLine': {'label': 'Top Line', 'widgetType': QCheckBox, 'position': (0,3,1,2), 'lblChkBxYesNo': {True:'YES', False:'NO'}, },
-        'BottomLine': {'label': 'Btm Line', 'widgetType': QCheckBox, 'position': (0,5), 'lblChkBxYesNo': {True:'YES', False:'NO'}, },
-        'Command': {'label': 'Command', 'widgetType': cComboBoxFromDict, 'choices': vars(COMMANDNUMBER), 'position': (1,0,1,2)},
-        'Argument': {'label': 'Argument', 'widgetType': QLineEdit, 'position': (1,2,1,2), },
-        'PWord': {'label': 'Password', 'widgetType': QLineEdit, 'position': (1,4,1,2), },
-    }
 
     # formFields:Dict[str, QWidget] = {}
 
@@ -735,13 +724,67 @@ class cWidgetMenuItem(OLDcSRF_Base):
     # __init__
 
     ##########################################
+    ########    Fields
+
+    def defineFields(self):
+        return [
+            cQFormFieldDef(
+                name='OptionNumber',
+                label='Option Number',
+                widget_type=QLineEdit,
+                position=(0,0),
+                readonly=True,
+                frame=False,
+                maximum_width=25,
+                focus_policy=Qt.FocusPolicy.NoFocus,
+            ),
+            cQFormFieldDef(
+                name='OptionText',
+                label='OptionText',
+                widget_type=QLineEdit,
+                position=(0,1,1,2),
+            ),
+            cQFormFieldDef(
+                name='TopLine',
+                label='Top Line',
+                widget_type=QCheckBox,
+                position=(0,3,1,2),
+                lblChkBxYesNo={True:'YES', False:'NO'},
+            ),
+            cQFormFieldDef(
+                name='BottomLine',
+                label='Btm Line',
+                widget_type=QCheckBox,
+                position=(0,5),
+                lblChkBxYesNo={True:'YES', False:'NO'},
+            ),
+            cQFormFieldDef(
+                name='Command',
+                label='Command',
+                widget_type=cComboBoxFromDict,
+                choices=vars(COMMANDNUMBER),
+                position=(1,0,1,2),
+            ),
+            cQFormFieldDef(
+                name='Argument',
+                label='Argument',
+                widget_type=QLineEdit,
+                position=(1,2,1,2),
+            ),
+            cQFormFieldDef(
+                name='PWord',
+                label='Password',
+                widget_type=QLineEdit,
+                position=(1,4,1,2),
+            ),
+            
+        ]
+
+    ##########################################
     ########    Layout
 
-    # def _buildFormLayout(self) -> tuple[QBoxLayout, QTabWidget, QBoxLayout | None]:
-    def _buildFormLayout(self) -> Dict[str, QWidget|QLayout|None]:
+    def _buildFormLayout(self) -> cQFormLayout:
         
-        rtnDict: Dict[str, QWidget|QLayout|None] = {}
-
         layoutMain = QVBoxLayout(self)
         layoutMain.setContentsMargins(0,0,0,0)
         layoutMain.setSpacing(0)
@@ -760,46 +803,82 @@ class cWidgetMenuItem(OLDcSRF_Base):
         layoutFormMain.addWidget(layoutFormMainLeft)
         layoutFormMain.addLayout(layoutFormMainRight)
         
-        rtnDict['layoutMain'] = layoutMain
-        rtnDict['layoutForm'] = layoutFormMain
-        rtnDict['layoutFormPages'] = layoutFormMainLeft
-        rtnDict['layoutButtons'] = layoutFormMainRight
-        
-        return rtnDict
+        rtnobj = cQFormLayout(
+            main=layoutMain,
+            form=QWidget(),
+            fixed_top=QGridLayout(),
+            pages=layoutFormMainLeft,
+            fixed_bottom=QGridLayout(),
+            status_bar=QStatusBar(),
+            header=QHBoxLayout(),  # subforms don't have a header
+            buttons=layoutFormMainRight,
+            
+            lblFormName=None, # subforms don't have a form name label
+            newrecFlag=QLabel(),
+        )
+        return rtnobj
     # _buildFormLayout
-    def _finalizeMainLayout(self, layoutMain: QVBoxLayout, items: List | Tuple) -> None:
-        items = [self.dictFormLayouts.get('layoutForm', None)]
-        return super()._finalizeMainLayout(layoutMain, items)
 
-    def _addActionButtons(self, 
-            layoutButtons:QBoxLayout|None = None,
-            layoutHorizontal: bool = True, 
-            NavActions: list[tuple[str, QIcon]]|None = None,
-            CRUDActions: list[tuple[str, QIcon]]|None = None,
+    ######################################################
+    ########    field and Widget placement
+
+    def defineActionButtons(self):
+        _iconlib = qtawesome.icon
+        r = [
+            cQFormBtnDef(text=self.tr('Save\nChanges'), 
+                icon=_iconlib("mdi.content-save"), 
+                commitBtn=True,
+                action=self.on_save_clicked),
+            cQFormBtnDef(name='btnMoveCopy',
+                text=self.tr("Copy / Move"),
+                action=self.copyMenuOption),
+            cQFormBtnDef(name='btnRemove',
+                text=self.tr("Remove"), 
+                icon=_iconlib("mdi.delete"), 
+                action=self.on_delete_clicked),
+            ]
+        return r
+
+    def _addActionButtons(self,
+            ActionButtons:List[cQFormBtnDef]|None = None,
             ) -> None:
-        self.btnCommit = QPushButton(self.tr('Save\nChanges'), self)
-        self.btnCommit.clicked.connect(self.on_save_clicked)
-        # self.btnCommit.setFixedSize(60, 30)  # Adjust width and height
-        self.btnCommit.setStyleSheet("padding: 2px; margin: 0;")  # Remove extra padding
+        """Add action buttons to the form.
+        """
 
-        self.btnMoveCopy = QPushButton(self.tr('Copy / Move'), self)
-        self.btnMoveCopy.clicked.connect(self.copyMenuOption)
-        # self.btnMoveCopy.setFixedSize(60, 30)  # Adjust width and height
-        self.btnMoveCopy.setStyleSheet("padding: 2px; margin: 0;")  # Remove extra padding
+        Actns = ActionButtons if ActionButtons is not None else self.defineActionButtons()
+        if Actns is None:
+            return
 
-        self.btnRemove = QPushButton(self.tr('Remove'), self)
-        self.btnRemove.clicked.connect(self.on_delete_clicked)
-        # self.btnRemove.setFixedSize(60, 30)  # Adjust width and height
-        self.btnRemove.setStyleSheet("padding: 2px; margin: 0;")  # Remove extra padding
+        layoutButtons = self._layouts.buttons
 
-        assert isinstance(layoutButtons, QBoxLayout), 'layoutButtons must be a Box Layout'
-        layoutButtons.addWidget(self.btnMoveCopy)
-        layoutButtons.addWidget(self.btnRemove)
-        layoutButtons.addWidget(self.btnCommit)
-    def _handleActionButton(self, action: str) -> None:
-        # we have our own handlers, so no need to handle anything here
-        return
-    # _addActionButtons, _handleActionButton    
+        innerLayout = QHBoxLayout()
+
+        for btndef in Actns:
+            if btndef.type == cQFormBtnDef.ButtonType.NEW_VSECTION:
+                layoutButtons.addLayout(innerLayout)
+                innerLayout = QHBoxLayout()
+            elif btndef.type == cQFormBtnDef.ButtonType.NEW_HSECTION:
+                innerLayout.addSpacing(20)
+            elif btndef.type != cQFormBtnDef.ButtonType.NORMAL:
+                raise ValueError(f"unknown button type {btndef.type}")
+            else:
+                btn = QPushButton(btndef.text)
+                btn.setStyleSheet("padding: 2px; margin: 0;")  # Remove extra padding
+                
+                if btndef.name:
+                    setattr(self, btndef.name, btn)
+                
+                if btndef.icon is not None:
+                    btn.setIcon(btndef.icon)
+                if callable(btndef.action):
+                    btn.clicked.connect(btndef.action)
+                if btndef.commitBtn:
+                    self.btnCommit = btn
+                innerLayout.addWidget(btn)
+            # endif button type
+        # endfor btndef om Actns
+        layoutButtons.addLayout(innerLayout)
+    # _addNavButtons
 
 
     ######################################################
@@ -808,8 +887,10 @@ class cWidgetMenuItem(OLDcSRF_Base):
     def fillFormFromcurrRec(self):
         super().fillFormFromcurrRec()
 
-        self.btnMoveCopy.setEnabled(not self.isNewRecord())
-        self.btnRemove.setEnabled(not self.isNewRecord())
+        if hasattr(self, 'btnMoveCopy') and self.btnMoveCopy is not None:   # type: ignore - these buttons may or may not exist depending on the form configuration, so we check before trying to set them up
+            self.btnMoveCopy.setEnabled(not self.isNewRecord())             # type: ignore - these buttons may or may not exist depending on the form configuration, so we check before trying to set them up
+        if hasattr(self, 'btnRemove') and self.btnRemove is not None:       # type: ignore - these buttons may or may not exist depending on the form configuration, so we check before trying to set them up
+            self.btnRemove.setEnabled(not self.isNewRecord())               # type: ignore - these buttons may or may not exist depending on the form configuration, so we check before trying to set them up
     # fillFormFromRec
 
     def initialdisplay(self):
@@ -819,7 +900,7 @@ class cWidgetMenuItem(OLDcSRF_Base):
     ##########################################
     ########    Create
 
-    # this widget doesn't create new records
+    # this widget doesn't create new records in the traditional sense
 
     ##########################################
     ########    Read
@@ -828,15 +909,15 @@ class cWidgetMenuItem(OLDcSRF_Base):
     ##########################################
     ########    Update
 
-    @Slot()     #type: ignore
-    # def changeField(self):
-    def changeField(self, wdgt, dbField, wdgt_value, force=False):
-        super().changeField(wdgt, dbField, wdgt_value, force=False)
-    # changeField
+    # @Slot()     #type: ignore
+    # # def changeField(self):
+    # def changeField(self, wdgt, dbField, wdgt_value, force=False):
+    #     super().changeField(wdgt, dbField, wdgt_value, force=False)
+    # # changeField
 
     @Slot()
     def on_save_clicked(self):
-        super().on_save_clicked()
+        # super().on_save_clicked()
         self.requestMenuReload.emit()   # let listeners know we need a menu reload
     # on_save_clicked
 
@@ -868,10 +949,11 @@ class cWidgetMenuItem(OLDcSRF_Base):
         assert modl is not None, "ORMmodel must be set before deleting record"
         Repository(ssnmkr, modl).remove(currRec)
 
-        self.initializeRec()
+        # create a new, empty record
+        newRec = self.ORMmodel()
         # preserve MenuGroup, MenuID, OptionNumber
-        currRec = self.currRec()
-        currRec.MenuGroup_id, currRec.MenuID, currRec.OptionNumber = mGrp, mnu, mOpt
+        newRec.MenuGroup_id, newRec.MenuID, newRec.OptionNumber = mGrp, mnu, mOpt       # type: ignore
+        self.setcurrRec(newRec)
 
         self.fillFormFromcurrRec()
 
@@ -915,10 +997,11 @@ class cWidgetMenuItem(OLDcSRF_Base):
             else:
                 Repository(ssnmaker, tbl).remove(cRec)
 
-                self.initializeRec()
+                # create a new, empty record
+                newRec = self.ORMmodel()
                 # preserve MenuGroup, MenuID, OptionNumber
-                currRec = self.currRec()
-                currRec.MenuGroup_id, currRec.MenuID, currRec.OptionNumber = mnuGrp, mnuID, optNum
+                newRec.MenuGroup_id, newRec.MenuID, newRec.OptionNumber = mnuGrp, mnuID, optNum     # type: ignore
+                self.setcurrRec(newRec)
             #endif CMChoiceCopy
 
             self.fillFormFromcurrRec()
