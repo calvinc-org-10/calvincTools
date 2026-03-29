@@ -55,7 +55,7 @@ class cSRF_FormUI_Base(QWidget):
         super().__init__(parent, *args, **kwargs)
 
         # set field definitions 
-        if self._field_defs is not None:
+        if getattr(self, '_field_defs', None) is not None:
             # class-level wins
             pass
         elif field_defs is not None:
