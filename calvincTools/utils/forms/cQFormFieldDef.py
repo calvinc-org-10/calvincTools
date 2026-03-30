@@ -22,7 +22,7 @@ class cQFormFieldDef:
     label_alignment: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignLeft
     widget_type: Type | None = None
     
-    choices: Dict | None = None
+    choices: Dict | Callable | None = None
     initval: str = ''
     lblChkBxYesNo: dict[bool, str] | None = None
     

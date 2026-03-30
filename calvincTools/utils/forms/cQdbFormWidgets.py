@@ -96,7 +96,7 @@ class cQFmFldWidg(cSimpRecFmElement_Base):
         lblChkBxYesNo: Dict[bool, str]|None = None,
         alignlblText: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignLeft,
         modlFld: str = '',
-        choices: Dict|List|None = None,
+        choices: Dict | List | Callable | None = None,
         initval: str = '',
         parent: QWidget|None = None,
     ):
@@ -131,28 +131,33 @@ class cQFmFldWidg(cSimpRecFmElement_Base):
     def createWidget(
         self,
         widgType: Type[QWidget],
-        choices: Dict|List|None = None,
+        choices: Dict | List | Callable | None = None,
         initval: str = ''
     ) -> QWidget:
         """Create the appropriate widget based on type."""
+        if callable(choices):
+            choice_listdict:Dict|List|None = choices()
+        else:
+            choice_listdict = choices
+        # endif callable choices
         if issubclass(widgType, cComboBoxFromDict):
-            if not isinstance(choices, dict):
+            if not isinstance(choice_listdict, dict):
                 # raise TypeError("Expected choices to be a dictionary for cComboBoxFromDict")
-                choices = {}
-            return widgType(choices, self)
+                choice_listdict = {}
+            return widgType(choice_listdict, self)
         elif issubclass(widgType, cDataList):
-            if not isinstance(choices, (dict, )):
+            if not isinstance(choice_listdict, (dict)):
                 # raise TypeError("Expected choices to be a dictionary or list for cDataList")
-                choices = {}
-            return widgType(choices, initval, self)
+                choice_listdict = {}
+            return widgType(choice_listdict, initval, self)
         elif issubclass(widgType, QComboBox):
             wdgt = widgType(self)
-            if choices is not None:
-                if isinstance(choices, dict):
-                    for key, value in choices.items():
+            if choice_listdict is not None:
+                if isinstance(choice_listdict, dict):
+                    for key, value in choice_listdict.items():
                         wdgt.addItem(str(value), key)
                 else:
-                    wdgt.addItems([str(item) for item in choices])
+                    wdgt.addItems([str(item) for item in choice_listdict])
             return wdgt
         else:
             return widgType(self)
@@ -542,7 +547,7 @@ class cQFmLookupWidg(cSimpRecFmElement_Base):
         lblText: str|None = None,
         alignlblText: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignLeft,
         lookupWidgType: Type[QWidget] = cDataList,
-        choices: Dict | None = {},
+        choices: Dict | Callable | None = {},
         parent: QWidget | None = None,
     ):
         """Initialize a lookup widget.
@@ -580,20 +585,25 @@ class cQFmLookupWidg(cSimpRecFmElement_Base):
         self.refreshChoices()
     # __init__
 
-    def createWidget(self, widgType: Type[QWidget], choices: Dict | None = {}) -> QWidget:
+    def createWidget(self, widgType: Type[QWidget], choices: Dict | Callable | None = {}) -> QWidget:
         """Create the widget with the specified type, choices, and initial value."""
         initval = ''
+        if callable(choices):
+            choice_listdict:Dict|List|None = choices()
+        else:
+            choice_listdict = choices
+        # endif callable choices
 
         if issubclass(widgType, cDataList):
-            if not isinstance(choices, (dict, )):
+            if not isinstance(choice_listdict, (dict, )):
                 # raise TypeError("Expected choices to be a dictionary or list for cDataList")
-                choices = {}
-            return widgType(choices, initval, self)
+                choice_listdict = {}
+            return widgType(choice_listdict, initval, self)
         elif issubclass(widgType, cComboBoxFromDict):
-            if not isinstance(choices, dict):
+            if not isinstance(choice_listdict, dict):
                 # raise TypeError("Expected choices to be a dictionary for cComboBoxFromDict")
-                choices = {}
-            return widgType(choices, self)
+                choice_listdict = {}
+            return widgType(choice_listdict, self)
         else:
             return cDataList({}, '', self)
         # endif widgType class
@@ -706,17 +716,19 @@ class cQFmLookupWidg(cSimpRecFmElement_Base):
 
     @Slot()
     def refreshChoices(self, 
-        session_factory: sessionmaker[Session],
-        model: type[Any],
-        lookup_field: str,
+        choices: Dict | List | Callable | None = None,
         ) -> None:
         """Reload available values from the database.
 
         Fetches distinct values from the lookup field and updates the widget's choices.
         """
-        with session_factory() as session:
-            field = getattr(model, lookup_field)
-            values = session.scalars(select(field).distinct().order_by(field)).all()
+        if callable(choices):
+            values:Dict|List|None = choices()
+        else:
+            values = choices
+        # endif callable choices
+        if values is None:
+            values = []
 
         # Populate the list
         if isinstance(self._wdgt, cDataList):
