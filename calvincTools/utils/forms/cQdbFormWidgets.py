@@ -547,7 +547,7 @@ class cQFmLookupWidg(cSimpRecFmElement_Base):
         lblText: str|None = None,
         alignlblText: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignLeft,
         lookupWidgType: Type[QWidget] = cDataList,
-        choices: Dict | Callable | None = {},
+        choices: Dict | List | Callable | None = {},
         parent: QWidget | None = None,
     ):
         """Initialize a lookup widget.
@@ -582,10 +582,24 @@ class cQFmLookupWidg(cSimpRecFmElement_Base):
         # Set up the layout
         self._setup_layout(lblText, alignlblText)
 
+        self._choices = choices
         self.refreshChoices()
     # __init__
 
-    def createWidget(self, widgType: Type[QWidget], choices: Dict | Callable | None = {}) -> QWidget:
+    def getrawChoices(self) -> Dict | List | Callable | None:
+        """Get the raw choices data structure."""
+        return self._choices
+    def getChoices(self) -> Dict | List | None:
+        """Get the processed choices as a dictionary, if applicable."""
+        choices = self.getrawChoices()
+        if callable(choices):
+            return choices()
+        if isinstance(choices, (dict, list)):
+            return choices
+        return None
+    # getChoices
+
+    def createWidget(self, widgType: Type[QWidget], choices: Dict | List | Callable | None = {}) -> QWidget:
         """Create the widget with the specified type, choices, and initial value."""
         initval = ''
         if callable(choices):
@@ -595,7 +609,10 @@ class cQFmLookupWidg(cSimpRecFmElement_Base):
         # endif callable choices
 
         if issubclass(widgType, cDataList):
-            if not isinstance(choice_listdict, (dict, )):
+            if isinstance(choice_listdict, list):
+                # convert list to dict with same keys and values
+                choice_listdict = {str(item): str(item) for item in choice_listdict}
+            if not isinstance(choice_listdict, (dict)):
                 # raise TypeError("Expected choices to be a dictionary or list for cDataList")
                 choice_listdict = {}
             return widgType(choice_listdict, initval, self)
@@ -716,17 +733,12 @@ class cQFmLookupWidg(cSimpRecFmElement_Base):
 
     @Slot()
     def refreshChoices(self, 
-        choices: Dict | List | Callable | None = None,
         ) -> None:
         """Reload available values from the database.
 
         Fetches distinct values from the lookup field and updates the widget's choices.
         """
-        if callable(choices):
-            values:Dict|List|None = choices()
-        else:
-            values = choices
-        # endif callable choices
+        values = self.getChoices()
         if values is None:
             values = []
 

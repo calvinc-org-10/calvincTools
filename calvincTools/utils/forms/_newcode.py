@@ -1113,13 +1113,8 @@ class cSRFSingleRecordForm(cSRF_FormUI_Base, cSRF_Formdb_Base):
 
     def repopLookups(self) -> None:
         """Refresh all lookup widgets with current database values."""
-        if not self.ssnmaker():
-            return
-        with self.ssnmaker()() as session:  # type: ignore
-            for lkupname, lkupwdgt in self._lookupFrmElements.items():
-                field = getattr(self._model, self._lookup_field)
-                values = session.scalars(select(field).distinct().order_by(field)).all()
-                lkupwdgt.refreshChoices(values)   # type: ignore
+        for lkupname, lkupwdgt in self._lookupFrmElements.items():
+                lkupwdgt.refreshChoices()   # type: ignore
     # repopLookups
 
     ###############################################
