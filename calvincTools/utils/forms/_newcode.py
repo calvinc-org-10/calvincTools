@@ -1592,13 +1592,15 @@ class cSRFRecordList_Record(
         parent:QWidget|None=None,
         *args, **kwargs):
         
-        
-        if rec is not None:
-            self._ORMmodel = rec.__class__  # cannot use setORMmodel here because super not yet initialized
 
-        self._ssnmaker = getattr(parent, '_ssnmaker', None)
-        if not self._ssnmaker:
-            raise ValueError(f"A sessionmaker must be provided defined in the parent form {parent}")
+        if getattr(self, '_ORMmodel', None) is None:
+            if rec is not None:
+                self._ORMmodel = rec.__class__
+
+        if getattr(self, '_ssnmaker', None) is None:
+            self._ssnmaker = getattr(parent, '_ssnmaker', None)
+            if not self._ssnmaker:
+                raise ValueError(f"A sessionmaker must be provided defined in the parent form {parent}")
 
         super().__init__(model=self._ORMmodel, ssnmaker=self._ssnmaker, parent=parent)
         # did field defs get set by super().__init__()? if not, try to get from parent
