@@ -802,7 +802,9 @@ class cWidgetMenuItem(cSRFRecordList_Record):
 
         layoutFormMain.addWidget(layoutFormMainLeft)
         layoutFormMain.addLayout(layoutFormMainRight)
-        
+
+        layoutMain.addLayout(layoutFormMain)
+                
         rtnobj = cQFormLayout(
             main=layoutMain,
             form=QWidget(),

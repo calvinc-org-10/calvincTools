@@ -1732,7 +1732,7 @@ class cSRFRecordList_Record(
     def isDirty(self) -> bool:
         """Check if any form element is dirty."""
         # any() stops and returns True as soon as it finds the first True
-        return any(el.isDirty() for el in self._formWidgets.values())       # type: ignore
+        return any(el.widget.isDirty() for el in self._formWidgets.values())       # type: ignore
     # isDirty
 
 
