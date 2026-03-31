@@ -162,6 +162,8 @@ class cSRF_FormUI_Base(QWidget):
             if 0 <= idx < len(self.pages):
                 idx = self.pages[idx]
             else:
+                if idx in [const.value for const in cQFmConstants]:
+                    return FormPageSpecial(cQFmConstants(idx))
                 return None
             return self._page_map.get(idx, None)
         def FormPageSpecial(enum: cQFmConstants):
@@ -321,7 +323,7 @@ class cSRF_FormUI_Base(QWidget):
     def _place_widget(self, widget: QWidget, defn: cQFormFieldDef):
         layout = self.FormPage(defn.page)
         if layout is None:
-            raise ValueError(f"Invalid page for field {defn.name}")
+            raise ValueError(f"Invalid page {defn.page} for field {defn.name}")
         layout.addWidget(widget, *defn.position)    # type: ignore
     # _place_widget
 
@@ -1098,7 +1100,7 @@ class cSRFSingleRecordForm(cSRF_FormUI_Base, cSRF_Formdb_Base):
     def isDirty(self) -> bool:
         """Check if any form element is dirty."""
         # any() stops and returns True as soon as it finds the first True
-        return any(el.isDirty() for el in self._formWidgets.values())       # type: ignore
+        return any(el.widget.isDirty() for el in self._formWidgets.values())       # type: ignore
     # isDirty
 
     def on_cancel_clicked(self):

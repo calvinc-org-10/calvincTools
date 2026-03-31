@@ -1353,7 +1353,7 @@ class cEditMenu(cSRFSingleRecordForm):
         # GpName = group_name if group_name else ""
         GpName = r.GroupName # type: ignore
 
-        self.fldmenuGroupName.setValue(GpName) # type: ignore
+        self.fldmenuGroupName.set_value(GpName) # type: ignore
         self.lblnummenuID.display(menuID)
         fldmenuID = self._formWidgets['@MenuID'].widget
         fldmenuID.replaceDict(self.dictmenus(menuGroup))  # type: ignore
