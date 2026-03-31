@@ -712,8 +712,8 @@ class cWidgetMenuItem(cSRFRecordList_Record):
 
     def __init__(self, menuitmRec:menuItems, parent:QWidget = None):   # type: ignore
 
-        self.setcurrRec(menuitmRec)
-        super().__init__(parent=parent)
+        self.setPrimary_key()   # why is super().__init__() not working to call this in the base class?  need to call it here to initialize the primary key field for the record handling in the base class
+        super().__init__(rec = menuitmRec, parent=parent)
 
         font = QFont()
         font.setPointSize(7)

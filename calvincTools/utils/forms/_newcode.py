@@ -405,7 +405,7 @@ class cSRF_Formdb_Base(object):
     """
     _ORMmodel:Type[Any]|None = None
     _primary_key: Any
-    _currRecs: Any      # will be a single ORMRecord for SingleForm, List[ORMRecord] for MultiForm
+    _currRec: Any      # will be a single ORMRecord for SingleForm, List[ORMRecord] for MultiForm
 
     _ssnmaker:sessionmaker[Session]|None = None
 
@@ -500,7 +500,7 @@ class cSRF_Formdb_Base(object):
         Returns:
             Current ORM record object.
         """
-        return self._currRecs
+        return self._currRec
 
     def setcurrRec(self, rec):
         """Set the current record.
@@ -508,7 +508,7 @@ class cSRF_Formdb_Base(object):
         Args:
             rec: ORM record object to set as current.
         """
-        self._currRecs = rec
+        self._currRec = rec
     # get/set currRec
     
 

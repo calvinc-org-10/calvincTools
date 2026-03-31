@@ -55,7 +55,7 @@ class OLDcSRF_Base(QWidget):
     # TODO: be more careful with class attributes vs instance attributes
     _ORMmodel:Type[Any]|None = None
     _primary_key: Any
-    _currRecs: Any      # will be a single ORMRecord for SingleForm, List[ORMRecord] for MultiForm
+    _currRec: Any      # will be a single ORMRecord for SingleForm, List[ORMRecord] for MultiForm
 
     _ssnmaker:sessionmaker[Session]|None = None
 
@@ -186,7 +186,7 @@ class OLDcSRF_Base(QWidget):
         Returns:
             Current ORM record object.
         """
-        return self._currRecs
+        return self._currRec
 
     def setcurrRec(self, rec):
         """Set the current record.
@@ -194,7 +194,7 @@ class OLDcSRF_Base(QWidget):
         Args:
             rec: ORM record object to set as current.
         """
-        self._currRecs = rec
+        self._currRec = rec
     # get/set currRec
 
     ######################################################
