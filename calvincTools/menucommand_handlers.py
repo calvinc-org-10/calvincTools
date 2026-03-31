@@ -1194,6 +1194,7 @@ class cEditMenu(cSRFSingleRecordForm):
                 on_change=self.loadMenuWithMenuID,
                 page=cQFmConstants.pageFixedTop.value,
                 position=(1,0),
+                depends_on=['@MenuGroup_id'],
             ),
             cQFormFieldDef(
                 name='+GroupName',

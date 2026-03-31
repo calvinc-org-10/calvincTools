@@ -41,6 +41,9 @@ class cQFormFieldDef:
     bg_color: str | None = None
     frame: bool = True
     focus_policy: Qt.FocusPolicy | None = None  # default focus policy will be ClickFocus for lookup and subform fields, None (i.e. inherit) for others
+    
+    # for lookups
+    depends_on: list[str] = field(default=[])  # list of field names that this lookup depends on for its choices
 # cQFormFieldDef
 
 # runtime class to hold field definition and widget instance
