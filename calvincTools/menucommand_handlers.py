@@ -1272,15 +1272,34 @@ class cEditMenu(cSRFSingleRecordForm):
     
     def _buildFormLayout(self) -> cQFormLayout:
         # TODO - this layout is pretty much hardcoded to the specific needs of this form; consider making it more flexible/reusable in the future if we find we need similar layouts elsewhere
+        layoutMain = QVBoxLayout(self)
+        layoutForm = cGridWidget(scrollable=True)
+        layoutFormFixedTop = QGridLayout()
+        layoutFormPages = cstdTabWidget()
+        layoutFormFixedBottom = QGridLayout()
+        layoutButtons = QVBoxLayout()
+        statusBar = QStatusBar(self)
+
+        # Build the same structure the base form expects: fixed_top, pages, fixed_bottom
+        # live inside the form container, and the container lives in the main layout.
+        layoutForm.addLayout(layoutFormFixedTop, 0, 0)
+        layoutForm.addWidget(layoutFormPages, 1, 0)
+        layoutForm.addLayout(layoutFormFixedBottom, 2, 0)
+        layoutForm.grid().setRowStretch(1, 1)
+
+        layoutMain.addWidget(layoutForm)
+        layoutMain.addLayout(layoutButtons)
+        layoutMain.addWidget(statusBar)
+
         fmlyout = cQFormLayout(
-            main=QVBoxLayout(self),
-            form=cGridWidget(scrollable=True),
-            fixed_top=QGridLayout(),
-            pages=cstdTabWidget(),
-            fixed_bottom=QGridLayout(),
-            status_bar=QStatusBar(),
+            main=layoutMain,
+            form=layoutForm,
+            fixed_top=layoutFormFixedTop,
+            pages=layoutFormPages,
+            fixed_bottom=layoutFormFixedBottom,
+            status_bar=statusBar,
             header=QHBoxLayout(),  # subforms don't have a header
-            buttons=QVBoxLayout(),
+            buttons=layoutButtons,
 
             lblFormName=None, # subforms don't have a form name label
             newrecFlag=QLabel(),
@@ -1322,9 +1341,9 @@ class cEditMenu(cSRFSingleRecordForm):
         # unless I'm mistaken, I need to do this BEFORE self._layouts is defined (i.e. - before _buildFormLayout returns), because once _layouts is defined, the form layout is set and I can't change it without rebuilding the whole form, which I don't want to do right now
         # When I place this code in _build_fields(), the widgets don't show up - they are invisible - and I can't figure out why - so I'm putting this code here for now until I can figure out how to make it work
         self.lblnummenuGroupID:  QLCDNumber = QLCDNumber(3)
-        self.lblnummenuGroupID.setMaximumSize(20,20)
+        self.lblnummenuGroupID.setMinimumSize(40, 24)
         self.lblnummenuID:  QLCDNumber = QLCDNumber(3)
-        self.lblnummenuID.setMaximumSize(20,20)
+        self.lblnummenuID.setMinimumSize(40, 24)
 
         # layout = self.FormPage(cQFmConstants.pageFixedTop)
         layout = layouts.fixed_top
@@ -1336,16 +1355,27 @@ class cEditMenu(cSRFSingleRecordForm):
         layoutmainMenu = self.FormPage(0)  # main page
         assert isinstance(layoutmainMenu, QGridLayout), "layoutmainMenu is not a QGridLayout"
         layoutmainMenu.setColumnStretch(0,1)
-        layoutmainMenu.setColumnStretch(1,0)
+        layoutmainMenu.setColumnStretch(1,1)
         layoutmainMenu.setColumnStretch(2,1)
+        layoutmainMenu.setHorizontalSpacing(8)
+        layoutmainMenu.setVerticalSpacing(8)
         self.layoutmainMenu = layoutmainMenu
-        
-        bxFrame:List[QFrame] = [QFrame() for _ in range(_NUM_menuBUTTONS)]
+
+        self.menuItemFrames: List[QFrame] = [QFrame() for _ in range(_NUM_menuBUTTONS)]
+        self.menuItemFrameLayouts: List[QVBoxLayout] = []
         for bNum in range(_NUM_menuBUTTONS):
-            bxFrame[bNum].setLineWidth(1)
-            bxFrame[bNum].setFrameStyle(QFrame.Shape.Box|QFrame.Shadow.Plain)
+            frame = self.menuItemFrames[bNum]
+            frame.setLineWidth(1)
+            frame.setFrameStyle(QFrame.Shape.Box|QFrame.Shadow.Plain)
+            frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+            frameLayout = QVBoxLayout(frame)
+            frameLayout.setContentsMargins(3, 3, 3, 3)
+            frameLayout.setSpacing(0)
+            self.menuItemFrameLayouts.append(frameLayout)
+
             y, x = ((bNum % _NUM_menuBTNperCOL)+1, 0 if bNum < _NUM_menuBTNperCOL else 2)
-            self.layoutmainMenu.addWidget(bxFrame[bNum],y,x)
+            self.layoutmainMenu.addWidget(frame,y,x)
             
             self.WmenuItm[bNum] = None      # type: ignore  # later - build WmenuItm before this loop?    
 
@@ -1419,27 +1449,42 @@ class cEditMenu(cSRFSingleRecordForm):
                     PWord = ''
                 )
             oldWdg = self.WmenuItm[bNum]
+            frameLayout = self.menuItemFrameLayouts[bNum]
             if oldWdg:
                 # remove old widget
-                self.layoutmainMenu.removeWidget(oldWdg)
-                oldWdg.hide()
-                del oldWdg
+                frameLayout.removeWidget(oldWdg)
+                oldWdg.setParent(None)
+                oldWdg.deleteLater()
 
             self.WmenuItm[bNum] = self.wdgtmenuITEM(mnuItmRc)
             self.WmenuItm[bNum].requestMenuReload.connect(lambda: self.loadMenu(self.intmenuGroup, self.intmenuID))
             if isinstance(self.MainMenuWindow, cMenuClass):
                 self.WmenuItm[bNum].requestMenuReload.connect(self.MainMenuWindow.refreshMenu)
-            self.layoutmainMenu.addWidget(self.WmenuItm[bNum],y,x) 
+            frameLayout.addWidget(self.WmenuItm[bNum])
         # endfor
 
-        mItmH = self.WmenuItm[0].height()
-        mItmW = self.WmenuItm[0].width()
-        padW = 70
-        multH = 1.5
+        frameW = 0
+        frameH = 0
+        for w in self.WmenuItm:
+            if w is None:
+                continue
+            hint = w.sizeHint()
+            frameW = max(frameW, hint.width())
+            frameH = max(frameH, hint.height())
+
+        if frameW > 0 and frameH > 0:
+            for frame in self.menuItemFrames:
+                frame.setMinimumSize(frameW + 8, frameH + 8)
+
+        padW = 80
+        padH = 60
+        numCols = _NUM_menuBUTNCOLS
+        numRows = _NUM_menuBTNperCOL
         # TODO: adjust scroller size based on number of items (do the line below)
         # self.layoutManinMenu_scrollerWidget.setMinimumSize(mItmW*2+10, mItmH)
         assert isinstance(self.layoutForm, cGridWidget), "layoutForm is not a cGridWidget"
-        self.layoutForm._scroller.setMinimumSize(mItmW*2+padW, multH*mItmH)     # type: ignore
+        if self.layoutForm._scroller is not None and frameW > 0 and frameH > 0:
+            self.layoutForm._scroller.setMinimumSize((frameW * numCols) + padW, (frameH * numRows) + padH)
         
     # displayMenu
 
