@@ -1310,9 +1310,9 @@ class cEditMenu(cSRFSingleRecordForm):
         return fmlyout
     # _buildFormLayout
 
-    def _buildPages(self) -> None:
-        # this form doesn't use the standard page-building mechanism, so we override this method to do nothing
-        return
+    # def _buildPages(self) -> None:
+    #     # this form doesn't use the standard page-building mechanism, so we override this method to do nothing
+    #     return
     def _buildPages_alt(self, layouts:cQFormLayout) -> None:
         """Build the pages (tabs) for the form based on self.pages."""
         if self.numPages() < 1:
@@ -1340,25 +1340,32 @@ class cEditMenu(cSRFSingleRecordForm):
         # hence, it needs intimate access to the layouts structure of the form, which is why I'm putting it here
         # unless I'm mistaken, I need to do this BEFORE self._layouts is defined (i.e. - before _buildFormLayout returns), because once _layouts is defined, the form layout is set and I can't change it without rebuilding the whole form, which I don't want to do right now
         # When I place this code in _build_fields(), the widgets don't show up - they are invisible - and I can't figure out why - so I'm putting this code here for now until I can figure out how to make it work
+
+        return
+
+    ######################################################
+    ########    field and Widget placement
+
+    def _build_fields(self):
+        super()._build_fields()
+
         self.lblnummenuGroupID:  QLCDNumber = QLCDNumber(3)
         self.lblnummenuGroupID.setMinimumSize(40, 24)
         self.lblnummenuID:  QLCDNumber = QLCDNumber(3)
         self.lblnummenuID.setMinimumSize(40, 24)
 
-        # layout = self.FormPage(cQFmConstants.pageFixedTop)
-        layout = layouts.fixed_top
+        layout = self.FormPage(cQFmConstants.pageFixedTop)
         assert layout is not None, "Layout is None"
         layout.addWidget(self.lblnummenuGroupID, 0,1)
         layout.addWidget(self.lblnummenuID, 1,1)
 
-        self._buildPages_alt(layouts)   # we need to build the pages before we can add widgets to them, but we want to add some widgets before the form layout is finalized, so we call this method here to build the pages and get access to the page layouts before the form layout is finalized in _buildFormLayout
         layoutmainMenu = self.FormPage(0)  # main page
         assert isinstance(layoutmainMenu, QGridLayout), "layoutmainMenu is not a QGridLayout"
         layoutmainMenu.setColumnStretch(0,1)
         layoutmainMenu.setColumnStretch(1,1)
         layoutmainMenu.setColumnStretch(2,1)
-        layoutmainMenu.setHorizontalSpacing(8)
-        layoutmainMenu.setVerticalSpacing(8)
+        # layoutmainMenu.setHorizontalSpacing(8)
+        # layoutmainMenu.setVerticalSpacing(8)
         self.layoutmainMenu = layoutmainMenu
 
         self.menuItemFrames: List[QFrame] = [QFrame() for _ in range(_NUM_menuBUTTONS)]
@@ -1367,7 +1374,7 @@ class cEditMenu(cSRFSingleRecordForm):
             frame = self.menuItemFrames[bNum]
             frame.setLineWidth(1)
             frame.setFrameStyle(QFrame.Shape.Box|QFrame.Shadow.Plain)
-            frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+            # frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
             frameLayout = QVBoxLayout(frame)
             frameLayout.setContentsMargins(3, 3, 3, 3)
@@ -1377,13 +1384,9 @@ class cEditMenu(cSRFSingleRecordForm):
             y, x = ((bNum % _NUM_menuBTNperCOL)+1, 0 if bNum < _NUM_menuBTNperCOL else 2)
             self.layoutmainMenu.addWidget(frame,y,x)
             
-            self.WmenuItm[bNum] = None      # type: ignore  # later - build WmenuItm before this loop?    
-
-    ######################################################
-    ########    field and Widget placement
-
-    def _build_fields(self):
-        super()._build_fields()
+            self.WmenuItm[bNum] = None      # type: ignore  # later - build WmenuItm before this loop?
+        # end for bNum in range(_NUM_menuBUTTONS)
+    # _build_fields
 
             
     ##########################################
