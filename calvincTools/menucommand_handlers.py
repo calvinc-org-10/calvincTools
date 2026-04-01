@@ -827,13 +827,10 @@ class cWidgetMenuItem(cSRFRecordList_Record):
     def defineActionButtons(self):
         _iconlib = qtawesome.icon
         r = [
-            cQFormBtnDef(text=self.tr('Save\nChanges'), 
-                icon=_iconlib("mdi.content-save"), 
-                commitBtn=True,
-                action=self.on_save_clicked),
             cQFormBtnDef(name='btnMoveCopy',
-                text=self.tr("Copy / Move"),
+                text=self.tr("Copy /\nMove"),
                 action=self.copyMenuOption),
+            cQFormBtnDef(type=cQFormBtnDef.ButtonType.NEW_VSECTION),
             cQFormBtnDef(name='btnRemove',
                 text=self.tr("Remove"), 
                 icon=_iconlib("mdi.delete"), 
@@ -854,11 +851,13 @@ class cWidgetMenuItem(cSRFRecordList_Record):
         layoutButtons = self._layouts.buttons
 
         innerLayout = QHBoxLayout()
+        innerLayout.setContentsMargins(0,0,0,0)
 
         for btndef in Actns:
             if btndef.type == cQFormBtnDef.ButtonType.NEW_VSECTION:
                 layoutButtons.addLayout(innerLayout)
                 innerLayout = QHBoxLayout()
+                innerLayout.setContentsMargins(0,0,0,0)
             elif btndef.type == cQFormBtnDef.ButtonType.NEW_HSECTION:
                 innerLayout.addSpacing(20)
             elif btndef.type != cQFormBtnDef.ButtonType.NORMAL:
@@ -1349,10 +1348,13 @@ class cEditMenu(cSRFSingleRecordForm):
     def _build_fields(self):
         super()._build_fields()
 
-        self.lblnummenuGroupID:  QLCDNumber = QLCDNumber(3)
-        self.lblnummenuGroupID.setMinimumSize(40, 24)
-        self.lblnummenuID:  QLCDNumber = QLCDNumber(3)
-        self.lblnummenuID.setMinimumSize(40, 24)
+        lcdWidth = 32
+        lcdHeight = 20
+        lcdNumDigits = 3
+        self.lblnummenuGroupID:  QLCDNumber = QLCDNumber(lcdNumDigits)
+        self.lblnummenuGroupID.setMinimumSize(lcdWidth, lcdHeight)
+        self.lblnummenuID:  QLCDNumber = QLCDNumber(lcdNumDigits)
+        self.lblnummenuID.setMinimumSize(lcdWidth, lcdHeight)
 
         layout = self.FormPage(cQFmConstants.pageFixedTop)
         assert layout is not None, "Layout is None"
@@ -1418,7 +1420,7 @@ class cEditMenu(cSRFSingleRecordForm):
         menuHdrRec:menuItems = menuItemRecs[0]
         
         # set header elements
-        self.lblnummenuGroupID.display(menuGroup)
+        self.lblnummenuGroupID.display(str(menuGroup) + "@")       # we add the "@" to the value to force the LCD to display a trailing space
         self.fldmenuGroup.setValue(str(menuGroup)) # type: ignore
 
         r = Repository(get_cMenu_sessionmaker(), menuGroups).get_by_id(menuGroup)
@@ -1430,7 +1432,7 @@ class cEditMenu(cSRFSingleRecordForm):
         GpName = r.GroupName # type: ignore
 
         self.fldmenuGroupName.setValue(GpName) # type: ignore
-        self.lblnummenuID.display(menuID)
+        self.lblnummenuID.display(str(menuID) + "@")       # we add the "@" to the value to force the LCD to display a trailing space
         fldmenuID = self._formWidgets['@MenuID'].widget
         fldmenuID.replaceDict(self.dictmenus(menuGroup))  # type: ignore
         fldmenuID.setValue(menuID) # type: ignore
