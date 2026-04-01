@@ -714,6 +714,8 @@ class cWidgetMenuItem(cSRFRecordList_Record):
 
         self.setPrimary_key()   # why is super().__init__() not working to call this in the base class?  need to call it here to initialize the primary key field for the record handling in the base class
         super().__init__(rec = menuitmRec, parent=parent)
+        assert self.currRec() is not None, "why isn't currRec set?"
+        breakpoint()
 
         font = QFont()
         font.setPointSize(7)
@@ -1163,7 +1165,12 @@ class cEditMenu(cSRFSingleRecordForm):
         # self.fldmenuGroup = self.fieldDefs['@MenuGroup_id'].get('widget') 
         self.fldmenuGroup = self._lookupFrmElements['@MenuGroup_id']
         self.fldmenuGroup.replaceDict(self.dictmenuGroups())    # type: ignore
-        self.fldmenuGroupName = self._formWidgets.get('+GroupName') 
+        gpNamestruct = self._formWidgets.get('+GroupName')
+        if gpNamestruct is not None:
+            self.fldmenuGroupName = gpNamestruct.widget
+        else:
+            self.fldmenuGroupName = None    # shoul;dn't happen - this field is defined in defineFields - but just in case, we won't crash if it's not there
+        #end if fldmenuGroupName
         
         self.loadMenu()
     # __init__
@@ -1606,7 +1613,7 @@ class cEditMenu(cSRFSingleRecordForm):
         # check other traps later
         
         # fldmenuGroupName = self.fieldDefs['+GroupName'].get('widget')  # type: ignore
-        fldmenuGroupName = self._formWidgets['+GroupName']
+        fldmenuGroupName = self._formWidgets['+GroupName'].widget
         
         if fldmenuGroupName.isDirty():  # type: ignore
             # update the menu group name in menuGroups table

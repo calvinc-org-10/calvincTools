@@ -691,7 +691,8 @@ class cSRFSingleRecordForm(cSRF_FormUI_Base, cSRF_Formdb_Base):
         Updates all field widgets with values from the current record
         and updates the dirty and new record flags.
         """
-        for widg in self._formWidgets.values():
+        for widgStructure in self._formWidgets.values():
+            widg = widgStructure.widget
             if isinstance(widg, cSimpRecFmElement_Base):
                 widg.loadFromRecord(self.currRec())
 
@@ -965,10 +966,12 @@ class cSRFSingleRecordForm(cSRF_FormUI_Base, cSRF_Formdb_Base):
 
         try:
             # Push data from form -> ORM object, except for subforms - they must come after the main record is saved
-            for fldName, fldDef in self._field_defs_by_name.items():
+            # for fldName, fldDef in self._field_defs_by_name.items():
+            for fldName, fldStruct in self._formWidgets.items():
+                fldDef = fldStruct.defn
+                widget = fldStruct.widget
                 isSubFormElmnt = fldDef.field_type == cQFormFieldDef.cQFormFieldType.SUBFORM
                 if not isSubFormElmnt:      # subforms handled after main record is saved
-                    widget = self._formWidgets.get(fldName)
                     if isinstance(widget, cSimpRecFmElement_Base):
                         widget.saveToRecord(currRec)
             # endfor fldDef in self.fieldDefs
@@ -991,10 +994,12 @@ class cSRFSingleRecordForm(cSRF_FormUI_Base, cSRF_Formdb_Base):
             # endwith session
 
             # now handle subforms
-            for fldName, fldDef in self._field_defs_by_name.items():
+            # for fldName, fldDef in self._field_defs_by_name.items():
+            for fldName, fldStruct in self._formWidgets.items():
+                fldDef = fldStruct.defn
+                widget = fldStruct.widget
                 isSubFormElmnt = fldDef.field_type == cQFormFieldDef.cQFormFieldType.SUBFORM
                 if isSubFormElmnt:
-                    widget = self._formWidgets.get(fldName)
                     if isinstance(widget, cSimpRecFmElement_Base):
                         widget.saveToRecord(currRec)
             # endfor fldDef in self.fieldDefs
@@ -1678,7 +1683,8 @@ class cSRFRecordList_Record(
         Updates all field widgets with values from the current record
         and updates the dirty and new record flags.
         """
-        for widg in self._formWidgets.values():
+        for Wstruc in self._formWidgets.values():
+            widg = Wstruc.widget
             if isinstance(widg, cSimpRecFmElement_Base):
                 widg.loadFromRecord(self.currRec())
 
