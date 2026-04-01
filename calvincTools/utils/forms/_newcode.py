@@ -500,7 +500,7 @@ class cSRF_Formdb_Base(object):
         Returns:
             Current ORM record object.
         """
-        return self._currRec
+        return getattr(self, '_currRec', None)
 
     def setcurrRec(self, rec):
         """Set the current record.

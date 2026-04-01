@@ -714,8 +714,6 @@ class cWidgetMenuItem(cSRFRecordList_Record):
 
         self.setPrimary_key()   # why is super().__init__() not working to call this in the base class?  need to call it here to initialize the primary key field for the record handling in the base class
         super().__init__(rec = menuitmRec, parent=parent)
-        assert self.currRec() is not None, "why isn't currRec set?"
-        breakpoint()
 
         font = QFont()
         font.setPointSize(7)
@@ -973,6 +971,8 @@ class cWidgetMenuItem(cSRFRecordList_Record):
 
     def copyMenuOption(self):
         cRec = self.currRec()
+        if cRec is None:
+            return
         tbl = cRec.__table__
         mnuGrp, mnuID, optNum = (cRec.MenuGroup_id, cRec.MenuID, cRec.OptionNumber)
 
@@ -1362,7 +1362,7 @@ class cEditMenu(cSRFSingleRecordForm):
         # GpName = group_name if group_name else ""
         GpName = r.GroupName # type: ignore
 
-        self.fldmenuGroupName.set_value(GpName) # type: ignore
+        self.fldmenuGroupName.setValue(GpName) # type: ignore
         self.lblnummenuID.display(menuID)
         fldmenuID = self._formWidgets['@MenuID'].widget
         fldmenuID.replaceDict(self.dictmenus(menuGroup))  # type: ignore
