@@ -1285,27 +1285,54 @@ class cEditMenu(cSRFSingleRecordForm):
             lblFormName=None, # subforms don't have a form name label
             newrecFlag=QLabel(),
         )
-        
+
+        self._trythis(fmlyout)
+                
         return fmlyout
     # _buildFormLayout
-    
-    ######################################################
-    ########    field and Widget placement
 
-    def _build_fields(self):
-        super()._build_fields()
+    def _buildPages(self) -> None:
+        # this form doesn't use the standard page-building mechanism, so we override this method to do nothing
+        return
+    def _buildPages_alt(self, layouts:cQFormLayout) -> None:
+        """Build the pages (tabs) for the form based on self.pages."""
+        if self.numPages() < 1:
+            # single page form
+            self.pages = ['Main']
+        # endif numPages
+        
+        self._page_map = {}
 
-        # later - consider building these into the field definitions instead of doing it here
+        for n, pg in enumerate(self.pages):
+            pgnm = str(pg)
+            widg, grid = QWidget(), QGridLayout()
+            widg.setLayout(grid)
+            
+            layouts.pages.addTab(widg, self.tr(pgnm))
+            self._page_map[str(pgnm)] = grid
+            # self._page_map[n] = grid
+        # endfor page in self.pages
+    # _buildPages
 
+    def _trythis(self, layouts:cQFormLayout):
+        # this is just a scratch area for trying out code that may eventually be used in the form, but isn't ready to be added to the form yet
+
+        # the problem - this code puts together layouts correctly AND places the widgets where I want them
+        # hence, it needs intimate access to the layouts structure of the form, which is why I'm putting it here
+        # unless I'm mistaken, I need to do this BEFORE self._layouts is defined (i.e. - before _buildFormLayout returns), because once _layouts is defined, the form layout is set and I can't change it without rebuilding the whole form, which I don't want to do right now
+        # When I place this code in _build_fields(), the widgets don't show up - they are invisible - and I can't figure out why - so I'm putting this code here for now until I can figure out how to make it work
         self.lblnummenuGroupID:  QLCDNumber = QLCDNumber(3)
         self.lblnummenuGroupID.setMaximumSize(20,20)
         self.lblnummenuID:  QLCDNumber = QLCDNumber(3)
         self.lblnummenuID.setMaximumSize(20,20)
-        layout = self.FormPage(cQFmConstants.pageFixedTop)
+
+        # layout = self.FormPage(cQFmConstants.pageFixedTop)
+        layout = layouts.fixed_top
         assert layout is not None, "Layout is None"
         layout.addWidget(self.lblnummenuGroupID, 0,1)
         layout.addWidget(self.lblnummenuID, 1,1)
 
+        self._buildPages_alt(layouts)   # we need to build the pages before we can add widgets to them, but we want to add some widgets before the form layout is finalized, so we call this method here to build the pages and get access to the page layouts before the form layout is finalized in _buildFormLayout
         layoutmainMenu = self.FormPage(0)  # main page
         assert isinstance(layoutmainMenu, QGridLayout), "layoutmainMenu is not a QGridLayout"
         layoutmainMenu.setColumnStretch(0,1)
@@ -1321,6 +1348,13 @@ class cEditMenu(cSRFSingleRecordForm):
             self.layoutmainMenu.addWidget(bxFrame[bNum],y,x)
             
             self.WmenuItm[bNum] = None      # type: ignore  # later - build WmenuItm before this loop?    
+
+    ######################################################
+    ########    field and Widget placement
+
+    def _build_fields(self):
+        super()._build_fields()
+
             
     ##########################################
     ########    menu and Group dicts
