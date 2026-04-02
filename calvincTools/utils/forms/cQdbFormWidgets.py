@@ -85,6 +85,7 @@ class cQFmFldWidg(cSimpRecFmElement_Base):
     _modlField: str = ''
     _lblChkYN: QLineEdit|None = None
     _lblChkYNValues: Dict[bool, str]|None = None
+    _compact_spacing: int = 2
 
     # signalFldChanged: Signal = Signal(object)
     # dirtyChanged = Signal(bool)
@@ -378,6 +379,14 @@ class cQFmFldWidg(cSimpRecFmElement_Base):
     ) -> None:
         """Configure the layout based on widget type and alignment."""
         layout = QGridLayout()
+        layout.setContentsMargins(
+            self._compact_spacing,
+            self._compact_spacing,
+            self._compact_spacing,
+            self._compact_spacing,
+        )
+        layout.setHorizontalSpacing(self._compact_spacing)
+        layout.setVerticalSpacing(self._compact_spacing)
 
         # Determine widget positions based on alignment
         if alignlblText == Qt.AlignmentFlag.AlignLeft:

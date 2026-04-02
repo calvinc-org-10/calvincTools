@@ -534,6 +534,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
     """
     _ORMmodel = menuItems
     _ssnmaker = get_cMenu_sessionmaker()
+    _compact_spacing = 2
 
     # formFields:Dict[str, QWidget] = {}
 
@@ -825,6 +826,12 @@ class cWidgetMenuItem(cSRFRecordList_Record):
     ######################################################
     ########    field and Widget placement
 
+    def _configure_widget(self, widget: QWidget, defn: cQFormFieldDef):
+        super()._configure_widget(widget, defn)
+
+        widget.setContentsMargins(0,0,0,0)
+        widget.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+    
     def defineActionButtons(self):
         _iconlib = qtawesome.icon
         r = [
@@ -853,14 +860,16 @@ class cWidgetMenuItem(cSRFRecordList_Record):
 
         innerLayout = QHBoxLayout()
         innerLayout.setContentsMargins(0,0,0,0)
+        innerLayout.setSpacing(self._compact_spacing)
 
         for btndef in Actns:
             if btndef.type == cQFormBtnDef.ButtonType.NEW_VSECTION:
                 layoutButtons.addLayout(innerLayout)
                 innerLayout = QHBoxLayout()
                 innerLayout.setContentsMargins(0,0,0,0)
+                innerLayout.setSpacing(self._compact_spacing)
             elif btndef.type == cQFormBtnDef.ButtonType.NEW_HSECTION:
-                innerLayout.addSpacing(20)
+                innerLayout.addSpacing(self._compact_spacing)
             elif btndef.type != cQFormBtnDef.ButtonType.NORMAL:
                 raise ValueError(f"unknown button type {btndef.type}")
             else:
@@ -1380,8 +1389,8 @@ class cEditMenu(cSRFSingleRecordForm):
             # frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
             frameLayout = QVBoxLayout(frame)
-            frameLayout.setContentsMargins(3, 3, 3, 3)
-            frameLayout.setSpacing(0)
+            frameLayout.setContentsMargins(2, 2, 2, 2)
+            frameLayout.setSpacing(2)
             self.menuItemFrameLayouts.append(frameLayout)
 
             y, x = ((bNum % _NUM_menuBTNperCOL)+1, 0 if bNum < _NUM_menuBTNperCOL else 2)

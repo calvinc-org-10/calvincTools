@@ -46,6 +46,7 @@ class cSRF_FormUI_Base(QWidget):
         object (_type_): _description_
     """
     pages: List = []
+    _page_spacing: int = 2
 
     def __init__(self, 
         field_defs: List[cQFormFieldDef] | None = None,
@@ -148,6 +149,9 @@ class cSRF_FormUI_Base(QWidget):
         for n, pg in enumerate(self.pages):
             pgnm = str(pg)
             widg, grid = QWidget(), QGridLayout()
+            widg.setContentsMargins(0,0,0,0)
+            grid.setContentsMargins(0,0,0,0)
+            grid.setSpacing(self._page_spacing)
             widg.setLayout(grid)
             
             self._layouts.pages.addTab(widg, self.tr(pgnm))
