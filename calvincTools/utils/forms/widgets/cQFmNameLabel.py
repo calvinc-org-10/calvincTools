@@ -1,25 +1,7 @@
-
-from enum import Enum
-
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QFrame, QLabel, QWidget
 
-
-class cQFmConstants(Enum):
-    """Constants for form widget configurations."""
-    # FldWidg_LineEdit = auto()
-    # FldWidg_ComboBox = auto()
-    # FldWidg_CheckBox = auto()
-    # FldWidg_TextEdit = auto()
-    # FldWidg_PlainTextEdit = auto()
-    # FldWidg_DateEdit = auto()
-    # FldWidg_DataList = auto()
-    flagInternalVarField = '+'
-    flagLookupField = '@'
-    pageFixedTop = -1
-    pageFixedBottom = -2
-# endclass cQFmConstants
 
 class cQFmNameLabel(QLabel):
     """A styled QLabel for displaying form titles.
@@ -49,6 +31,5 @@ class cQFmNameLabel(QLabel):
             self.setText(formName)
     # __init__
 # endclass cQFmNameLabel
-
-
-    
+    def endofclass(self):
+        pass

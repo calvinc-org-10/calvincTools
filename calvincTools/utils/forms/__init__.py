@@ -1,6 +1,6 @@
-from .cQFormBtnDef import *
-from .cQFormFieldDef import *
-from .cQFormLayout import *
+from .definitions.cQFormBtnDef import *
+from .definitions.cQFormFieldDef import *
+from .definitions.cQFormLayout import *
 from .cQFormWidgets import *
 from .cQdbFormWidgets import *
 # from .cQdbSimpleRecordFormWidgets import *

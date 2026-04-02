@@ -1,7 +1,7 @@
 # TODO: implement editing
 # deprecate? see subform widget 
 from calvincTools.utils.cQModels import SQLAlchemyTableModel
-from calvincTools.utils.forms.cQFormWidgets import cQFmNameLabel
+from calvincTools.utils.forms.cQFmNameLabel import cQFmNameLabel
 
 
 from PySide6.QtCore import Qt

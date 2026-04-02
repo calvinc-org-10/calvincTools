@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QWidget, QGridLayout, QTabWidget, QBoxLayout, QStatusBar
     )
 
-from .cQFormWidgets import cQFmNameLabel
+from ..widgets.cQFmNameLabel import cQFmNameLabel
 
 @dataclass
 class cQFormLayout:

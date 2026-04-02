@@ -15,10 +15,11 @@ from sqlalchemy.sql.elements import ColumnElement
 from calvincTools.utils.SQLAlcTools import get_primary_key_column
 from calvincTools.utils.cQModels import SQLAlchemyTableModel
 from calvincTools.utils.cQWidgets import cComboBoxFromDict, cDataList, cGridWidget, cstdTabWidget
-from calvincTools.utils.forms.cQFormBtnDef import cQFormBtnDef
-from calvincTools.utils.forms.cQFormFieldDef import cQFormFieldDef, cQFormFieldInstance
-from calvincTools.utils.forms.cQFormLayout import cQFormLayout
-from calvincTools.utils.forms.cQFormWidgets import cQFmConstants, cQFmNameLabel
+from calvincTools.utils.forms.definitions.cQFmConstants import cQFmConstants
+from calvincTools.utils.forms.definitions.cQFormBtnDef import cQFormBtnDef
+from calvincTools.utils.forms.definitions.cQFormFieldDef import cQFormFieldDef, cQFormFieldInstance
+from calvincTools.utils.forms.definitions.cQFormLayout import cQFormLayout
+from calvincTools.utils.forms.widgets.cQFmNameLabel import cQFmNameLabel
 from calvincTools.utils.messageBoxes import areYouSure
 from calvincTools.utils.strings import str2
 
@@ -75,6 +76,8 @@ class cSimpRecFmElement_Base(QWidget):
         """
         pass
 # endclass cSimpRecFmElement_Base
+    def endofclass(self):
+        pass
 
 class cQFmFldWidg(cSimpRecFmElement_Base):
 ###########################################
@@ -536,6 +539,8 @@ class cQFmFldWidg(cSimpRecFmElement_Base):
         self.signalFldChanged.emit(args if args else (None,))
     # fldChanged
 # endclass cQFmFldWidg
+    def endofclass(self):
+        pass
 
 
 class cQFmLookupWidg(cSimpRecFmElement_Base):
@@ -829,14 +834,12 @@ class cQFmLookupWidg(cSimpRecFmElement_Base):
         self.signalLookupSelected.emit(value)
     # _emitSelection
 # endclass cQFmLookupWidg
-
-
+    def endofclass(self):
+        pass
 
 #################################################
 # cSRF = calvincTools Simple Record Form classes
 #################################################
-
-
 
 # TODO: pretty up NEW RECORD FLAG
 class cSRF_FormUI_Base(QWidget):
@@ -1199,7 +1202,8 @@ class cSRF_FormUI_Base(QWidget):
     ########    Delete
 
 # cSRF_FormUI_Base
-
+    def endofclass(self):
+        pass
 
 
 class cSRF_Formdb_Base(object):
@@ -1332,6 +1336,8 @@ class cSRF_Formdb_Base(object):
 
 
 # cSRF_Formdb_Base
+    def endofclass(self):
+        pass
         
 
 class cSRFSingleRecordForm(cSRF_FormUI_Base, cSRF_Formdb_Base):
@@ -1938,6 +1944,8 @@ class cSRFSingleRecordForm(cSRF_FormUI_Base, cSRF_Formdb_Base):
     def beforeSave(self): pass
     def afterSave(self): pass
 # cSRFSingleRecordForm
+    def endofclass(self):
+        pass
 
 class cSRFMultiRecordWrapper(cSRF_FormUI_Base):
     """
@@ -2092,6 +2100,8 @@ class cSRFMultiRecordWrapper(cSRF_FormUI_Base):
     # initialdisplay()
 
 # cSRFMultiRecordWrapper
+    def endofclass(self):
+        pass
         
 class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
     """
@@ -2396,6 +2406,8 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
 
     # cSimpleRecordForm_Base already has this covered
 # cRFRecordGrid
+    def endofclass(self):
+        pass
 
 class cSRFRecordList_Record(
     cSRF_Formdb_Base,
@@ -2560,6 +2572,8 @@ class cSRFRecordList_Record(
     # isDirty
 
 # cSRFRecordList_Record
+    def endofclass(self):
+        pass
 class cSRFRecordList(cSRFSingleRecordForm):     # is cSRFSingleRecordForm = cSRF_Formdb_Base + cSRF_FormUI_Base the right parent?
     """
     Base class for record list subforms. Should be used as a subform within a cSRFMultiRecordWrapper. Inherits from both cSRF_FormUI_Base and cSRF_Formdb_Base to provide both UI and db functionality.
@@ -2871,6 +2885,9 @@ class cSRFRecordList(cSRFSingleRecordForm):     # is cSRFSingleRecordForm = cSRF
         idxs = self.dispArea.selectionModel().selectedRows()    # does dispArea have selectionModel()?
             # end for
         # del_row
+# cSRFRecordList_Record
+    def endofclass(self):
+        pass
 
 # other form classes can be added here as needed, following the same pattern of inheriting from the appropriate base classes to combine UI and db functionality as needed.
 # Note that a cSRFRecordGridForm = cSRFMultiRecordWrapper + cSRFRecordGrid is not necessary, as the cSRFRecordGrid can simply be used as a subform within the cSRFMultiRecordWrapper, and the cSRFMultiRecordWrapper can be used on its own as a wrapper for any number of subforms, including cSRFRecordGrids and cSRFRecordLists.
