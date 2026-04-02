@@ -730,12 +730,13 @@ class cWidgetMenuItem(cSRFRecordList_Record):
         return [
             cQFormFieldDef(
                 name='OptionNumber',
-                label='Option Number',
-                widget_type=QLineEdit,
+                # label='Option Number',
+                label='Option',
+                widget_type=QLabel,
                 position=(0,0),
-                readonly=True,
-                frame=False,
-                maximum_width=25,
+                # readonly=True,
+                # frame=False,
+                # maximum_width=25,
                 focus_policy=Qt.FocusPolicy.NoFocus,
             ),
             cQFormFieldDef(
@@ -776,8 +777,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
                 label='Password',
                 widget_type=QLineEdit,
                 position=(1,4,1,2),
-            ),
-            
+            ),    
         ]
 
     ##########################################
@@ -785,11 +785,12 @@ class cWidgetMenuItem(cSRFRecordList_Record):
 
     def _buildFormLayout(self) -> cQFormLayout:
         
-        layoutMain = QVBoxLayout(self)
+        # layoutMain = QVBoxLayout(self)
+        layoutMain = QVBoxLayout()
         layoutMain.setContentsMargins(0,0,0,0)
         layoutMain.setSpacing(0)
 
-        layoutFormMain = QHBoxLayout()
+        layoutFormMain = QHBoxLayout(self)
         layoutFormMain.setContentsMargins(0,0,0,0)
         layoutFormMain.setSpacing(0)
 
@@ -803,7 +804,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
         layoutFormMain.addWidget(layoutFormMainLeft)
         layoutFormMain.addLayout(layoutFormMainRight)
 
-        layoutMain.addLayout(layoutFormMain)
+        # layoutMain.addLayout(layoutFormMain)
                 
         rtnobj = cQFormLayout(
             main=layoutMain,
