@@ -55,7 +55,8 @@ Repository = "https://github.com/calvinc-org-10/calvincTools"
 "Bug Tracker" = "https://github.com/calvinc-org-10/calvincTools/issues"
 
 [tool.setuptools.dynamic]
-version = {attr = "calvincTools.__version__.__version__"}
+# version = {attr = "calvincTools.__version__.__version__"}
+version = "2026.04.02.2300"
 
 [tool.black]
 line-length = 100
