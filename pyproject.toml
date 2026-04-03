@@ -38,7 +38,6 @@ dependencies = [
     "sqlparse==0.5.3",
     "python-dateutil==2.9.0.post0",
     "tzdata==2024.2"
-
 ]
 
 [project.optional-dependencies]
@@ -54,6 +53,9 @@ dev = [
 Homepage = "https://github.com/calvinc-org-10/calvincTools"
 Repository = "https://github.com/calvinc-org-10/calvincTools"
 "Bug Tracker" = "https://github.com/calvinc-org-10/calvincTools/issues"
+
+[tool.setuptools]
+packages = ["calvincTools"]
 
 #[tool.setuptools.dynamic]
 # version = {attr = "calvincTools.__version__.__version__"}
