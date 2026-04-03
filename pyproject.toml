@@ -4,7 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "calvincTools"
-dynamic = ["version"]
+version = "2026.04.02.2300"
+# dynamic = ["version"]
 description = "A Python package for Calvin C's UI/Menu system and other tools"
 readme = "README.md"
 authors = [
@@ -54,8 +55,8 @@ Homepage = "https://github.com/calvinc-org-10/calvincTools"
 Repository = "https://github.com/calvinc-org-10/calvincTools"
 "Bug Tracker" = "https://github.com/calvinc-org-10/calvincTools/issues"
 
-[tool.setuptools.dynamic]
-version = {attr = "calvincTools.__version__.__version__"}
+#[tool.setuptools.dynamic]
+# version = {attr = "calvincTools.__version__.__version__"}
 # version = "2026.04.02.2300"
 
 [tool.black]
