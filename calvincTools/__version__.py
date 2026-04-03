@@ -8,7 +8,8 @@ _base_ver_minor=0
 _base_ver_patch='0'
 _ver_date='2026-04-02'
 _base_ver = f'{_base_ver_major}.{_base_ver_minor}.{_base_ver_patch}'
-__version__ = _base_ver
+# __version__ = _base_ver
+__version__ = "2026.04.03.0930"         # Use date-based versioning for easier tracking of updates. When package stabilizes, can switch to semantic versioning if desired. Format: YYYY.MM.DD.HHMM
 sysver = {
     'DEV': f'DEV{_base_ver}', 
     'PROD': _base_ver,
