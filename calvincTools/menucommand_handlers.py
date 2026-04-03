@@ -22,11 +22,13 @@ from openpyxl import Workbook
 from sqlalchemy import (inspect, select, Engine, ) 
 from sqlalchemy.orm.session import make_transient
 
+from .utils.forms.forms.cSRFSingleRecordForm import cSRFSingleRecordForm
+
 from .utils.forms.widgets.cQFmNameLabel import cQFmNameLabel
 
 from .utils.forms.definitions.cQFmConstants import cQFmConstants
 
-from .utils.forms.cQdbFormWidgets import cSRFRecordList_Record, cSRFSingleRecordForm
+from .utils.forms.subforms.cSRFRecordList import cSRFRecordList_Record
 
 # there's no need to import cMenu, plus it's a circular ref - cMenu depends heavily on this module
 # from .kls_cMenu import cMenu 

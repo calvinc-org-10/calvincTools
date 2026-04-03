@@ -8,8 +8,9 @@
 # TODO: pretty up NEW RECORD FLAG
 from calvincTools.utils.cQWidgets import cGridWidget, cstdTabWidget
 from calvincTools.utils.forms.cQFmConstants import cQFmConstants
+from calvincTools.utils.forms.widgets.cQFmFldWidg import cQFmFldWidg
 from calvincTools.utils.forms.cQFmNameLabel import cQFmNameLabel
-from calvincTools.utils.forms.cQdbFormWidgets import cQFmFldWidg, cQFmLookupWidg, cSimpRecFmElement_Base
+from calvincTools.utils.forms.cQFmLookupWidg import cQFmLookupWidg
 
 
 import qtawesome
@@ -19,6 +20,8 @@ from PySide6.QtWidgets import QBoxLayout, QGridLayout, QHBoxLayout, QLabel, QLay
 
 
 from typing import Any, Dict, List
+
+from calvincTools.utils.forms.cSimpRecFmElement_Base import cSimpRecFmElement_Base
 
 
 class cSimpleMultiRecordSubFmWrapperForm(QWidget):
