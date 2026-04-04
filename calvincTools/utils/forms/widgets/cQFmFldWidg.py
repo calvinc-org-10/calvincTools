@@ -1,16 +1,14 @@
-from calvincTools.utils.cQWidgets import cComboBoxFromDict, cDataList
-from calvincTools.utils.forms.definitions.cQFmConstants import cQFmConstants
-from calvincTools.utils.forms.widgets.cSimpRecFmElement_Base import cSimpRecFmElement_Base
-from calvincTools.utils.strings import str2
-
+from collections.abc import Callable
+from functools import partial
+from typing import Any, Dict, List, Type
 
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import QCheckBox, QComboBox, QDateEdit, QGridLayout, QLabel, QLineEdit, QPlainTextEdit, QPushButton, QTextEdit, QWidget
 
-
-from collections.abc import Callable
-from functools import partial
-from typing import Any, Dict, List, Type
+from calvincTools.utils.cQWidgets import cComboBoxFromDict, cDataList
+from calvincTools.utils.forms.definitions.cQFmConstants import cQFmConstants
+from calvincTools.utils.forms.widgets.cSimpRecFmElement_Base import cSimpRecFmElement_Base
+from calvincTools.utils.strings import str2
 
 
 class cQFmFldWidg(cSimpRecFmElement_Base):

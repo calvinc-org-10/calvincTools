@@ -1,21 +1,21 @@
-from calvincTools.utils.SQLAlcTools import get_primary_key_column
-from sqlalchemy import select
-from sqlalchemy.orm import Session, sessionmaker
-
 from typing import Any, Type
 
-from calvincTools.utils.cQWidgets import cGridWidget, cstdTabWidget
-from calvincTools.utils.forms.definitions.cQFormBtnDef import cQFormBtnDef
-from calvincTools.utils.forms.definitions.cQFormLayout import cQFormLayout
-from calvincTools.utils.forms.forms.cSRFSingleRecordForm import cSRFSingleRecordForm
-from calvincTools.utils.forms.forms.cSRF_FormUI_Base import cSRF_FormUI_Base
-from calvincTools.utils.forms.forms.cSRF_Formdb_Base import cSRF_Formdb_Base
-from calvincTools.utils.forms.widgets.cSimpRecFmElement_Base import cSimpRecFmElement_Base
-
+from sqlalchemy import select
+from sqlalchemy.orm import Session, sessionmaker
 
 from PySide6.QtCore import Slot
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QStatusBar, QVBoxLayout, QWidget
+
+from calvincTools.utils.forms.definitions.cQFormLayout import cQFormLayout
+from calvincTools.utils.forms.definitions.cQFormBtnDef import cQFormBtnDef
+from calvincTools.utils.forms.forms.cSRF_FormUI_Base import cSRF_FormUI_Base
+from calvincTools.utils.forms.forms.cSRF_Formdb_Base import cSRF_Formdb_Base
+from calvincTools.utils.forms.forms.cSRFSingleRecordForm import cSRFSingleRecordForm
+from calvincTools.utils.forms.widgets.cSimpRecFmElement_Base import cSimpRecFmElement_Base
+from calvincTools.utils.SQLAlcTools import get_primary_key_column
+from calvincTools.utils.cQWidgets import cGridWidget, cstdTabWidget
+
 
 from calvincTools.utils.strings import str2
 
@@ -185,8 +185,7 @@ class cSRFRecordList_Record(
 # cSRFRecordList_Record
     def endofclass(self):
         pass
-
-
+####################################################################
 class cSRFRecordList(cSRFSingleRecordForm):     # is cSRFSingleRecordForm = cSRF_Formdb_Base + cSRF_FormUI_Base the right parent?
     """
     Base class for record list subforms. Should be used as a subform within a cSRFMultiRecordWrapper. Inherits from both cSRF_FormUI_Base and cSRF_Formdb_Base to provide both UI and db functionality.
@@ -239,8 +238,6 @@ class cSRFRecordList(cSRFSingleRecordForm):     # is cSRFSingleRecordForm = cSRF
         self._ssnmaker = getattr(parent, '_ssnmaker', None)
         if not self._ssnmaker:
             raise ValueError(f"A sessionmaker must be provided defined in the parent form {parent}")
-
-        self.OLDfieldDefs = getattr(parent, 'fieldDefs', {})
 
         self._parentRec = None  # set by parent form when loading
         self._childRecs:list = []

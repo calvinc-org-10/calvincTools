@@ -1,17 +1,16 @@
-from calvincTools.utils.cQWidgets import cGridWidget, cstdTabWidget
-from calvincTools.utils.forms.definitions.cQFormBtnDef import cQFormBtnDef
-from calvincTools.utils.forms.definitions.cQFormFieldDef import cQFormFieldDef
-from calvincTools.utils.forms.definitions.cQFormLayout import cQFormLayout
-from calvincTools.utils.forms.forms.cSRF_FormUI_Base import cSRF_FormUI_Base
-from calvincTools.utils.forms.widgets.cQFmNameLabel import cQFmNameLabel
+from typing import List
 
-
-import qtawesome
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QPushButton, QStatusBar, QVBoxLayout, QWidget
 
+import qtawesome
 
-from typing import List
+from calvincTools.utils.forms.definitions.cQFormLayout import cQFormLayout
+from calvincTools.utils.forms.definitions.cQFormFieldDef import cQFormFieldDef
+from calvincTools.utils.forms.definitions.cQFormBtnDef import cQFormBtnDef
+from calvincTools.utils.forms.forms.cSRF_FormUI_Base import cSRF_FormUI_Base
+from calvincTools.utils.forms.widgets.cQFmNameLabel import cQFmNameLabel
+from calvincTools.utils.cQWidgets import cGridWidget, cstdTabWidget
 
 
 class cSRFMultiRecordWrapper(cSRF_FormUI_Base):

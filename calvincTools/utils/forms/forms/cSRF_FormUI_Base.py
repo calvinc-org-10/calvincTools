@@ -1,23 +1,21 @@
 #################################################
 # cSRF = calvincTools Simple Record Form classes
 #################################################
-
 # TODO: pretty up NEW RECORD FLAG
-from calvincTools.utils.cQWidgets import cComboBoxFromDict, cDataList
-from calvincTools.utils.forms.definitions.cQFmConstants import cQFmConstants
-from calvincTools.utils.forms.definitions.cQFormBtnDef import cQFormBtnDef
-from calvincTools.utils.forms.definitions.cQFormFieldDef import cQFormFieldDef, cQFormFieldInstance
-from calvincTools.utils.forms.definitions.cQFormLayout import cQFormLayout
-from calvincTools.utils.forms.widgets.cQFmFldWidg import cQFmFldWidg
-from calvincTools.utils.forms.widgets.cQFmLookupWidg import cQFmLookupWidg
 
+from enum import Enum
+from typing import Dict, List
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QGridLayout, QLineEdit, QMessageBox, QStatusBar, QWidget
 
-
-from enum import Enum
-from typing import Dict, List
+from calvincTools.utils.cQWidgets import cComboBoxFromDict, cDataList
+from calvincTools.utils.forms.definitions.cQFmConstants import cQFmConstants
+from calvincTools.utils.forms.definitions.cQFormLayout import cQFormLayout
+from calvincTools.utils.forms.definitions.cQFormFieldDef import cQFormFieldDef, cQFormFieldInstance
+from calvincTools.utils.forms.definitions.cQFormBtnDef import cQFormBtnDef
+from calvincTools.utils.forms.widgets.cQFmFldWidg import cQFmFldWidg
+from calvincTools.utils.forms.widgets.cQFmLookupWidg import cQFmLookupWidg
 
 
 class cSRF_FormUI_Base(QWidget):

@@ -1,17 +1,16 @@
-from calvincTools.utils.SQLAlcTools import get_primary_key_column
-from calvincTools.utils.cQModels import SQLAlchemyTableModel
-from calvincTools.utils.forms.forms.cSRF_Formdb_Base import cSRF_Formdb_Base
-from calvincTools.utils.forms.widgets.cSimpRecFmElement_Base import cSimpRecFmElement_Base
-from calvincTools.utils.strings import str2
-
+from typing import Any, Type
 
 from PySide6.QtWidgets import QTableView, QVBoxLayout
+
 from sqlalchemy import literal, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.sql.elements import ColumnElement
 
-
-from typing import Any, Type
+from calvincTools.utils.forms.forms.cSRF_Formdb_Base import cSRF_Formdb_Base
+from calvincTools.utils.forms.widgets.cSimpRecFmElement_Base import cSimpRecFmElement_Base
+from calvincTools.utils.SQLAlcTools import get_primary_key_column
+from calvincTools.utils.cQModels import SQLAlchemyTableModel
+from calvincTools.utils.strings import str2
 
 
 class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):

@@ -1,14 +1,12 @@
-from calvincTools.utils.cQWidgets import cComboBoxFromDict, cDataList
-from calvincTools.utils.forms.widgets.cSimpRecFmElement_Base import cSimpRecFmElement_Base
-from calvincTools.utils.strings import str2
-
+from typing import Any, Dict, List, Type
+from collections.abc import Callable
 
 from PySide6.QtCore import Qt, Signal, Slot
 from PySide6.QtWidgets import QComboBox, QGridLayout, QLabel, QWidget
 
-
-from collections.abc import Callable
-from typing import Any, Dict, List, Type
+from calvincTools.utils.cQWidgets import cComboBoxFromDict, cDataList
+from calvincTools.utils.forms.widgets.cSimpRecFmElement_Base import cSimpRecFmElement_Base
+from calvincTools.utils.strings import str2
 
 
 class cQFmLookupWidg(cSimpRecFmElement_Base):
