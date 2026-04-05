@@ -1,6 +1,9 @@
 from typing import Any, Type
 
-from PySide6.QtWidgets import QTableView, QVBoxLayout
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QTableView, QVBoxLayout,
+    )
 
 from sqlalchemy import literal, select
 from sqlalchemy.orm import Session, sessionmaker
@@ -46,6 +49,8 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
         parent_linkFld: Any = None,
         session_factory: sessionmaker[Session] | None = None,
         viewClass: Type[QTableView] = QTableView,
+        viewSelectionBehavior: QAbstractItemView.SelectionBehavior = QAbstractItemView.SelectionBehavior.SelectRows,
+        viewSelectionMode: QAbstractItemView.SelectionMode = QAbstractItemView.SelectionMode.ExtendedSelection,
         parent=None,
         *args, **kwargs):
         """Initialize a table-based subform.
@@ -104,6 +109,8 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
 
         self.layoutMain = QVBoxLayout(self)
         self.table = viewClass(parent=self)
+        self.table.setSelectionBehavior(viewSelectionBehavior)
+        self.table.setSelectionMode(viewSelectionMode)
         if ORMmdl is None:
             raise ValueError("ORMmodel must be provided")
         if ssnmkr is None:
@@ -213,6 +220,26 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
             self._parent_linkFld = get_primary_key_column(rec.__class__)
     # get/set parentFK
 
+    # -- view settings --
+    def setViewSelectionBehavior(self, behavior: QAbstractItemView.SelectionBehavior):
+        """Set the selection behavior of the table view.
+
+        Args:
+            behavior: QAbstractItemView.SelectionBehavior value.
+        """
+        self.table.setSelectionBehavior(behavior)
+    def setViewSelectionMode(self, mode: QAbstractItemView.SelectionMode):
+        """Set the selection mode of the table view.
+
+        Args:
+            mode: QAbstractItemView.SelectionMode value.
+        """
+        self.table.setSelectionMode(mode)
+    # end of view settings
+    
+    # end of property and key widget getters/setters
+    ######################################################
+    
 
     # --- Lifecycle hooks ---
     def loadFromRecord(self, rec=None, *caller_conditions):
