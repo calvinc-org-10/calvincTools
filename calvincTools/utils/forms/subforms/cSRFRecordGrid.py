@@ -96,8 +96,9 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
         else:
             self._parent_linkFld = parent_linkFld
         # endif self._parent_linkFld is not None
-        self.setParentLinkFromIncoming = self.parent_linkFld() is None      # if True, when loading from parent record, set parent link field to parent's PK
+        self.setParentLinkFromIncoming = self._parent_linkFld is None      # if True, when loading from parent record, set parent link field to parent's PK
 
+        self._parentRec = None      # set in loadFromRecord
         self._recordList:list = []
         self._deleted_recordList:list = []
 
@@ -170,11 +171,11 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
     def parent_linkFld(self):
         """Get the parent record primary key."""
         pRec = self.parentRec()
-        linkFld = self._parent_linkFld
+        parentRecordLinkField = self._parent_linkFld
         if pRec:
-            retval = getattr(pRec.__class__, linkFld) if isinstance(linkFld, str) else linkFld
+            retval = getattr(pRec.__class__, parentRecordLinkField) if isinstance(parentRecordLinkField, str) else parentRecordLinkField
         else:
-            retval = linkFld
+            retval = parentRecordLinkField
         return retval
     def parent_linkFld_keystr(self, rec):
         if rec is None:
@@ -228,8 +229,8 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
                 raise TypeError(f"Invalid condition: {c!r}")
         conditions = list(caller_conditions)
         PLFkey = self.parent_linkFld_keystr(rec)
-        if PLFkey and self.linkFld():
-            conditions.append(self.linkFld() == PLFkey)
+        if PLFkey and self.linkFld() and rec is not None:
+            conditions.append(self.linkFld() == getattr(rec, PLFkey))
 
         ssnmkr = self.ssnmaker()
         assert ssnmkr is not None, "Sessionmaker must be set before touching the database"
@@ -268,10 +269,11 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
                     setattr(rec, self.linkFld().key, getattr(parntRec, PLFkey)) # type: ignore
                 session.merge(rec)
 
+            # NOT NEEDED!! - the delete is handled by del_row, which removes from the db immediately via the session in that method. We just need to commit here.
             # delete removed
-            for rec in self._deleted_recordList:
-                obj = session.merge(rec)
-                session.delete(obj)
+            # for rec in self._deleted_recordList:
+            #     obj = session.merge(rec)
+            #     session.delete(obj)
 
             session.commit()
         # endwith
@@ -286,9 +288,13 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
 
     def add_row(self):
         """Add a new empty row to the subform table."""
-        row = self.ORMmodel()
+        rowClass = self.ORMmodel()
+        if rowClass is None:
+            raise ValueError("ORMmodel must be set before adding rows")
+        row = rowClass()
         self._recordList.append(row)
-        self.Tblmodel.insertRow(row)
+        newpos = self.Tblmodel.rowCount()
+        self.Tblmodel.insertRow(newpos)
     # add_row
 
     def del_row(self):
@@ -299,16 +305,7 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
             if rec in self._recordList:
                 self._recordList.remove(rec)
                 self._deleted_recordList.append(rec)
-            self.Tblmodel.removeRow(idx.row())
-
-
-            # for idx in sorted(idxs, key=lambda x: x.row(), reverse=True):
-        #     rec = self.Tblmodel.record(idx.row())
-        #     if rec in self._childRecs:
-        #         self._childRecs.remove(rec)
-        #         self._deleted_childRecs.append(rec)
-            # see loadFromRecord for how to add to display area
-            # self.Tblmodel.removeRow(idx.row())
+            self.Tblmodel.removeRow(idx.row())      # this call will also remove the record from thee db
     # del_row
 
     ##########################################

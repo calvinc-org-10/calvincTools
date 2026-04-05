@@ -33,6 +33,13 @@ class cSRFMultiRecordWrapper(cSRF_FormUI_Base):
             self._formname = formname if formname else 'Form'
 
         super().__init__(field_defs=field_defs, parent=parent, *args, **kwargs)
+        
+        # nobody to load records but us...
+        for fd in self._formWidgets.values():
+            wtype = fd.defn.field_type
+            widg = fd.widget
+            if wtype in [cQFormFieldDef.cQFormFieldType.SUBFORM,]:
+                widg.loadRecords()  # type: ignore        # the subforms will handle loading their own records, and the wrapper form will not have any records of its own, as it is just a container for the subforms
     # __init__
 
     ######################################################
@@ -63,14 +70,14 @@ class cSRFMultiRecordWrapper(cSRF_FormUI_Base):
         lblFormName = cQFmNameLabel(self.tr(self._formname), self)
         layoutFormHdr.addWidget(lblFormName)
 
-        newrecFlag = QLabel("New Record", self)
-        fontNewRec = QFont()
-        fontNewRec.setBold(True)
-        fontNewRec.setPointSize(10)
-        fontNewRec.setItalic(True)
-        newrecFlag.setFont(fontNewRec)
-        newrecFlag.setStyleSheet("color: red;")
-        layoutFormHdr.addWidget(newrecFlag)
+        # newrecFlag = QLabel("New Record")
+        # fontNewRec = QFont()
+        # fontNewRec.setBold(True)
+        # fontNewRec.setPointSize(10)
+        # fontNewRec.setItalic(True)
+        # newrecFlag.setFont(fontNewRec)
+        # newrecFlag.setStyleSheet("color: red;")
+        # layoutFormHdr.addWidget(newrecFlag) - no new records in this form, as it is just a wrapper for subforms, so we will let the subforms handle the new record status and display as needed
 
         # put it together
         layoutMain.addLayout(layoutFormHdr)
@@ -91,7 +98,7 @@ class cSRFMultiRecordWrapper(cSRF_FormUI_Base):
             status_bar=statusBar,
 
             lblFormName = lblFormName,
-            newrecFlag = newrecFlag,
+            newrecFlag = None, # newrecFlag, not used in this form as there are no new records in the wrapper form - the subforms will handle their own new record status and display as needed
             )
 
         return rtnval
@@ -165,6 +172,17 @@ class cSRFMultiRecordWrapper(cSRF_FormUI_Base):
         ...
     # initialdisplay()
 
+    ######################################################
+    ########    Record status
+    
+    # def isNewRecord(self):
+    #     """
+    #     "Overridden" here because there is no single record in this form - it is a wrapper for multiple records
+    #     Hence, there are no new records
+    #     The subforms will handle their own new record status, and the wrapper form will not have a new record status of its own, as it is just a container for the subforms
+    #     """
+    #     return False
+    # # isNewRecord
 # cSRFMultiRecordWrapper
     def endofclass(self):
         pass

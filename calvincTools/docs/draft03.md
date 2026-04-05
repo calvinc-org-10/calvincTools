@@ -247,6 +247,29 @@ Persistence style in this branch:
 - loaded entities are often detached (`expunge`) for UI-side editing
 - save paths use merge/add in fresh sessions
 
+## 8A) Current cSRF hierarchy/dependency 
+
+| class | description | inherits from (in cSRF classes) | may have components or attributes of class |
+|---|---|---|---|
+| cQFmConstants | constants |  |  |
+| cQFormLayout | form layout definitions |  | cQFmNameLabel |
+| cQFormFieldDef | form field definitions |  |  |
+| cQFormFieldInstance | runtime field def + widget |  | cQFormFieldDef, QWidget (usually a descendant of cSimpleRecFmElement_Base) |
+| cQFormBtnDef | form button definitions |  |  |
+| cQFmNameLabel | form name label |  |  |
+| cSimpRecFmElement_Base | form field base class |  |  |
+| cQFmFldWidg | form field (data entry) | cSimpRecFmElement_Base | cComboBoxFromDict, cDataList |
+| cQFmLookupWidg | form field for db lookup | cSimpRecFmElement_Base | cComboBoxFromDict, cDataList |
+| cSRF_FormUI_Base | form base class (UI) |  | cComboBoxFromDict, cDataList, cQFormLayout,  cQFormFieldDef, cQFormFieldInstance, cQFormBtnDef, cQFmFldWidg, cQFmLookupWidg |
+| cSRF_Formdb_Base | form base class (db) |  | calvincTools.utils.SQLAlcTools.get_primary_key_column |
+| cSRFSingleRecordForm | single record form | cSRF_FormUI_Base, cSRF_Formdb_Base | cQFormLayout, cQFormFieldDef, cQFormBtnDef, cQFmNameLabel, cSimpRecFmElement_Base from calvincTools.utils.cQWidgets import cGridWidget, cstdTabWidget from calvincTools.utils.messageBoxes import areYouSure |
+| cSRFMultiRecordWrapper | wrapper form for subforms  (no "parent" record on this form) | cSRF_FormUI_Base | cQFormLayout, cQFormFieldDef, cQFormBtnDef, cQFmNameLabel from calvincTools.utils.cQWidgets import cGridWidget, cstdTabWidget |
+| cSRFRecordGrid | subform, table display supports parent record (cSSRFSingleRecordForm) or not (cSRFMultiRecordWrapper) | cSRF_Formdb_Base, cSimpRecFmElement_Base | from calvincTools.utils.cQModels import SQLAlchemyTableModel  from calvincTools.utils.SQLAlcTools import get_primary_key_column |
+| cSRFRecordGridForm  (placeholder) | cSRFMultiRecordWrapper + cSRFRecordGrid | cSRFMultiRecordWrapper |  |
+| cSRFRecordList_Record | single db record presented by cSRFRecordList | cSRF_Formdb_Base, cSRF_FormUI_Base |  |
+| cSRFRecordList | subform, multiple record/form display supports parent record (cSSRFSingleRecordForm) or not (cSRFMultiRecordWrapper) | cSRFSingleRecordForm | cSRFRecordList_Record |
+| cSRFRecordListForm (placeholder) | cSRFMultiRecordWrapper + cSRFRecordList | cSRFMultiRecordWrapper |  |
+
 ## 9) Known caveats in current codebase
 
 - Some docs still reference older pre-rewrite names (`cSimpleRecord*`, `cQdbFormWidgets`).
