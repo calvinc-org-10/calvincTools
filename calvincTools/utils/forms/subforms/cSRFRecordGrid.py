@@ -1,19 +1,33 @@
-from typing import Any, Type
+from typing import Any, Type, List
 
+from PySide6.QtCore import (
+    QTimer,
+ )
 from PySide6.QtWidgets import (
     QAbstractItemView,
-    QTableView, QVBoxLayout,
+    QWidget, QPushButton,
+    QTableView, QVBoxLayout, QHBoxLayout, QGridLayout, 
+    QStatusBar, 
     )
 
 from sqlalchemy import literal, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.sql.elements import ColumnElement
 
-from calvincTools.utils.forms.forms.cSRF_Formdb_Base import cSRF_Formdb_Base
-from calvincTools.utils.forms.widgets.cSimpRecFmElement_Base import cSimpRecFmElement_Base
+import qtawesome
+
+from calvincTools.utils.forms import (
+    cQFmConstants,
+    cSRF_Formdb_Base, cSimpRecFmElement_Base,
+    cQFormLayout, cQFormBtnDef,
+    )
+from calvincTools.utils.cQWidgets import (
+    cGridWidget, cstdTabWidget,
+    )
 from calvincTools.utils.SQLAlcTools import get_primary_key_column
 from calvincTools.utils.cQModels import SQLAlchemyTableModel
 from calvincTools.utils.strings import str2
+from calvincTools.utils import pleaseWriteMe
 
 
 class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
@@ -107,7 +121,14 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
         self._recordList:list = []
         self._deleted_recordList:list = []
 
-        self.layoutMain = QVBoxLayout(self)
+        # build form layout
+        self._layouts: cQFormLayout= self._buildFormLayout()
+
+        self.pages = []    # not used in this class, but needed for the layout - the subform will just use the main page and ignore the tabs
+        self._page_spacing = 2
+        self._buildPages()  # needed to initialize the page map for the layout, even though we won't be using multiple pages in this subform
+        
+        self.layoutMain = self._layouts.main
         self.table = viewClass(parent=self)
         self.table.setSelectionBehavior(viewSelectionBehavior)
         self.table.setSelectionMode(viewSelectionMode)
@@ -117,7 +138,11 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
             raise ValueError("session_factory must be provided")
         self.Tblmodel = SQLAlchemyTableModel(ORMmdl, ssnmkr, literal(False), parent=self)
         self.table.setModel(self.Tblmodel)
-        self.layoutMain.addWidget(self.table)
+        self.FormPage(0).addWidget(self.table)       # type: ignore
+
+        # Add buttons
+        self._addActionButtons()
+
     # __init__
 
 
@@ -239,9 +264,172 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
     
     # end of property and key widget getters/setters
     ######################################################
-    
 
-    # --- Lifecycle hooks ---
+    ######################################################
+    ########    UI  (ripped off directly from cSRF_FormUI_Base, but without the form fields and with a table instead, and with some adjustments to work as a subform within cSRFMultiRecordWrapper)
+
+    def _buildFormLayout(self) -> cQFormLayout:
+        """
+        Build the form layout for this class.
+
+        Returns:
+            QFormLayout instance
+        """
+
+        layoutMain = QVBoxLayout(self)
+        layoutFormHdr = QHBoxLayout()                   # not used here
+        layoutForm = cGridWidget(scrollable=False)
+        layoutFormFixedTop = QGridLayout()              # not used here 
+        layoutFormPages = cstdTabWidget()               # the main page will be used for the table, and the tabs will just be ignored in this subform, but we need to include the tab widget in the layout to match the expected structure of cSRFMultiRecordWrapper  
+        layoutFormFixedBottom = QGridLayout()           # not used here
+        layoutButtons = QVBoxLayout()  
+        statusBar = QStatusBar(self)
+
+        # should this be in _finalizeMainLayout instead?
+        # layoutForm.addLayout(layoutFormFixedTop, 0, 0)
+        layoutForm.addWidget(layoutFormPages, 1, 0)
+        # layoutForm.addLayout(layoutFormFixedBottom, 2, 0)
+
+        # put it together
+        # layoutMain.addLayout(layoutFormHdr)
+        layoutMain.addWidget(layoutForm)
+        layoutMain.addLayout(layoutButtons)
+        # layoutMain.addWidget(statusBar)
+
+        rtnval = cQFormLayout(
+            main=layoutMain,
+            header=layoutFormHdr,
+            form=layoutForm,
+            fixed_top=layoutFormFixedTop,
+            pages=layoutFormPages,
+            fixed_bottom=layoutFormFixedBottom,
+            buttons=layoutButtons,
+            status_bar=statusBar,
+
+            lblFormName = None, # lblFormName, not used in this form as the subform will use the main form's name label - the subform will just display the main form's name and ignore itss own name, but we need to include it in the layout to match the expected structure of cSRFMultiRecordWrapper
+            newrecFlag = None, # newrecFlag, not used in this form as there are no new records in the wrapper form - the subforms will handle their own new record status and display as needed
+            )
+
+        return rtnval
+    # _buildFormLayout
+
+    def _buildPages(self) -> None:
+        """Build the pages (tabs) for the form based on self.pages."""
+        if self.numPages() < 1:
+            # single page form
+            self.pages = ['Main']
+        # endif numPages
+
+        self._page_map = {}
+
+        for n, pg in enumerate(self.pages):
+            pgnm = str(pg)
+            widg, grid = QWidget(), QGridLayout()
+            widg.setContentsMargins(0,0,0,0)
+            grid.setContentsMargins(0,0,0,0)
+            grid.setSpacing(self._page_spacing)
+            widg.setLayout(grid)
+
+            self._layouts.pages.addTab(widg, self.tr(pgnm))
+            self._page_map[str(pgnm)] = grid
+            # self._page_map[n] = grid
+        # endfor page in self.pages
+    # _buildPages
+    def FormPage(self, idx: int | str | cQFmConstants) -> QGridLayout | None:
+        def FormPageByName(name: str):
+            return self._page_map.get(name, None)
+        def FormPageByIndex(idx: int):
+            if 0 <= idx < len(self.pages):
+                return FormPageByName(self.pages[idx])
+            elif idx in [const.value for const in cQFmConstants]:
+                return FormPageSpecial(cQFmConstants(idx))
+            return None
+        def FormPageSpecial(enum: cQFmConstants):
+            if enum is cQFmConstants.pageFixedTop:
+                return self._layouts.fixed_top
+            elif enum is cQFmConstants.pageFixedBottom:
+                return self._layouts.fixed_bottom
+            return None  # other enum values not valid pages
+        ####################################
+        ####################################
+        # --- Enum handling ---
+        if isinstance(idx, cQFmConstants):
+            return FormPageSpecial(idx)
+
+        # --- int index handling ---
+        if isinstance(idx, int):
+            return FormPageByIndex(idx)
+
+        # --- str lookup ---
+        if isinstance(idx, str):
+            return FormPageByName(idx)
+
+        return None
+    # FormPage
+    def numPages(self) -> int:
+        """Return the number of pages/tabs in the form.
+
+        Returns:
+            int: Number of pages.
+        """
+        return len(self.pages)
+        # or return self.layoutForm.count() # mebbe not - see _buildPages
+    # numPages
+
+    def defineActionButtons(self):
+        _iconlib = qtawesome.icon
+        r = [
+            # cQFormBtnDef(text="First", icon=_iconlib("mdi.page-first"), action=self.on_loadfirst_clicked),
+            # cQFormBtnDef(text="Previous", icon= _iconlib("mdi.arrow-left-bold"), action=self.on_loadprev_clicked),
+            # cQFormBtnDef(text="Next", icon=_iconlib("mdi.arrow-right-bold"), action=self.on_loadnext_clicked),
+            # cQFormBtnDef(text="Last", icon=_iconlib("mdi.page-last"), action=self.on_loadlast_clicked),
+            # cQFormBtnDef(type=cQFormBtnDef.ButtonType.NEW_HSECTION),
+            cQFormBtnDef(text="Add", icon=_iconlib("mdi.plus"), action=self.add_row),
+            cQFormBtnDef(text="Save", icon=_iconlib("mdi.content-save"), commitBtn=True, action=self.saveRecords),
+            cQFormBtnDef(text="Delete", icon=_iconlib("mdi.delete"), action=self.del_row),
+            cQFormBtnDef(text="Undo All", icon=_iconlib("mdi.undo"), action=self.on_cancel_clicked),
+            ]
+        return r
+
+    def _addActionButtons(self,
+            ActionButtons:List[cQFormBtnDef]|None = None,
+            ) -> None:
+        """Add action buttons to the form.
+        """
+
+        Actns = ActionButtons if ActionButtons is not None else self.defineActionButtons()
+        if Actns is None:
+            return
+
+        layoutButtons = self._layouts.buttons
+
+        innerLayout = QHBoxLayout()
+
+        for btndef in Actns:
+            if btndef.type == cQFormBtnDef.ButtonType.NEW_VSECTION:
+                layoutButtons.addLayout(innerLayout)
+                innerLayout = QHBoxLayout()
+            elif btndef.type == cQFormBtnDef.ButtonType.NEW_HSECTION:
+                innerLayout.addSpacing(20)
+            elif btndef.type != cQFormBtnDef.ButtonType.NORMAL:
+                raise ValueError(f"unknown button type {btndef.type}")
+            else:
+                btn = QPushButton(btndef.text)
+                if btndef.icon is not None:
+                    btn.setIcon(btndef.icon)
+                if callable(btndef.action):
+                    btn.clicked.connect(btndef.action)
+                if btndef.commitBtn:
+                    self.btnCommit = btn
+                innerLayout.addWidget(btn)
+            # endif button type
+        # endfor btndef om Actns
+        layoutButtons.addLayout(innerLayout)
+    # _addNavButtons
+
+    ######################################################
+    ########    db interaction
+
     def loadFromRecord(self, rec=None, *caller_conditions):
         """Load subrecords for the given parent record."""
         self.setparentRec(rec)
@@ -322,6 +510,8 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
         self._recordList.append(row)
         newpos = self.Tblmodel.rowCount()
         self.Tblmodel.insertRow(newpos)
+        
+        QTimer.singleShot(0, self.table.scrollToBottom)
     # add_row
 
     def del_row(self):
@@ -335,6 +525,20 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
             self.Tblmodel.removeRow(idx.row())      # this call will also remove the record from thee db
     # del_row
 
+    def on_cancel_clicked(self):
+        """Handle cancel/undo action - discard unsaved changes and reload from database."""
+        # verify this is actually what I want for the cancel button in this subform context - maybe just want to discard unsaved changes without reloading from the database, since the user can just navigate away and back to get a fresh load if they want to discard changes?
+        if False:
+            self.loadFromRecord(self.parentRec())
+        elif False:
+            # just clear the unsaved changes without reloading from the database - this will keep the current _recordList but will just refresh the view to discard unsaved changes, which should be sufficient for most use cases in this subform context, since the user can just navigate away and back to get a fresh load if they want to discard changes
+            self._recordList.clear()
+            self._deleted_recordList.clear()
+            self.Tblmodel.refresh()   # just refresh the view to discard unsaved changes - this will not reload from the database, but will just reset the view to match the current state of the _recordList, which should have the unsaved changes removed at this point
+        else:
+            pleaseWriteMe("on_cancel_clicked in cSRFRecordGrid - need to decide on the desired behavior for the cancel button in this subform context - maybe just want to discard unsaved changes without reloading from the database, since the user can just navigate away and back to get a fresh load if they want to discard changes?", parent=self)
+    # on_cancel_clicked
+    
     ##########################################
     ########    Record Status
 

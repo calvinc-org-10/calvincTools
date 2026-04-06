@@ -144,12 +144,10 @@ class cSRF_FormUI_Base(QWidget):
             return self._page_map.get(name, None)
         def FormPageByIndex(idx: int):
             if 0 <= idx < len(self.pages):
-                idx = self.pages[idx]
-            else:
-                if idx in [const.value for const in cQFmConstants]:
-                    return FormPageSpecial(cQFmConstants(idx))
-                return None
-            return self._page_map.get(idx, None)
+                return FormPageByName(self.pages[idx])
+            elif idx in [const.value for const in cQFmConstants]:
+                return FormPageSpecial(cQFmConstants(idx))
+            return None
         def FormPageSpecial(enum: cQFmConstants):
             if enum is cQFmConstants.pageFixedTop:
                 return self._layouts.fixed_top

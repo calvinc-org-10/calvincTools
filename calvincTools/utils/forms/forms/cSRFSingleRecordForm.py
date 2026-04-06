@@ -52,7 +52,8 @@ class cSRFSingleRecordForm(cSRF_FormUI_Base, cSRF_Formdb_Base):
     ########    Layout construction
 
     def _buildFormLayout(self) -> cQFormLayout:
-        """Build the form layout for cSimpleRecordForm.
+        """
+        Build the form layout for this class.
 
         Returns:
             QFormLayout instance
