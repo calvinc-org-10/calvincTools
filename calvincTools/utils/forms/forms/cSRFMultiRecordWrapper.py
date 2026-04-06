@@ -147,6 +147,7 @@ class cSRFMultiRecordWrapper(cSRF_FormUI_Base):
                 innerLayout.addWidget(btn)
             # endif button type
         # endfor btndef om Actns
+        layoutButtons.addLayout(innerLayout)
     # _addNavButtons
 
     def on_close_clicked(self):
