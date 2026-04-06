@@ -232,6 +232,58 @@ Structured return object from `_buildFormLayout()` containing key regions:
 
 When no explicit pages are defined, the framework uses a default single page (`Main`).
 
+<div style="page-break-after: always;"></div>
+## 7+1/2) Standard Layout Structure
+
+The standard layout created by `_buildFormLayout()`:
+
+```
+┌─────────────────────────────────────────────────────┐
+│ Form Header (layoutFormHdr)                         │
+│ ┌─────────────────────┐ ┌───────────────┐           │
+│ │ Form Title          │ │ "New Record"  │           │
+│ └─────────────────────┘ └───────────────┘           │
+├─────────────────────────────────────────────────────┤
+│ Scrollable Form Area (layoutForm)                   │
+│ ┌──────────────────────────────────────────────────┐│
+│ │ layoutFormFixedTop (optional)                    ││
+│ ├──────────────────────────────────────────────────┤│
+│ │ Tab Widget (layoutFormPages)                     ││
+│ │ ┌─────┬─────┬─────┐                              ││
+│ │ │Page1│Page2│Page3│ (Tab = Page)                 ││
+│ │ ├─────┴─────┴─────┴────────────────────────────┐ ││
+│ │ │                                              │ ││
+│ │ │  Form fields arranged in grid                │ ││
+│ │ │                                              │ ││
+│ │ └──────────────────────────────────────────────┘ ││
+│ ├──────────────────────────────────────────────────┤│
+│ │ layoutFormFixedBottom (optional)                 ││
+│ └──────────────────────────────────────────────────┘│
+├─────────────────────────────────────────────────────┤
+│ Button Panel (layoutButtons)                        │
+│ ┌──────────────────┐  ┌──────────────────────────┐  │
+│ │ Navigation       │  │ CRUD Actions             │  │
+│ │ [<<] [<] [>] [>>]│  │ [+] [Save] [Del] [Cancel]│  │
+│ └──────────────────┘  └──────────────────────────┘  │
+├─────────────────────────────────────────────────────┤
+│ Status Bar (statusBar)                              │
+└─────────────────────────────────────────────────────┘
+```
+
+### Layout Components
+
+| Component | Type | Description |
+|-----------|------|-------------|
+| `layoutMain` | `QVBoxLayout` | Root layout containing all other components |
+| `layoutFormHdr` | `QHBoxLayout` | Header with form title and new record flag |
+| `layoutForm` | `cGridWidget` | Scrollable container for form fields |
+| `layoutFormFixedTop` | `QGridLayout` | Optional fixed section above tabs |
+| `layoutFormPages` | `cstdTabWidget` | Tab widget for organizing fields |
+| `layoutFormFixedBottom` | `QGridLayout` | Optional fixed section below tabs |
+| `layoutButtons` | `QHBoxLayout` | Button panel with navigation and CRUD buttons |
+| `statusBar` | `QStatusBar` | Status messages and indicators |
+
+
 ## 8) Single-record lifecycle details
 
 In `cSRFSingleRecordForm`:
