@@ -235,7 +235,8 @@ class cSRFRecordList(cSRFSingleRecordForm):     # is cSRFSingleRecordForm = cSRF
         # if setParentLinkFromIncoming, when loading from parent record, set parent link field to parent's PK
         self.setParentLinkFromIncoming = self._parent_linkFld is None   # if parent_linkFld provided in constructor, only set from incoming if it's None
 
-        self._ssnmaker = getattr(parent, '_ssnmaker', None)
+        if not getattr(self, '_ssnmaker', None):
+            self._ssnmaker = getattr(parent, '_ssnmaker', None)
         if not self._ssnmaker:
             raise ValueError(f"A sessionmaker must be provided defined in the parent form {parent}")
 
@@ -402,7 +403,7 @@ class cSRFRecordList(cSRFSingleRecordForm):     # is cSRFSingleRecordForm = cSRF
     ##########################################
     ########    Read
 
-    def loadFromRecord(self, rec, *caller_conditions):
+    def loadFromRecord(self, rec=None, *caller_conditions):
         """Load subrecords for a parent record, or all records when parent is None."""
         self.setparentRec(rec)
         self._childRecs.clear()

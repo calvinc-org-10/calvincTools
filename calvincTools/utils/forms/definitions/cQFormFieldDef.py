@@ -5,6 +5,7 @@ from enum import Enum
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget
 
+from .cQFmConstants import cQFmConstants
 
 @dataclass(frozen=True)
 class cQFormFieldDef:
@@ -25,7 +26,7 @@ class cQFormFieldDef:
     initval: str = ''
     lblChkBxYesNo: dict[bool, str] | None = None
     
-    page: int | str = 0
+    page: int | str | cQFmConstants = 0
     position: tuple[int, int, int, int] | tuple[int, int] = (0, 0)
 
     # behavior
