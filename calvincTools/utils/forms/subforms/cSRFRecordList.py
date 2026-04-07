@@ -3,7 +3,7 @@ from typing import Any, Type
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
-from PySide6.QtCore import Slot
+from PySide6.QtCore import Slot, QTimer
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QStatusBar, QVBoxLayout, QWidget
 
@@ -395,6 +395,8 @@ class cSRFRecordList(cSRFSingleRecordForm):     # is cSRFSingleRecordForm = cSRF
         QLWitm.setSizeHint(wdgt.sizeHint())
         self.dispArea.addItem(QLWitm)
         self.dispArea.setItemWidget(QLWitm, wdgt)
+
+        QTimer.singleShot(0, self.dispArea.scrollToBottom)
     # _addDisplayRow
 
 
