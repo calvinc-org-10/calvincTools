@@ -750,6 +750,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
                 name='OptionText',
                 label='OptionText',
                 widget_type=QLineEdit,
+                on_change=self.changeField,
                 position=(0,1,1,2),
             ),
             cQFormFieldDef(
@@ -757,6 +758,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
                 label='Top Line',
                 widget_type=QCheckBox,
                 position=(0,3,1,2),
+                on_change=self.changeField,
                 lblChkBxYesNo={True:'YES', False:'NO'},
             ),
             cQFormFieldDef(
@@ -764,6 +766,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
                 label='Btm Line',
                 widget_type=QCheckBox,
                 position=(0,5),
+                on_change=self.changeField,
                 lblChkBxYesNo={True:'YES', False:'NO'},
             ),
             cQFormFieldDef(
@@ -771,18 +774,21 @@ class cWidgetMenuItem(cSRFRecordList_Record):
                 label='Command',
                 widget_type=cComboBoxFromDict,
                 choices=vars(COMMANDNUMBER),
+                on_change=self.changeField,
                 position=(1,0,1,2),
             ),
             cQFormFieldDef(
                 name='Argument',
                 label='Argument',
                 widget_type=QLineEdit,
+                on_change=self.changeField,
                 position=(1,2,1,2),
             ),
             cQFormFieldDef(
                 name='PWord',
                 label='Password',
                 widget_type=QLineEdit,
+                on_change=self.changeField,
                 position=(1,4,1,2),
             ),    
         ]
@@ -926,14 +932,17 @@ class cWidgetMenuItem(cSRFRecordList_Record):
     ##########################################
     ########    Update
 
-    # @Slot()     #type: ignore
-    # # def changeField(self):
-    # def changeField(self, wdgt, dbField, wdgt_value, force=False):
-    #     super().changeField(wdgt, dbField, wdgt_value, force=False)
-    # # changeField
+    @Slot()     
+    # def changeField(self):
+    def changeField(self, wdgt, dbField, wdgt_value, force=False):
+        # is this the correct signature?
+        super().changeField(wdgt, dbField, wdgt_value, force=False)         # type: ignore - this is where the base class handles the actual field update in the record; we just want to hook in after that to trigger any additional behavior needed for menu items
+        # do I need to tell daddy to flip the commit btn?
+    # changeField
 
     @Slot()
     def on_save_clicked(self):
+        # i don't need this for the menu item widgets, do i?
         # super().on_save_clicked()
         self.requestMenuReload.emit()   # let listeners know we need a menu reload
     # on_save_clicked
