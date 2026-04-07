@@ -197,7 +197,7 @@ class cSRFSingleRecordForm(cSRF_FormUI_Base, cSRF_Formdb_Base):
     # TODO: play with positioning of new record flag
     def showNewRecordFlag(self) -> None:
         """Show or hide the 'New Record' flag based on current record state."""
-        nrf = getattr(self, '_newrecFlag', None)
+        nrf = self._layouts.newrecFlag
         if not isinstance(nrf, QWidget):
             return
         nrf.setVisible(self.isNewRecord())

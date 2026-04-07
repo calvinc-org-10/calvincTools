@@ -91,6 +91,8 @@ class cSRFRecordList_Record(
         newrecFlag.setFont(fontNewRec)
         newrecFlag.setStyleSheet("color: red;")
         layoutMain.addWidget(newrecFlag) # at top for visibility - different from main form
+        layoutMain.addWidget(layoutForm)
+        # layoutMain.addWidget(statusBar)
 
         rtnobj: cQFormLayout = cQFormLayout(
             main=layoutMain,
@@ -142,7 +144,7 @@ class cSRFRecordList_Record(
     # TODO: play with positioning of new record flag
     def showNewRecordFlag(self) -> None:
         """Show or hide the 'New Record' flag based on current record state."""
-        nrf = getattr(self, '_newrecFlag', None)
+        nrf = self._layouts.newrecFlag
         if not isinstance(nrf, QWidget):
             return
         nrf.setVisible(self.isNewRecord())
