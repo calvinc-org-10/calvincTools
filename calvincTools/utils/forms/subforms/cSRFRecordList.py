@@ -118,6 +118,10 @@ class cSRFRecordList_Record(
     ######################################################
     ########    Display 
 
+    def initialdisplay(self):
+        return # no-op for subrecord forms since record is passed in constructor and displayed immediately
+    # initialdisplay()
+    
     def fillFormFromcurrRec(self):
         """Load the current record into all form fields.
 
@@ -203,19 +207,26 @@ class cSRFRecordList(cSRFSingleRecordForm):     # is cSRFSingleRecordForm = cSRF
         parent_linkFld: Any = None,
         session_factory: sessionmaker[Session] | None = None,
         viewClass: Type[QListWidget] = QListWidget,
+        recordClass: Type[cSRFRecordList_Record]|None = None,   
         parent:QWidget|None=None,
         *args, **kwargs):
 
         self.vwClass = viewClass
         super().__init__(model=ORMmodel, ssnmaker=session_factory, parent=parent)
 
-        if not self._ORMmodel:
-            if not ORMmodel:
-                raise ValueError("A model class must be provided either in the constructor or as a class attribute")
-            self._ORMmodel = ORMmodel
-        self._primary_key = get_primary_key_column(self._ORMmodel)
+        if getattr(self, '_ORMmodel', None) is None:
+            self.setORMmodel(ORMmodel)
+        if self._ORMmodel is not None:
+            self._primary_key = get_primary_key_column(self._ORMmodel)
 
-        if getattr(self, '_linkFld', None) is not None:
+        if getattr(self, '_recordClass', None) is None:
+            self._recordClass = recordClass
+        if self._recordClass is None:
+            self._recordClass = cSRFRecordList_Record   # default record class for list-based subforms - can be overridden by passing in constructor or setting as class attribute
+
+
+        self._linkFld =  getattr(self, '_linkFld', None)
+        if self._linkFld is not None:
             # nothing to do - already set as class attribute
             pass
         else:
@@ -226,6 +237,7 @@ class cSRFRecordList(cSRFSingleRecordForm):     # is cSRFSingleRecordForm = cSRF
             # endif linkFld is not None
         # endif self._linkFld is not None
 
+        self._parent_linkFld = getattr(self, '_parent_linkFld', None)
         if getattr(self, '_parent_linkFld', None) is not None:
             # nothing to do - already set as class attribute
             pass
@@ -375,7 +387,8 @@ class cSRFRecordList(cSRFSingleRecordForm):     # is cSRFSingleRecordForm = cSRF
     def _addDisplayRow(self, rec):
         """Add a display row for the given record."""
         # does NOT add to _childRecs - that must be done separately (document why)
-        wdgt = cSRFRecordList_Record(rec, parent=self)
+        assert self._recordClass is not None, "recordClass must be set to add display rows"
+        wdgt = self._recordClass(rec, parent=self)
         QLWitm = QListWidgetItem()
         QLWitm.setSizeHint(wdgt.sizeHint())
         self.dispArea.addItem(QLWitm)

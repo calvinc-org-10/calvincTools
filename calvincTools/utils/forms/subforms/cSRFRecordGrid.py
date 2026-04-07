@@ -98,7 +98,8 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
             super(cSimpRecFmElement_Base, self).__init__(parent=parent)
         # endif for super() call
 
-        if getattr(self, '_linkFld', None) is not None:
+        self._linkFld =  getattr(self, '_linkFld', None)
+        if self._linkFld is not None:
             # nothing to do - already set as class attribute
             pass
         else:
@@ -109,6 +110,7 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
             # endif linkFld is not None
         # endif self._linkFld is not None
 
+        self._parent_linkFld = getattr(self, '_parent_linkFld', None)
         if getattr(self, '_parent_linkFld', None) is not None:
             # nothing to do - already set as class attribute
             pass
