@@ -3,6 +3,7 @@
 #################################################
 # TODO: pretty up NEW RECORD FLAG
 
+import inspect
 from enum import Enum
 from typing import Dict, List
 
@@ -286,7 +287,9 @@ class cSRF_FormUI_Base(QWidget):
     # _configure_widget
     def _connect_widget(self, widget: QWidget, defn: cQFormFieldDef):
         if defn.field_type==cQFormFieldDef.cQFormFieldType.SCALAR and hasattr(widget, "signalFldChanged"):
-            widget.signalFldChanged.connect(defn.on_change) if defn.on_change else None     # type: ignore
+            # Always route through _on_field_changed so we can normalize value/transform
+            # and support multiple on_change handler signatures.
+            widget.signalFldChanged.connect(lambda *_args, w=widget, d=defn: self._on_field_changed(w, d))     # type: ignore
 
         if defn.field_type==cQFormFieldDef.cQFormFieldType.LOOKUP and isinstance(widget, cQFmLookupWidg):
             # TODO: use signalFldChanged for lookup widgets as well, and pass the field definition to the handler so that it can handle different lookup fields differently if needed, instead of having separate handlers for each lookup field - this will make the code cleaner and more scalable as we add more lookup fields - we can still have special handling within the handler based on the field definition as needed            
@@ -369,7 +372,40 @@ class cSRF_FormUI_Base(QWidget):
             value = defn.transform(value)
 
         if defn.on_change:
-            defn.on_change(value)
+            handler = defn.on_change
+            sig = inspect.signature(handler)
+            params = list(sig.parameters.values())
+            positional = [
+                p for p in params
+                if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            ]
+            has_varargs = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
+
+            min_args = sum(1 for p in positional if p.default is inspect.Signature.empty)
+            max_args = None if has_varargs else len(positional)
+
+            # Preferred calling conventions in order of context richness.
+            candidates = [
+                (widget, defn.name, value),
+                (value,),
+                tuple(),
+            ]
+            for args in candidates:
+                argc = len(args)
+                if argc < min_args:
+                    continue
+                if max_args is not None and argc > max_args:
+                    continue
+                handler(*args)
+                return
+
+            if min_args <= 2 and (max_args is None or 2 <= max_args):
+                handler(defn.name, value)
+                return
+
+            raise TypeError(
+                f"Unsupported on_change signature for field '{defn.name}': expected 0, 1, 2, or 3 positional args"
+            )
     # _on_field_changed
 
     ##########################################

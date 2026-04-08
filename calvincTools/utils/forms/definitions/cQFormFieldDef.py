@@ -31,7 +31,7 @@ class cQFormFieldDef:
 
     # behavior
     transform: Callable[[Any], Any] | None = None
-    on_change: Callable[[Any], None] | None = None
+    on_change: Callable[..., None] | None = None
 
     # UI options
     readonly: bool = False

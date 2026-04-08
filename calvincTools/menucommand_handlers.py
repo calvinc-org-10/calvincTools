@@ -935,9 +935,8 @@ class cWidgetMenuItem(cSRFRecordList_Record):
     @Slot()     
     # def changeField(self):
     def changeField(self, wdgt, dbField, wdgt_value, force=False):
-        # is this the correct signature?
-        super().changeField(wdgt, dbField, wdgt_value, force=False)         # type: ignore - this is where the base class handles the actual field update in the record; we just want to hook in after that to trigger any additional behavior needed for menu items
         # do I need to tell daddy to flip the commit btn?
+        self.showCommitButton()  # this just shows the commit button, it doesn't actually commit anything - the user has to click the button to commit, which is when the base class on_save_clicked() will run and do the actual commit
     # changeField
 
     @Slot()
@@ -1289,9 +1288,10 @@ class cEditMenu(cSRFSingleRecordForm):
 
     def _addActionButtons(self, ActionButtons=[]) -> None:
         fld = self._formWidgets.get('+Commit')
-        if fld is not None:
-            self.btnCommit = fld.widget
-        return
+        if fld is None:
+            return
+        self.btnCommit = fld.widget
+        #do we have to connect the button here, or will it already be connected by the time we get here?  if we have to connect it here, we have to be careful not to connect it multiple times if _addActionButtons gets called multiple times for some reason - maybe we can set a flag on the form to indicate whether we've already connected the button or not?
     # _addActionButtons
     
     def _buildFormLayout(self) -> cQFormLayout:
@@ -1490,6 +1490,7 @@ class cEditMenu(cSRFSingleRecordForm):
             self.WmenuItm[bNum].requestMenuReload.connect(lambda: self.loadMenu(self.intmenuGroup, self.intmenuID))
             if isinstance(self.MainMenuWindow, cMenuClass):
                 self.WmenuItm[bNum].requestMenuReload.connect(self.MainMenuWindow.refreshMenu)
+            self.WmenuItm[bNum].btnCommit = self.btnCommit   # type: ignore - this is a bit hacky, but it allows the menu item widgets to trigger the commit button on the main form when they need to save changes, without having to implement a more complex signal/slot mechanism for communicating between the widgets and the form
             frameLayout.addWidget(self.WmenuItm[bNum])
         # endfor
 
