@@ -737,10 +737,19 @@ class cWidgetMenuItem(cSRFRecordList_Record):
         return [
             cQFormFieldDef(
                 name='OptionNumber',
-                # label='Option Number',
                 label='Option',
                 widget_type=QLabel,
                 position=(0,0),
+                # readonly=True,
+                # frame=False,
+                # maximum_width=25,
+                focus_policy=Qt.FocusPolicy.NoFocus,
+            ),
+            cQFormFieldDef(
+                name='id',
+                label='id',
+                widget_type=QLabel,
+                position=(0,1),
                 # readonly=True,
                 # frame=False,
                 # maximum_width=25,
@@ -751,7 +760,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
                 label='OptionText',
                 widget_type=QLineEdit,
                 on_change=self.changeField,
-                position=(0,1,1,2),
+                position=(0,2,1,2),
             ),
             cQFormFieldDef(
                 name='TopLine',
@@ -935,16 +944,29 @@ class cWidgetMenuItem(cSRFRecordList_Record):
     @Slot()     
     # def changeField(self):
     def changeField(self, wdgt, dbField, wdgt_value, force=False):
-        # do I need to tell daddy to flip the commit btn?
+        # CHANGE cRec!!!!!!!
+        change crec !!!!!
+        # do I need to tell daddy to flip the commit btn? Ans: seems that's ALL I have to do - the base class on_save_clicked() will handle the actual commit when the user clicks the commit button, but I just need to show the commit button when a change is made.  If I wanted to auto-commit on change, that would be more work, but for now I just want to show the commit button so the user can click it when they're ready to commit.
         self.showCommitButton()  # this just shows the commit button, it doesn't actually commit anything - the user has to click the button to commit, which is when the base class on_save_clicked() will run and do the actual commit
     # changeField
 
-    @Slot()
-    def on_save_clicked(self):
-        # i don't need this for the menu item widgets, do i?
-        # super().on_save_clicked()
-        self.requestMenuReload.emit()   # let listeners know we need a menu reload
-    # on_save_clicked
+    # @Slot()
+    # def on_save_clicked(self):
+    #     # i don't need this for the menu item widgets, do i?
+    #     # super().on_save_clicked()
+    #     self.requestMenuReload.emit()   # let listeners know we need a menu reload
+    # # on_save_clicked
+
+    def writeRecord(self):
+        ssnmaker = self.ssnmaker()
+        model = self.ORMmodel()
+        rec = self.currRec()
+
+        assert ssnmaker is not None, "Sessionmaker must be set before touching the database"
+        assert model is not None, "ORMmodel must be set before touching the database"
+
+        Repository(ssnmaker, model).add(rec)
+        self.requestMenuReload.emit()
 
     ##########################################
     ########    Delete
@@ -1051,7 +1073,6 @@ class cWidgetMenuItem(cSRFRecordList_Record):
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
 class cEditMenu(cSRFSingleRecordForm):
     _ORMmodel = menuItems
     _ssnmaker = get_cMenu_sessionmaker()
@@ -1063,8 +1084,9 @@ class cEditMenu(cSRFSingleRecordForm):
     intmenuID:int = _DFLT_menuID
     
     class wdgtmenuITEM(cWidgetMenuItem):
-        def __init__(self, menuitmRec, parent = None):
-            super().__init__(menuitmRec, parent)
+        # def __init__(self, menuitmRec, parent = None):
+        #     super().__init__(menuitmRec, parent)
+        pass        # all I need to do is inherit from cWidgetMenuItem, the base class will handle the rest - I just want to be able to refer to this specific widget class as self.wdgtmenuITEM in the cEditMenu code, and it needs to be a distinct class so I can set class attributes on it if needed without affecting other potential uses of cWidgetMenuItem elsewhere in the program
     # wdgtmenuITEM
             
     class cEdtMnuDlgGetNewMenuGroupInfo(QDialog):
@@ -1184,7 +1206,7 @@ class cEditMenu(cSRFSingleRecordForm):
         super().__init__(parent=parent)
         self.layoutForm = self._layouts.form
         assert isinstance(self.layoutForm, cGridWidget), "layoutForm is not a cGridWidget"
-        
+
         # self.fldmenuGroup = self.fieldDefs['@MenuGroup_id'].get('widget') 
         self.fldmenuGroup = self._lookupFrmElements['@MenuGroup_id']
         self.fldmenuGroup.replaceDict(self.dictmenuGroups())    # type: ignore
@@ -1329,8 +1351,6 @@ class cEditMenu(cSRFSingleRecordForm):
             newrecFlag=QLabel(),
         )
 
-        self._trythis(fmlyout)
-                
         return fmlyout
     # _buildFormLayout
 
@@ -1356,16 +1376,6 @@ class cEditMenu(cSRFSingleRecordForm):
             # self._page_map[n] = grid
         # endfor page in self.pages
     # _buildPages
-
-    def _trythis(self, layouts:cQFormLayout):
-        # this is just a scratch area for trying out code that may eventually be used in the form, but isn't ready to be added to the form yet
-
-        # the problem - this code puts together layouts correctly AND places the widgets where I want them
-        # hence, it needs intimate access to the layouts structure of the form, which is why I'm putting it here
-        # unless I'm mistaken, I need to do this BEFORE self._layouts is defined (i.e. - before _buildFormLayout returns), because once _layouts is defined, the form layout is set and I can't change it without rebuilding the whole form, which I don't want to do right now
-        # When I place this code in _build_fields(), the widgets don't show up - they are invisible - and I can't figure out why - so I'm putting this code here for now until I can figure out how to make it work
-
-        return
 
     ######################################################
     ########    field and Widget placement
@@ -1665,54 +1675,6 @@ class cEditMenu(cSRFSingleRecordForm):
     ##########################################
     ########    Update
 
-    # @Slot(Any)   #type: ignore
-    # # def changeField(self, wdgt:cQFmFldWidg) -> bool:
-    # def changeField(self, wdgt, dbField, wdgt_value):
-
-    #     cRec = self.currRec()
-
-    #     super().changeField(wdgt, dbField, wdgt_value)
-        
-    #     if wdgt_value or isinstance(wdgt_value,bool):
-    #         if dbField != '+GroupName':  # GroupName belongs to cRec.MenuGroup; persist only at final write
-    #             assert cRec is not None, "Current record is None"
-    #             cRec.setValue(str(dbField), wdgt_value)
-    #         wdgt.setDirty(True)
-        
-    #         return True
-    #     else:
-    #         return False
-    #     # endif wdgt_value
-    # # changeField
-    
-    # def changeInternalVarField(self, wdgt):
-    def changeInternalVarField(self, wdgt, intVarField, wdgt_value):
-        # '+RmvMenu': {'widgetType': QPushButton, 'label': 'Remove Menu', 'clickedHandler': 'rmvMenu', 
-        #     'page': cQFmConstants.pageFixedTop.value, 'position': (1,3), },
-        # '+NewMenuGroup': {'widgetType': QPushButton, 'label': 'New Menu Group', 'clickedHandler': 'createNewMenuGroup', 
-        #     'page': cQFmConstants.pageFixedTop.value, 'position': (0,4), },
-        # '+CopyMenu': {'widgetType': QPushButton, 'label': 'Copy/Move Menu', 'clickedHandler': 'copyMenu', 
-        #     'page': cQFmConstants.pageFixedTop.value, 'position': (1,4), },
-        # '+Commit': {'widgetType': QPushButton, 'label': 'Save Changes', 'clickedHandler': 'writeRecord', 
-        #     'page': cQFmConstants.pageFixedTop.value, 'position': (1,5,2,1), },
-        # assert isinstance(wdgt, cQFmFldWidg), "wdgt is not a cQFmFldWidg"
-        # intVarField = wdgt.modelField()
-        _internalVarFields = {
-            '+RmvMenu': self.rmvMenu, 
-            '+NewMenuGroup': self.createNewMenuGroup, 
-            '+CopyMenu': self.copyMenu, 
-            '+Commit': self.writeRecord,
-            '+GroupName': lambda: None,  # GroupName belongs to cRec.MenuGroup; persist only at final write
-            }
-                
-        if intVarField in _internalVarFields:
-            _internalVarFields[intVarField]()
-        # else:
-        #     no need to raise error
-        #     raise ValueError(f"Unknown internal variable field: {intVarField}")
-        # endif
-    # changeInternalVarField
-
     @Slot()
     def writeRecord(self):
         if not self.isDirty():
@@ -1733,24 +1695,16 @@ class cEditMenu(cSRFSingleRecordForm):
                 return
             groupRec.GroupName = str(fldmenuGroupName.Value())  # type: ignore
             Repository(get_cMenu_sessionmaker(), menuGroups).update(groupRec)
-            # grpstmt = select(menuGroups).where(menuGroups.id == self.intmenuGroup)
-            # with cMenu_Session() as session:
-            #     groupRec = session.execute(grpstmt).scalar_one_or_none()
-            #     if groupRec is None:
-            #         print("Menu group not found:", self.intmenuGroup)
-            #         return
-            #     # update the group name
-            #     groupRec.GroupName = str(fldmenuGroupName.Value())  # type: ignore
-            #     session.merge(groupRec)
-            #     session.commit()
-            # #endwith cMenu_Session() as session:
-        #endif self.isWdgtDirty(self.fldmenuGroupName)
 
         if cRec is not None:
             Repository(get_cMenu_sessionmaker(), menuItems).update(cRec)
-            # with cMenu_Session() as session:
-            #     session.merge(cRec)
-            #     session.commit()
+
+        # save the menu item records
+        for bNum in range(_NUM_menuBUTTONS):
+            w = self.WmenuItm[bNum]
+            if w is not None and w.isDirty():
+                w.writeRecord()
+        # endfor bNum in range(_NUM_menuBUTTONS)
 
         self.setDirty(False)
     # writeRecord

@@ -286,12 +286,14 @@ class cSRF_FormUI_Base(QWidget):
         #enddef maximum width/height
     # _configure_widget
     def _connect_widget(self, widget: QWidget, defn: cQFormFieldDef):
-        if defn.field_type==cQFormFieldDef.cQFormFieldType.SCALAR and hasattr(widget, "signalFldChanged"):
+        # if defn.field_type==cQFormFieldDef.cQFormFieldType.SCALAR and hasattr(widget, "signalFldChanged"):
+        if hasattr(widget, "signalFldChanged"):
             # Always route through _on_field_changed so we can normalize value/transform
             # and support multiple on_change handler signatures.
             widget.signalFldChanged.connect(lambda *_args, w=widget, d=defn: self._on_field_changed(w, d))     # type: ignore
 
-        if defn.field_type==cQFormFieldDef.cQFormFieldType.LOOKUP and isinstance(widget, cQFmLookupWidg):
+        # if defn.field_type==cQFormFieldDef.cQFormFieldType.LOOKUP and isinstance(widget, cQFmLookupWidg):
+        if isinstance(widget, cQFmLookupWidg):
             # TODO: use signalFldChanged for lookup widgets as well, and pass the field definition to the handler so that it can handle different lookup fields differently if needed, instead of having separate handlers for each lookup field - this will make the code cleaner and more scalable as we add more lookup fields - we can still have special handling within the handler based on the field definition as needed            
             lookupHandler = defn.on_change
             if lookupHandler:
@@ -378,7 +380,7 @@ class cSRF_FormUI_Base(QWidget):
             positional = [
                 p for p in params
                 if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
-            ]
+                ]
             has_varargs = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
 
             min_args = sum(1 for p in positional if p.default is inspect.Signature.empty)
@@ -389,7 +391,7 @@ class cSRF_FormUI_Base(QWidget):
                 (widget, defn.name, value),
                 (value,),
                 tuple(),
-            ]
+                ]
             for args in candidates:
                 argc = len(args)
                 if argc < min_args:

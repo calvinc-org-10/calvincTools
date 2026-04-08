@@ -435,13 +435,14 @@ class cSRFSingleRecordForm(cSRF_FormUI_Base, cSRF_Formdb_Base):
 
     @Slot()
     def _on_field_changed(self, widget, defn: cQFormFieldDef):
-        value = widget.Value()
+        super()._on_field_changed(widget, defn)
+        # value = widget.Value()
 
-        if defn.transform:
-            value = defn.transform(value)
+        # if defn.transform:
+        #     value = defn.transform(value)
 
-        if defn.on_change:
-            defn.on_change(value)
+        # if defn.on_change:
+        #     defn.on_change(value)
 
         self.showCommitButton()
     # _on_field_changed
