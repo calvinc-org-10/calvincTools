@@ -720,7 +720,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
     def __init__(self, menuitmRec:menuItems, parent:QWidget = None):   # type: ignore
 
         self.setPrimary_key()   # why is super().__init__() not working to call this in the base class?  need to call it here to initialize the primary key field for the record handling in the base class
-        super().__init__(rec = menuitmRec, parent=parent)
+        super().__init__(rec = menuitmRec, parent=parent) # - commented out because a phantom window gets created with this call here - need to figure out why - but for now, just call the base class init without the rec argument and then set the current record manually
 
         font = QFont()
         font.setPointSize(7)
@@ -808,11 +808,11 @@ class cWidgetMenuItem(cSRFRecordList_Record):
     def _buildFormLayout(self) -> cQFormLayout:
         
         # layoutMain = QVBoxLayout(self)
-        layoutMain = QVBoxLayout()
+        layoutMain = QVBoxLayout(self)
         layoutMain.setContentsMargins(0,0,0,0)
         layoutMain.setSpacing(0)
 
-        layoutFormMain = QHBoxLayout(self)
+        layoutFormMain = QHBoxLayout()
         layoutFormMain.setContentsMargins(0,0,0,0)
         layoutFormMain.setSpacing(0)
 
@@ -826,7 +826,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
         layoutFormMain.addWidget(layoutFormMainLeft)
         layoutFormMain.addLayout(layoutFormMainRight)
 
-        # layoutMain.addLayout(layoutFormMain)
+        layoutMain.addLayout(layoutFormMain)
                 
         rtnobj = cQFormLayout(
             main=layoutMain,
@@ -839,7 +839,8 @@ class cWidgetMenuItem(cSRFRecordList_Record):
             buttons=layoutFormMainRight,
             
             lblFormName=None, # subforms don't have a form name label
-            newrecFlag=QLabel(),
+            # newrecFlag=QLabel(),
+            newrecFlag=None,
         )
         return rtnobj
     # _buildFormLayout
@@ -1089,9 +1090,10 @@ class cEditMenu(cSRFSingleRecordForm):
     intmenuID:int = _DFLT_menuID
     
     class wdgtmenuITEM(cWidgetMenuItem):
-        # def __init__(self, menuitmRec, parent = None):
-        #     super().__init__(menuitmRec, parent)
-        pass        # all I need to do is inherit from cWidgetMenuItem, the base class will handle the rest - I just want to be able to refer to this specific widget class as self.wdgtmenuITEM in the cEditMenu code, and it needs to be a distinct class so I can set class attributes on it if needed without affecting other potential uses of cWidgetMenuItem elsewhere in the program
+        # if this __init__ doesn't exist, the base class __init__ will be called, which expects a menuItems record, but the cEditMenu constructor doesn't have one to give it, so we need this __init__ to prevent the base class __init__ from running and trying to access a non-existent menuItems record
+        # side effect: a phantom window will be created and persist
+        def __init__(self, menuitmRec, parent = None):
+            super().__init__(menuitmRec, parent)
     # wdgtmenuITEM
             
     class cEdtMnuDlgGetNewMenuGroupInfo(QDialog):
