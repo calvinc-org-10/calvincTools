@@ -24,7 +24,7 @@ from sqlalchemy.orm.session import make_transient
 
 from .utils.forms.forms.cSRFSingleRecordForm import cSRFSingleRecordForm
 
-from .utils.forms.widgets.cQFmNameLabel import cQFmNameLabel
+from .utils.forms.widgets import (cQFmNameLabel, cSimpRecFmElement_Base, )
 
 from .utils.forms.definitions.cQFmConstants import cQFmConstants
 
@@ -944,8 +944,6 @@ class cWidgetMenuItem(cSRFRecordList_Record):
     @Slot()     
     # def changeField(self):
     def changeField(self, wdgt, dbField, wdgt_value, force=False):
-        # CHANGE cRec!!!!!!!
-        change crec !!!!!
         # do I need to tell daddy to flip the commit btn? Ans: seems that's ALL I have to do - the base class on_save_clicked() will handle the actual commit when the user clicks the commit button, but I just need to show the commit button when a change is made.  If I wanted to auto-commit on change, that would be more work, but for now I just want to show the commit button so the user can click it when they're ready to commit.
         self.showCommitButton()  # this just shows the commit button, it doesn't actually commit anything - the user has to click the button to commit, which is when the base class on_save_clicked() will run and do the actual commit
     # changeField
@@ -964,6 +962,13 @@ class cWidgetMenuItem(cSRFRecordList_Record):
 
         assert ssnmaker is not None, "Sessionmaker must be set before touching the database"
         assert model is not None, "ORMmodel must be set before touching the database"
+        assert rec is not None, "Current record must be set before writing to the database"
+
+        # write fields to cRec
+        for Wstruc in self._formWidgets.values():
+            widg = Wstruc.widget
+            if isinstance(widg, cSimpRecFmElement_Base):
+                widg.saveToRecord(rec)
 
         Repository(ssnmaker, model).add(rec)
         self.requestMenuReload.emit()
