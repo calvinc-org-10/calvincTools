@@ -59,6 +59,9 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
 
     def __init__(self,
         ORMmodel: Type[Any]|None = None,
+        columns: List[str]|None = None,
+        whereclause: Any = None,
+        orderby: Any = None,
         linkFld: Any = None,
         parent_linkFld: Any = None,
         session_factory: sessionmaker[Session] | None = None,
@@ -98,6 +101,15 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
             super(cSimpRecFmElement_Base, self).__init__(parent=parent)
         # endif for super() call
 
+        if getattr(self, '_columns', None) is None:
+            self._columns = columns
+        
+        if getattr(self, '_whereclause', None) is None:
+            self._whereclause = whereclause
+        
+        if getattr(self, '_orderby', None) is None:
+            self._orderby = orderby
+        
         self._linkFld =  getattr(self, '_linkFld', None)
         if self._linkFld is not None:
             # nothing to do - already set as class attribute
@@ -138,7 +150,14 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
             raise ValueError("ORMmodel must be provided")
         if ssnmkr is None:
             raise ValueError("session_factory must be provided")
-        self.Tblmodel = SQLAlchemyTableModel(ORMmdl, ssnmkr, literal(False), parent=self)
+        self.Tblmodel = SQLAlchemyTableModel(
+            model_class=ORMmdl, 
+            session_factory=ssnmkr, 
+            columns=self._columns,
+            filter=literal(False), 
+            orderby=self._orderby,
+            parent=self
+            )
         self.table.setModel(self.Tblmodel)
         self.FormPage(0).addWidget(self.table)       # type: ignore
 
@@ -449,6 +468,8 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
         if PLFkey and self.linkFld() and rec is not None:
             conditions.append(self.linkFld() == getattr(rec, PLFkey))
 
+        self._whereclause = conditions
+        
         ssnmkr = self.ssnmaker()
         assert ssnmkr is not None, "Sessionmaker must be set before touching the database"
         ORMmdl = self.ORMmodel()
@@ -462,7 +483,7 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
                 session.expunge(r)
             self._recordList.extend(rows)
 
-            self.Tblmodel.refresh(filter=conditions)
+            self.Tblmodel.refresh(columns=self._columns, filter=self._whereclause, orderby=self._orderby)
         #endwith
     def loadRecords(self, *caller_conditions):
         """Load records - assumes no parent record """
