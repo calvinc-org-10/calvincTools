@@ -2,68 +2,14 @@ from collections.abc import Callable
 from functools import partial
 from typing import Any, Dict, List, Type
 
-from PySide6.QtCore import Qt, Signal, Slot
+from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import QCheckBox, QComboBox, QDateEdit, QGridLayout, QLabel, QLineEdit, QPlainTextEdit, QPushButton, QTextEdit, QWidget
-from sqlalchemy import select
-from sqlalchemy.orm import Session, sessionmaker
 
 from calvincTools.utils.cQWidgets import cComboBoxFromDict, cDataList
-from calvincTools.utils.forms.cQFormWidgets import cQFmConstants
+from calvincTools.utils.forms.definitions.cQFmConstants import cQFmConstants
+from calvincTools.utils.forms.widgets.cSimpRecFmElement_Base import cSimpRecFmElement_Base
 from calvincTools.utils.strings import str2
 
-
-class cSimpRecFmElement_Base(QWidget):
-    """Base class for form elements in simple record forms.
-
-    This abstract base class defines the interface that all form elements must implement
-    for loading from and saving to ORM records, as well as tracking dirty state.
-
-    Signals:
-        signalFldChanged: Emitted when the field value changes.
-        dirtyChanged: Emitted when the dirty state changes.
-    """
-    signalFldChanged: Signal = Signal(object)
-    dirtyChanged = Signal(bool)
-
-    def loadFromRecord(self, rec: object) -> None:
-        """Fill widget from ORM record.
-
-        Args:
-            rec: ORM record object to load data from.
-
-        Raises:
-            NotImplementedError: Must be implemented by subclasses.
-        """
-        raise NotImplementedError
-
-    def saveToRecord(self, rec: object) -> None:
-        """Push widget state into ORM record.
-
-        Args:
-            rec: ORM record object to save data to.
-
-        Raises:
-            NotImplementedError: Must be implemented by subclasses.
-        """
-        raise NotImplementedError
-
-    def isDirty(self) -> bool:
-        """Return True if the widget's value differs from what was loaded.
-
-        Returns:
-            bool: True if the value has been modified, False otherwise.
-        """
-        return False
-
-    def setDirty(self, dirty: bool = True, sendSignal:bool = True) -> None:
-        """Mark the field/subform as dirty.
-
-        Args:
-            dirty (bool, optional): Whether to mark as dirty. Defaults to True.
-            sendSignal (bool, optional): Whether to emit dirtyChanged signal. Defaults to True.
-        """
-        pass
-# endclass cSimpRecFmElement_Base
 
 class cQFmFldWidg(cSimpRecFmElement_Base):
 ###########################################
@@ -85,6 +31,7 @@ class cQFmFldWidg(cSimpRecFmElement_Base):
     _modlField: str = ''
     _lblChkYN: QLineEdit|None = None
     _lblChkYNValues: Dict[bool, str]|None = None
+    _compact_spacing: int = 2
 
     # signalFldChanged: Signal = Signal(object)
     # dirtyChanged = Signal(bool)
@@ -96,7 +43,7 @@ class cQFmFldWidg(cSimpRecFmElement_Base):
         lblChkBxYesNo: Dict[bool, str]|None = None,
         alignlblText: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignLeft,
         modlFld: str = '',
-        choices: Dict|List|None = None,
+        choices: Dict | List | Callable | None = None,
         initval: str = '',
         parent: QWidget|None = None,
     ):
@@ -131,28 +78,33 @@ class cQFmFldWidg(cSimpRecFmElement_Base):
     def createWidget(
         self,
         widgType: Type[QWidget],
-        choices: Dict|List|None = None,
+        choices: Dict | List | Callable | None = None,
         initval: str = ''
     ) -> QWidget:
         """Create the appropriate widget based on type."""
+        if callable(choices):
+            choice_listdict:Dict|List|None = choices()
+        else:
+            choice_listdict = choices
+        # endif callable choices
         if issubclass(widgType, cComboBoxFromDict):
-            if not isinstance(choices, dict):
+            if not isinstance(choice_listdict, dict):
                 # raise TypeError("Expected choices to be a dictionary for cComboBoxFromDict")
-                choices = {}
-            return widgType(choices, self)
+                choice_listdict = {}
+            return widgType(choice_listdict, self)
         elif issubclass(widgType, cDataList):
-            if not isinstance(choices, (dict, )):
+            if not isinstance(choice_listdict, (dict)):
                 # raise TypeError("Expected choices to be a dictionary or list for cDataList")
-                choices = {}
-            return widgType(choices, initval, self)
+                choice_listdict = {}
+            return widgType(choice_listdict, initval, self)
         elif issubclass(widgType, QComboBox):
             wdgt = widgType(self)
-            if choices is not None:
-                if isinstance(choices, dict):
-                    for key, value in choices.items():
+            if choice_listdict is not None:
+                if isinstance(choice_listdict, dict):
+                    for key, value in choice_listdict.items():
                         wdgt.addItem(str(value), key)
                 else:
-                    wdgt.addItems([str(item) for item in choices])
+                    wdgt.addItems([str(item) for item in choice_listdict])
             return wdgt
         else:
             return widgType(self)
@@ -373,6 +325,14 @@ class cQFmFldWidg(cSimpRecFmElement_Base):
     ) -> None:
         """Configure the layout based on widget type and alignment."""
         layout = QGridLayout()
+        layout.setContentsMargins(
+            self._compact_spacing,
+            self._compact_spacing,
+            self._compact_spacing,
+            self._compact_spacing,
+        )
+        layout.setHorizontalSpacing(self._compact_spacing)
+        layout.setVerticalSpacing(self._compact_spacing)
 
         # Determine widget positions based on alignment
         if alignlblText == Qt.AlignmentFlag.AlignLeft:
@@ -511,277 +471,5 @@ class cQFmFldWidg(cSimpRecFmElement_Base):
         self.signalFldChanged.emit(args if args else (None,))
     # fldChanged
 # endclass cQFmFldWidg
-
-
-class cQFmLookupWidg(cSimpRecFmElement_Base):
-    """A lookup widget that allows selection from database values.
-
-    This widget provides a dropdown or auto-complete interface populated with
-    distinct values from a database field. It supports both cDataList and
-    cComboBoxFromDict widget types.
-
-    Attributes:
-        _session_factory (sessionmaker[Session]): Database session factory.
-        _model: The ORM model class to lookup from.
-        _lookup_field (str): Name of the field to lookup.
-
-    Signals:
-        signalLookupSelected: Emitted when a lookup value is selected.
-    """
-    """
-    returns a widget that allows the user to select from a list of values
-    returns the text selected, not the key
-
-    NOTE: any choices passed in will be overwritten when refreshChoices() is called
-
-    """
-    signalLookupSelected: Signal = Signal(object)
-
-    def __init__(
-        self,
-        session_factory: sessionmaker[Session],
-        model: type[Any],
-        lookup_field: str,
-        lblText: str|None = None,
-        alignlblText: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignLeft,
-        lookupWidgType: Type[QWidget] = cDataList,
-        choices: Dict | None = {},
-        parent: QWidget | None = None,
-    ):
-        """Initialize a lookup widget.
-
-        Args:
-            session_factory (sessionmaker[Session]): Database session factory.
-            model (type[Any]): ORM model to look up values from.
-            lookup_field (str): Field name to look up.
-            lblText (str | None, optional): Label text. Defaults to None (uses field name).
-            alignlblText (Qt.AlignmentFlag, optional): Label alignment. Defaults to AlignLeft.
-            lookupWidgType (Type[QWidget], optional): Widget type. Defaults to cDataList.
-            choices (Dict | None, optional): Initial choices. Defaults to {}.
-            parent (QWidget | None, optional): Parent widget. Defaults to None.
-        """
-        super().__init__(parent)
-        self._session_factory = session_factory
-        self._model = model
-        self._lookup_field = lookup_field
-        if lblText is None:
-            lblText = lookup_field.replace('_', ' ').title()
-
-        # Create the widget with proper typing
-        if not issubclass(lookupWidgType, (cComboBoxFromDict, cDataList)):
-            lookupWidgType = cDataList  # force it to be a cDataList
-        self._wdgt = self.createWidget(lookupWidgType, choices)
-        lblText = self.tr(lblText)
-
-        # Set up widget-specific behaviors with proper type checking
-        self._setup_widget_behavior(lblText)
-
-        # Set up the layout
-        self._setup_layout(lblText, alignlblText)
-
-        self.refreshChoices()
-    # __init__
-
-    def createWidget(self, widgType: Type[QWidget], choices: Dict | None = {}) -> QWidget:
-        """Create the widget with the specified type, choices, and initial value."""
-        initval = ''
-
-        if issubclass(widgType, cDataList):
-            if not isinstance(choices, (dict, )):
-                # raise TypeError("Expected choices to be a dictionary or list for cDataList")
-                choices = {}
-            return widgType(choices, initval, self)
-        elif issubclass(widgType, cComboBoxFromDict):
-            if not isinstance(choices, dict):
-                # raise TypeError("Expected choices to be a dictionary for cComboBoxFromDict")
-                choices = {}
-            return widgType(choices, self)
-        else:
-            return cDataList({}, '', self)
-        # endif widgType class
-    # createWidget
-
-    def _setup_widget_behavior(self, lblText: str) -> None:
-        """Configure widget-specific behaviors with proper type checking."""
-        wdgt = self._wdgt
-        widgType = type(wdgt)
-
-        if issubclass(widgType, cDataList):
-            self._setup_datalist_behavior(wdgt, lblText)
-        elif issubclass(widgType, (cComboBoxFromDict, QComboBox)):
-            self._setup_combobox_behavior(wdgt, lblText)
-        else:
-            raise TypeError(f'type {widgType} is not implemented')
-        # endif widget type
-    # _setup_widget_behavior
-
-    def _create_datalist_setter(self, wdgt:cDataList|QWidget) -> Callable[[Any], None]:
-        """Create a type-safe setter function for cDataList."""
-        if not isinstance(wdgt, (cDataList, )):
-            raise TypeError("Expected a cDataList widget")
-        def set_datalist_value(value: Any) -> None:
-            # value could be the actual data value, or the display text
-            # assume key value first
-            if value in wdgt.choices:
-                wdgt.setText(wdgt.choices[value])
-                return
-            elif str(value) in wdgt.choices.values():
-                wdgt.setText(str(value))
-                return
-            else:
-                wdgt.setText(str(value))
-                return
-            #endif
-        return set_datalist_value
-    # _create_datalist_setter
-    def _setup_datalist_behavior(self, wdgt: cDataList|QWidget, lblText: str) -> None:
-        """Configure behavior for cDataList widgets."""
-        if not isinstance(wdgt, cDataList):
-            raise TypeError("Expected a cDataList widget")
-        self._label = QLabel(lblText)
-        self.LabelText = self._label.text
-        self._labelSetLblText = self._label.setText
-        self._label.setBuddy(wdgt)
-
-        self.Value = wdgt.selectedItem
-        self.setValue = self._create_datalist_setter(wdgt)
-        self.addChoices = wdgt.addChoices
-        wdgt.editingFinished.connect(self._emitSelection)
-    # _setup_datalist_behavior
-
-    def _create_combobox_setter(self, wdgt:cComboBoxFromDict|QComboBox|QWidget) -> Callable[[Any], None]:
-        """Create a type-safe setter function for combo boxes."""
-        if not isinstance(wdgt, (cComboBoxFromDict, QComboBox)):
-            raise TypeError("Expected a cComboBoxFromDict or QComboBox widget")
-        def set_combobox_value(value: Any) -> None:
-            if wdgt.findData(value) == -1:
-                wdgt.setCurrentText(str(value))
-            else:
-                wdgt.setCurrentIndex(wdgt.findData(value))
-        return set_combobox_value
-    def _setup_combobox_behavior(self, wdgt: cComboBoxFromDict|QComboBox|QWidget, lblText: str) -> None:
-        """Configure behavior for combo box widgets."""
-        if not isinstance(wdgt, (cComboBoxFromDict, QComboBox)):
-            raise TypeError("Expected a cComboBoxFromDict or QComboBox widget")
-        self._label = QLabel(lblText)
-        self.LabelText = self._label.text
-        self._labelSetLblText = self._label.setText
-        self._label.setBuddy(wdgt)
-
-        self.Value = wdgt.currentData
-        self.setValue = self._create_combobox_setter(wdgt)
-
-        if isinstance(wdgt, cComboBoxFromDict):
-            self.replaceDict = wdgt.replaceDict
-
-        wdgt.activated.connect(self._emitSelection)
-    # _setup_combobox_behavior
-
-    def _setup_layout(
-        self,
-        lblText: str,
-        alignlblText: Qt.AlignmentFlag,
-    ) -> None:
-        """Configure the layout based on widget type and alignment."""
-        layout = QGridLayout()
-
-        # Determine widget positions based on alignment
-        if alignlblText == Qt.AlignmentFlag.AlignLeft:
-            positions = ((0, 0), (0, 1))
-        elif alignlblText == Qt.AlignmentFlag.AlignRight:
-            positions = ((0, 1), (0, 0))
-        elif alignlblText == Qt.AlignmentFlag.AlignTop:
-            positions = ((0, 0), (1, 0))
-        elif alignlblText == Qt.AlignmentFlag.AlignBottom:
-            positions = ((1, 0), (0, 0))
-        else:
-            positions = ((0, 0), (0, 1))  # default to left
-        # Place widgets in layout
-        if lblText and self._label:
-            layout.addWidget(self._label, *positions[0])
-            layout.addWidget(self._wdgt, *positions[1])
-        else:
-            layout.addWidget(self._wdgt, 0, 0)
-
-        self.setLayout(layout)
-    # _setup_layout
-
-    @Slot()
-    def refreshChoices(self) -> None:
-        """Reload available values from the database.
-
-        Fetches distinct values from the lookup field and updates the widget's choices.
-        """
-        with self._session_factory() as session:
-            field = getattr(self._model, self._lookup_field)
-            values = session.scalars(select(field).distinct().order_by(field)).all()
-
-        # Populate the list
-        if isinstance(self._wdgt, cDataList):
-            self._wdgt.clear()
-            self._wdgt.addChoices({val: str(val) for val in values if val is not None})
-        if isinstance(self._wdgt, cComboBoxFromDict):
-            self._wdgt.replaceDict({str(val): val for val in values if val is not None})
-    # refreshChoices            
-
-    def _setWidgetValue(self, val):
-        """Best-effort assignment based on widget type."""
-        self.setValue(val)
-
-    def _getWidgetValue(self):
-        """Best-effort retrieval based on widget type."""
-        return self.Value()
-
-    def loadFromRecord(self, rec):
-        """Load the ORM record value into the widget."""
-        val = getattr(rec, self._lookup_field, None) if rec else None
-        self._setWidgetValue(val)
-        # no setting dirty for lookups
-
-    def saveToRecord(self, rec):
-        """Save the lookup widget value to a record.
-
-        Args:
-            rec: ORM record object.
-
-        Note:
-            Lookups don't save their values to the record, so this is a no-op.
-        """
-        # lookups don't save their values to the record
-        return
-
-    # lookups don't become dirty
-    def isDirty(self, widg = None):
-        """Check if the lookup widget is dirty.
-
-        Returns:
-            bool: Always returns False since lookups don't track dirty state.
-        """
-        if widg is None:
-            widg = self
-        return False
-
-    def setDirty(self, dirty:bool = False, sendSignal:bool = False):
-        """Set the dirty state of the lookup widget.
-
-        Args:
-            dirty (bool, optional): Dirty state. Defaults to False.
-            sendSignal (bool, optional): Whether to emit signal. Defaults to False.
-
-        Note:
-            Lookups don't maintain dirty state, so this is a no-op.
-        """
-        return
-
-    @Slot()
-    def _emitSelection(self) -> None:
-        """Emit the selected value."""
-        value = None
-        if isinstance(self._wdgt, (cComboBoxFromDict, QComboBox)):
-            value = self._wdgt.currentData()
-        elif isinstance(self._wdgt, cDataList):
-            value = self._wdgt.selectedItem()
-        self.signalLookupSelected.emit(value)
-    # _emitSelection
-# endclass cQFmLookupWidg
-
+    def endofclass(self):
+        pass

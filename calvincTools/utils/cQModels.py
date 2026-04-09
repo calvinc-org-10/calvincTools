@@ -7,12 +7,13 @@ from PySide6.QtCore import (
     )
 
 import sqlalchemy
-from sqlalchemy import (select, text, )
+from sqlalchemy import (select, text, inspect, )
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import (Session, sessionmaker, )
 from sqlalchemy.dialects import sqlite
 
 from .messageBoxes import pleaseWriteMe
+from .strings import str2
 
 
 class cDictModel(QAbstractTableModel):
@@ -104,7 +105,14 @@ class SQLAlchemyTableModel(QAbstractTableModel):
         _dirty (set): Set of (row, col) tuples that have been modified.
         header (list): List of column names.
     """
-    def __init__(self, model_class:Type[Any], session_factory:sessionmaker, filter = None, orderby = None, parent=None):
+    def __init__(self, 
+        model_class:Type[Any], 
+        session_factory:sessionmaker, 
+        columns:List[str]|None = None,
+        filter = None, 
+        orderby = None, 
+        parent=None
+        ):
         """Initialize the SQLAlchemy table model.
         
         Args:
@@ -123,40 +131,67 @@ class SQLAlchemyTableModel(QAbstractTableModel):
         self.model_class = model_class
         self._data = []
         self._dirty = set()  # {(row, col)} pairs that are dirty
-        # self.header = []
+        # self._columns will be set in refresh() based on the model_class and optional columns argument
         
-        # Set headers based on model class (optional)
-        # if hasattr(model_class, '__table__'):
-        self.header = [column.name for column in model_class.__table__.columns]
-
-        self.refresh(filter, orderby)
+        self.refresh(columns=columns, filter=filter, orderby=orderby)
     
-    def refresh(self, filter = None, orderby = None):
-        """Reload data from the database"""
+    def refresh(self, columns: list[str] | None = None, filter = None, orderby = None):
+        """Reload specific columns or all data from the database"""
         with self.session_factory() as session:
-            stmt = select(self.model_class)
+            # 1. Determine what to select
+            # is columns iterable but not a string? (i.e. list of column names)
+            try:
+                iter(columns)        # type: ignore
+                columns_is_iterable = True
+            except TypeError:
+                columns_is_iterable = False
+            # end try iterating columns
+            
+            if columns_is_iterable and columns is not None:
+                # Map string names to instrumented attributes/columns
+                mapper = inspect(self.model_class)
+                selection = [mapper.attrs[name].expression for name in columns]
+                stmt = select(*selection)
+            else:
+                # Default to selecting the whole model
+                stmt = select(self.model_class)
+
+            # 2. Apply filters
             if filter is not None:
                 if not isinstance(filter, (list, tuple)):
                     filter = [filter]
                 stmt = stmt.where(*filter)
+
+            # 3. Apply ordering
             if orderby is not None:
-                stmt = stmt.order_by(orderby)
-            rows = session.execute(stmt).scalars().all()
-            for row in rows:
-                session.expunge(row)  # detach from session
+                stmt = stmt.order_by(*orderby)
+
+            # 4. Execute and handle results
+            result = session.execute(stmt)
+            
+            if columns:
+                # When selecting specific columns, .scalars() returns the first column.
+                # Use .all() to get a list of Row objects (accessible like tuples or dicts).
+                rows = result.all()
+            else:
+                # When selecting the whole model, we get entity objects that need expunging.
+                rows = result.scalars().all()
+                for row in rows:
+                    session.expunge(row)
 
         self.beginResetModel()
         self._data = rows
-        self._dirty.clear()  # nothing's dirty
+        self._columns = columns or [c.key for c in inspect(self.model_class).mapper.columns]
+        self._dirty.clear()
         self.endResetModel()
-    
+
     def rowCount(self, parent:QModelIndex | QPersistentModelIndex=QModelIndex()):
         """Return number of rows"""
         return len(self._data)
     
     def columnCount(self, parent:QModelIndex | QPersistentModelIndex=QModelIndex()):
         """Return number of columns"""
-        return len(self.header) if self.header else len(self._data[0].__table__.columns)
+        return len(self._columns) if self._columns else len(self._data[0].__table__.columns)
     
     def data(self, index, role:int=Qt.ItemDataRole.DisplayRole):
         """Return data at index for given role"""
@@ -171,8 +206,8 @@ class SQLAlchemyTableModel(QAbstractTableModel):
                 return None
                 
             item = self._data[row]
-            column_name = self.header[col] if self.header else item.__table__.columns[col].name
-            return str(getattr(item, column_name))
+            column_name = self._columns[col]
+            return str2(getattr(item, column_name, ''))
         
         return None
     
@@ -180,8 +215,8 @@ class SQLAlchemyTableModel(QAbstractTableModel):
         """Return header data"""
         if role == Qt.ItemDataRole.DisplayRole:
             if orientation == Qt.Orientation.Horizontal:
-                if section < len(self.header):
-                    return self.header[section]
+                if section < len(self._columns):
+                    return self._columns[section]
                 else:
                     return f"Column {section}"
             elif orientation == Qt.Orientation.Vertical:
@@ -205,7 +240,7 @@ class SQLAlchemyTableModel(QAbstractTableModel):
             return False
             
         item = self._data[row]
-        column_name = self.header[col] if self.header else item.__table__.columns[col].name
+        column_name = self._columns[col] if self._columns else item.__table__.columns[col].name
         
         setattr(item, column_name, value)
         self._dirty.add((row, col))        # mark dirty
@@ -279,7 +314,7 @@ class SQLAlchemyTableModel(QAbstractTableModel):
     def record(self, row:int|None = None):
         """Return the record at the specified row"""
         if row is None:
-            return self.header
+            return self._columns
         if 0 <= row < len(self._data):
             return self._data[row]
         return None
@@ -293,9 +328,9 @@ class SQLAlchemyTableModel(QAbstractTableModel):
     
     def findColumn(self, column_name:str) -> int:
         """Find the index of the specified column name"""
-        if self.header:
+        if self._columns and column_name in self._columns:
             try:
-                return self.header.index(column_name)
+                return self._columns.index(column_name)
             except ValueError:
                 return -1
         return -1
@@ -307,7 +342,7 @@ class SQLAlchemyTableModel(QAbstractTableModel):
             List[Dict[str, Any]]: List where each element is a dictionary mapping
                 column names to values for each row.
         """
-        return [{col: getattr(item, col) for col in self.header} for item in self._data]
+        return [{col: getattr(item, col) for col in self._columns} for item in self._data]
 
     # is this needed?    
     def getDataAsDict(self) -> Dict[str, Any]:
@@ -317,9 +352,9 @@ class SQLAlchemyTableModel(QAbstractTableModel):
             Dict[str, Any]: Dictionary where keys are column names and values are lists
                 of all values in that column.
         """
-        data_dict = {col: [] for col in self.header}
+        data_dict = {col: [] for col in self._columns}
         for item in self._data:
-            for col in self.header:
+            for col in self._columns:
                 data_dict[col].append(getattr(item, col))
         return data_dict
 

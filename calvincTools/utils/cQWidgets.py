@@ -22,8 +22,6 @@ from PySide6.QtWidgets import (
 from sqlalchemy import (select, )
 from sqlalchemy.orm import (Session, sessionmaker, )
 
-from .cQModels import (SQLAlchemyTableModel, )
-
 # from app.database import (get_app_sessionmaker, get_app_session, )
 
 

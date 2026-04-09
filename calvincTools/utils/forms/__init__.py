@@ -1,5 +1,5 @@
-from .cQFormWidgets import *
-from .cQdbFormWidgets import *
-from .cQdbSimpleRecordFormWidgets import *
-from .cQdbSimpleRecordSubFormWidgets import *
-from .cSimpleMultiRecordSubFmWrapperForm import *
+from .definitions import *
+from .widgets import *
+from .forms import *
+from .subforms import *
+
