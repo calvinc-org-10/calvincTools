@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (QApplication, QWidget, QGridLayout, QHBoxLayout, 
         QSpinBox, QButtonGroup, QRadioButton, QGroupBox, 
     QFrame, QSizePolicy, 
     )
-from PySide6.QtSvgWidgets import QSvgWidget
+# from PySide6.QtSvgWidgets import QSvgWidget
 
 from .apphooks import cTools_apphooks
 from .dbmenulist import MenuRecords

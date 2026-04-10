@@ -1,0 +1,9 @@
+from typing import Any, Protocol, Dict
+
+class ValueProtocol(Protocol):
+    def Value(self) -> Any: ...
+    def setValue(self, val: Any) -> None: ...
+
+class LookupDataProviderProtocol(Protocol):
+    def get_choices(self) -> Dict: ...
+

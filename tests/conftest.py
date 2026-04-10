@@ -40,6 +40,29 @@ def another_function(name: str) -> str:
 
 
 @pytest.fixture
+def test_engine():
+    """Create an in-memory SQLite engine for testing."""
+    from calvincTools.models import cMenuBase
+    
+    engine = create_engine("sqlite:///:memory:", echo=False)
+    cMenuBase.metadata.create_all(engine)
+    
+    yield engine
+    
+    engine.dispose()
+
+
+@pytest.fixture
+def test_session(test_engine):
+    """Create a test database session."""
+    TestSessionLocal = sessionmaker(bind=test_engine)
+    
+    session = TestSessionLocal()
+    yield session
+    session.close()
+
+
+@pytest.fixture
 def in_memory_db():
     """Create an in-memory SQLite database for testing."""
     from calvincTools.models import cMenuBase

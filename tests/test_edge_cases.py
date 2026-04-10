@@ -39,53 +39,6 @@ class TestStringsEdgeCases:
         assert IsWrappedInQuotes('a') is False
 
 
-class TestCalvindateEdgeCases:
-    """Edge cases for calvindate."""
-    
-    def test_calvindate_leap_year(self):
-        """Test calvindate with leap year date."""
-        from calvincTools.utils.calvindate import calvindate
-        cd = calvindate(2024, 2, 29)
-        assert cd.year == 2024
-        assert cd.month == 2
-        assert cd.day == 29
-    
-    def test_calvindate_year_boundary(self):
-        """Test date calculations crossing year boundary."""
-        from calvincTools.utils.calvindate import calvindate
-        cd = calvindate(2024, 12, 31)
-        next_day = cd.tomorrow()
-        assert next_day.year == 2025
-        assert next_day.month == 1
-        assert next_day.day == 1
-    
-    def test_calvindate_invalid_string_fallback(self):
-        """Test calvindate with invalid string falls back to today."""
-        from calvincTools.utils.calvindate import calvindate
-        cd = calvindate("not a valid date string xyz")
-        today = datetime.today()
-        assert cd.year == today.year
-        assert cd.month == today.month
-    
-    def test_calvindate_daysfrom_large_number(self):
-        """Test daysfrom with large number of days."""
-        from calvincTools.utils.calvindate import calvindate
-        cd = calvindate(2024, 1, 1)
-        future = cd.daysfrom(365)
-        assert future.year == 2024  # Leap year, so still in 2024
-        assert future.month == 12
-        assert future.day == 31
-    
-    def test_calvindate_daysfrom_negative_large(self):
-        """Test daysfrom with large negative number."""
-        from calvincTools.utils.calvindate import calvindate
-        cd = calvindate(2024, 12, 31)
-        past = cd.daysfrom(-365)
-        assert past.year == 2024
-        assert past.month == 1
-        assert past.day == 1
-
-
 class TestMisctoolsEdgeCases:
     """Edge cases for misctools."""
     

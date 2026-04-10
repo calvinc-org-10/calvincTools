@@ -67,7 +67,7 @@ class UnderConstruction_Dialog(QDialog):
     """
     _svg_constr_barrier = 'assets/svg/under-construction-barrier-icon.svg'
     
-    def __init__(self, parent:QWidget|None = None, constructionMsg:str = '', f:Qt.WindowType = Qt.WindowType.Dialog):
+    def __init__(self, parent = None, constructionMsg:str = '', f:Qt.WindowType = Qt.WindowType.Dialog):
         """Initialize the under construction dialog.
         
         Args:
