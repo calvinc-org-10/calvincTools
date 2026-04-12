@@ -5,8 +5,8 @@ calvincTools - A Python package
 _pkgname='Calvin C Tools'
 _base_ver_major=2
 _base_ver_minor=0
-_base_ver_patch='0'
-_ver_date='2026-04-09'
+_base_ver_patch='1'
+_ver_date='2026-04-11'
 _base_ver = f'{_base_ver_major}.{_base_ver_minor}.{_base_ver_patch}'
 __version__ = _base_ver
 # __version__ = "2026.04.09.0000"         # Use date-based versioning for easier tracking of updates. When package stabilizes, can switch to semantic versioning if desired. Format: YYYY.MM.DD.HHMM
@@ -22,6 +22,7 @@ __author__ = "Calvin C"
 __email__ = "calvinc404@gmail.com"
 
 # Change Log:
+# 2.0.1 - 2026-04-11 - deprecated calvindate class. Replaced with utility functions in utils/dates.py
 # 2.0.0 - 2026-04-02 - rewrite of cQdbRecordForm classes, notably introducing and using
 #               cFormFieldDefs and cFormLayouts to replace dicts. Also restructured Form Class
 #               methods extensively
