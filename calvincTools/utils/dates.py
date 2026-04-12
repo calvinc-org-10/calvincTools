@@ -1,5 +1,3 @@
-from typing import Self
-
 import re
 from datetime import datetime, date, time, timedelta
 from dateutil.parser import parse
