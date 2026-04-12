@@ -1,8 +1,5 @@
-from typing import Self
-
 import re
-import datetime
-from datetime import date, datetime, timedelta
+from datetime import datetime, date, time, timedelta
 from dateutil.parser import parse
 from dateutil.rrule import (
     rrule, rruleset, 
@@ -11,138 +8,63 @@ from dateutil.rrule import (
     )
 
 
-class calvindate(datetime):
-    """ 
-        calvindate extends datetime to add some convenience methods
-        and to allow more flexible construction from various input formats.
-        
-        Construction formats:
-            calvindate()                          # today's date
-            calvindate(year, month, day)          # year, month, day as integers
-            calvindate(month, day)                # month, day as integers; year is current year
-            calvindate(date_string)               # date_string parseable by dateutil.parser
-            calvindate(date_object)               # date_object is a datetime.date or datetime.datetime object
-    """
-    def __new__(cls, *args):
-        raise DeprecationWarning("calvindate class has been removed as of version 1.5.0. Please use datetime and dateutil directly.")   
-        return None
-    # def __init__(self, *args) -> None:
-    # we initialize via __new__ since datetime is immutable (__init__ constructor parameters must be YY,MM,DD, with optional hh,mm,ss,us)
-    # since we want to allow more flexible construction formats, we have to do the work here
-        D = cls._generateDT(*args)
-        return super(calvindate, cls).__new__(cls, D.year, D.month, D.day, D.hour, D.minute, D.second, D.microsecond)
-    # __new__
-    def _generateDT(self, *args) -> datetime:
-        D = datetime.today()        # default to today
-        if len(args) > 3:
-            YY = int(args[0])
-            MM = int(args[1])
-            DD = int(args[2])
-            hh = int(args[3])
-            mm = int(args[4]) if len(args) > 4 else 0
-            ss = int(args[5]) if len(args) > 5 else 0
-            us = int(args[6]) if len(args) > 6 else 0
-            D = datetime(YY,MM,DD,hh,mm,ss,us)
-        elif len(args) == 3:  # year, month, day was passed in
-            YY, MM, DD = map(int, args)
-            D = datetime(YY,MM,DD)
-        elif len(args) == 2:    # month, day passed in , year should be current year
-            YY = date.today().year
-            MM, DD = map(int, args)
-            D = datetime(YY,MM,DD)
-        elif len(args) == 1:    # either a date string or date object passed in
-            if isinstance(args[0],(date, datetime)):
-                D = datetime.combine(args[0], datetime.min.time()) \
-                    if isinstance(args[0], date) and not isinstance(args[0], datetime) else args[0]
-            else:
-                try:
-                    D = parse(str(args[0]))
-                except Exception:
-                    D = datetime.today()                
+def generateDT(*args) -> datetime:
+    D = datetime.today()        # default to today
+    if len(args) > 3:
+        YY = int(args[0])
+        MM = int(args[1])
+        DD = int(args[2])
+        hh = int(args[3])
+        mm = int(args[4]) if len(args) > 4 else 0
+        ss = int(args[5]) if len(args) > 5 else 0
+        us = int(args[6]) if len(args) > 6 else 0
+        D = datetime(YY,MM,DD,hh,mm,ss,us)
+    elif len(args) == 3:  # year, month, day was passed in
+        YY, MM, DD = map(int, args)
+        D = datetime(YY,MM,DD)
+    elif len(args) == 2:    # month, day passed in , year should be current year
+        YY = date.today().year
+        MM, DD = map(int, args)
+        D = datetime(YY,MM,DD)
+    elif len(args) == 1:    # either a date string or date object passed in
+        if isinstance(args[0],(date, datetime)):
+            D = datetime.combine(args[0], datetime.min.time()) \
+                if isinstance(args[0], date) and not isinstance(args[0], datetime) else args[0]
         else:
-            # invalid number of args.  Do nothing; let the default stand
-            pass
-        return D
-    # _generateDT
+            try:
+                D = parse(str(args[0]))
+            except Exception:
+                D = datetime.today()                
+    else:
+        # invalid number of args.  Do nothing; let the default stand
+        pass
+    return D
+# generateDT
 
-    def value(self) -> Self:
-        return self
-    def setValue(self, newdate) -> None:
-        D = self._generateDT(newdate)
-        self = D
-    def as_datetime(self) -> datetime:
-        return datetime(self.year, self.month, self.day, self.hour, self.minute, self.second, self.microsecond)
+def daysfrom(in_date:date, delta:int) -> date:
+    R_dt = in_date + timedelta(days=delta)
+    return R_dt
+def tomorrow(in_date:date) -> date:
+    return daysfrom(in_date, 1)
+def yesterday(in_date:date) -> date:
+    return daysfrom(in_date, -1)
 
-    def daysfrom(self,delta:int) -> Self:
-        R_dt = self + timedelta(days=delta)
-        return R_dt
-    def tomorrow(self) -> Self:
-        return self.daysfrom(1)
-    def yesterday(self) -> Self:
-        return self.daysfrom(-1)
+def nextWorkdayAfter(in_date:date, nonWorkdays={SA,SU}, extraNonWorkdayList={}, include_afterdate=False):
+    in_datetime = datetime.combine(in_date, time.min)
     
-    def nextWorkdayAfter(self, nonWorkdays={SA,SU}, extraNonWorkdayList={}, include_afterdate=False):
-        afterdate = self.as_datetime()
-        
-        excRule = rrule(WEEKLY,dtstart=afterdate,byweekday=nonWorkdays)
-        afterdaysRule = rrule(DAILY,dtstart=afterdate)
+    excRule = rrule(WEEKLY,dtstart=in_datetime,byweekday=nonWorkdays)
+    afterdaysRule = rrule(DAILY,dtstart=in_datetime)
 
-        exclSet = rruleset()
-        exclSet.rrule(afterdaysRule)
-        exclSet.exrule(excRule)
-        # loop extraNonWorkdays into exclSet.exdate
-        for xDate in extraNonWorkdayList:
-            exclSet.exdate(xDate)
+    exclSet = rruleset()
+    exclSet.rrule(afterdaysRule)
+    exclSet.exrule(excRule)
+    # loop extraNonWorkdays into exclSet.exdate
+    for xDate in extraNonWorkdayList:
+        exclSet.exdate(xDate)
 
-        return exclSet.after(afterdate,include_afterdate)
-    
-    # operators
-    # def __comparison_workhorse__(self, RHE, compOpr):
-    #     LHExpr = calvindate(self).as_datetime()
-    #     RHExpr = calvindate(RHE).as_datetime()
-    #     if compOpr == 'lt':
-    #         return LHExpr < RHExpr
-    #     if compOpr == 'le':
-    #         return LHExpr <= RHExpr
-    #     if compOpr == 'eq':
-    #         return LHExpr == RHExpr
-    #     if compOpr == 'ne':
-    #         return LHExpr != RHExpr
-    #     if compOpr == 'gt':
-    #         return LHExpr > RHExpr
-    #     if compOpr == 'ge':
-    #         return LHExpr >= RHExpr
-    #     return False
-    # def __lt__(self, other):
-    #     return self.__comparison_workhorse__(other,'lt')
-    # def __le__(self, other):
-    #     return self.__comparison_workhorse__(other,'le')
-    # def __eq__(self, other):
-    #     return self.__comparison_workhorse__(other,'eq')
-    # def __ne__(self, other):
-    #     return self.__comparison_workhorse__(other,'ne')
-    # def __gt__(self, other):
-    #     return self.__comparison_workhorse__(other,'gt')
-    # def __ge__(self, other):
-    #     return self.__comparison_workhorse__(other,'ge')
-    # def __add__(self, other):
-    #     if isinstance(other, int):
-    #         return self.daysfrom(other)
-    #     else:
-    #         return NotImplemented
-    # def __sub__(self, other):
-    #     if isinstance(other, int):
-    #         return self.daysfrom(-other)
-    #     else:
-    #         return NotImplemented
+    return exclSet.after(in_datetime,include_afterdate)
 
-    def __str__(self) -> str:
-        strfmt = "%Y-%m-%d" if self.hour == 0 and self.minute == 0 and self.second == 0 else "%Y-%m-%d %H:%M:%S"
-        return self.strftime(strfmt)
-    # __str__
-# calvindate 
-
-def IsDateString(datestr):
+def IsDateString(datestr) -> bool:
     try:
         D = parse(datestr)
         return True
@@ -150,7 +72,7 @@ def IsDateString(datestr):
         return False
 # IsDateString
     
-def parse_relative_time(time_string, reference_time=None):
+def parse_relative_time(time_string, reference_time=None) -> datetime:
     """
     Convert relative time strings to datetime objects.
     
@@ -190,9 +112,12 @@ def parse_relative_time(time_string, reference_time=None):
     elif unit == 'year':
         # Approximate: 365 days per year
         return reference_time - timedelta(days=amount * 365)
+    else:
+        return reference_time
+    # endif unit
 # parse_relative_time
 
-def extract_date_from_text(text, current_year=None):
+def extract_date_from_text(text, current_year=None) -> datetime|None:
     """
     Extract dates from natural language text.
     
@@ -239,7 +164,7 @@ def extract_date_from_text(text, current_year=None):
 # extract_date_from_text
 
 
-def parse_flexible_date(date_string):
+def parse_flexible_date(date_string) -> datetime:
     """
     Parse dates in multiple common formats.
     
@@ -271,10 +196,11 @@ def parse_flexible_date(date_string):
     
     # If nothing worked, raise an error
     raise ValueError(f"Unable to parse date: {date_string}")
+    # consider return None - change fn signature if you do that
 # parse_flexible_date
 
 
-def parse_duration(duration_string):
+def parse_duration(duration_string) -> timedelta:
     """
     Parse duration strings into timedelta objects.
     
@@ -297,6 +223,7 @@ def parse_duration(duration_string):
             # H:M:S format
             hours, minutes, seconds = map(int, parts)
             return timedelta(hours=hours, minutes=minutes, seconds=seconds)
+        # end if colon format
     
     # Try unit-based format (1h 30m 45s)
     total_seconds = 0
@@ -320,10 +247,11 @@ def parse_duration(duration_string):
         return timedelta(seconds=total_seconds)
     
     raise ValueError(f"Unable to parse duration: {duration_string}")
+    # consider return timedelta() - change fn signature if you do that
 # parse_duration
 
 
-def parse_iso_week_date(iso_week_string):
+def parse_iso_week_date(iso_week_string) -> datetime:
     """
     Parse ISO week date format: YYYY-Www-D
     

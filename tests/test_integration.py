@@ -3,6 +3,7 @@ import pytest
 from datetime import datetime
 from calvincTools.utils.strings import str2, WrapInQuotes, UnWrapQuotes
 from calvincTools.utils.misctools import show_fns
+from calvincTools.utils.dates import parse_flexible_date
 
 
 class TestIntegrationStringAndDate:
@@ -161,8 +162,8 @@ class TestIntegrationEndToEnd:
         
         # Retrieve and parse
         found = test_session.query(cParameters).filter_by(ParmName="InstallDate").first()
-        # parsed_date = calvindate(found.ParmValue)
+        parsed_date = parse_flexible_date(found.ParmValue)
         
-        # assert parsed_date.year == 2024
-        # assert parsed_date.month == 11
-        # assert parsed_date.day == 1
+        assert parsed_date.year == 2024
+        assert parsed_date.month == 11
+        assert parsed_date.day == 1
