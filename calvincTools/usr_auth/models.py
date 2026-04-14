@@ -154,3 +154,18 @@ class User(UserBase):
                 UserBase.metadata.create_all(engine, tables=[cast(Table, User.__table__)])
         super().__init__(**kw)
 # User
+
+class AnonymousUser(AnonymousUserBase):
+    """
+    Anonymous user model for representing unauthenticated users.
+    Inherit from AnonymousUserMixin to get default implementations for:
+    - is_authenticated, is_active, is_anonymous, get_id()
+    """
+    __tablename__ = 'AnonymousUser'
+    # __tablename__ = cTools_tablenames.get('AnonymousUser', 'anonymous_users')
+
+User_usrauth_not_used = User(
+    username='usr_auth_not_used',
+    first_name='N/A',
+    last_name='N/A',
+)

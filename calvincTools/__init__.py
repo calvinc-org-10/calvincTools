@@ -9,18 +9,21 @@ from .__version__ import (
 # Import main modules here as needed
 # from .module import function
 
+from PySide6.QtGui import QPixmap
+
 from .apphooks import cTools_apphooks
+from .usr_auth.models import User
+from .usr_auth import LoginForm
+from calvincTools.cMenu import cMenu
 
-class calvincTools_init:
-    _cMenu = None
 
-
-    def __init__(self, 
-        usr_auth: bool,
+def calvincTools_init(usr_auth: bool,
         app_sessionmaker=None, 
         FormNameToURL_Map={},
         ExternalWebPageURL_Map={},
+        appname = 'Application',
         appver='',
+        logo: QPixmap|None = None,
         **kwargs
         ):
         """
@@ -28,7 +31,7 @@ class calvincTools_init:
         Pass in structures that calvincTools will need which are cntrolled by calling app
 
         Returns:
-            None
+            Login screen (if usr_auth=True) or menu screen (if usr_auth=False), depending on usr_auth
         """
         ## dirty little secret: this started life as calvincTools_apphooks, but I wanted to add some more app-specific initialization here.
         ## so I renamed it to calvincTools_init, but calvincTools_apphooks still exists and still does the heavy lifting. 
@@ -46,14 +49,20 @@ class calvincTools_init:
         
         # login, if usr_auth is True
         if usr_auth:
-            ...
-            # init_login_manager(app)
-                
-            # Create default Calvin user if not exists
-            # R E M O V E   I N   P R O D U C T I O N   ! ! !
-            # create_calvin(app)
+            init_form = LoginForm(
+                formname=appname + " Login",
+                logo=logo,
+                )
+        else:
+            init_form = cMenu(
+                parent=None,
+                # logo=logo,
+                )
+        # endif usr_auth
+        
+        return init_form
     
-    # implement later
+    # implement later (???)
     # cTools_tables = (None, None, None, None, None)   # will be set by init_cDatabase
     # cTools_bind_key=None, 
     # cTools_tablenames=None, 
@@ -63,3 +72,7 @@ class calvincTools_init:
 
 # calvinCTools_init
 
+def create_calvin():
+    calvinUser = User(
+        username='calvinc111',
+    )
