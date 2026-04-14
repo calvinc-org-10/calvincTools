@@ -93,8 +93,10 @@ class User(UserBase):
 
     id:Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     username:Mapped[str] = mapped_column(String(80), unique=True, nullable=False, index=True)
+    first_name:Mapped[str] = mapped_column(String(80), nullable=False)
+    last_name:Mapped[str] = mapped_column(String(80), nullable=False, index=True)
     email:Mapped[str] = mapped_column(String(120), unique=True, nullable=False, index=True)
-    password_optional:Mapped[bool] = mapped_column(Boolean, default=False)
+    password_optional:Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     password_hash:Mapped[str] = mapped_column(String(255), nullable=False)
     active_status:Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_superuser:Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

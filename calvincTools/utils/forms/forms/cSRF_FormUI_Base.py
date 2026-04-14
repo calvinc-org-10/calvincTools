@@ -43,7 +43,7 @@ class cSRF_FormUI_Base(QWidget):
         elif field_defs is not None:
             self._field_defs = field_defs
         else:
-            self._field_defs: List[cQFormFieldDef] = self.defineFields()
+            self._field_defs: List[cQFormFieldDef] = self.defineFields() or []
         # endif field_defs source
         self._validate_field_defs()
         self._field_defs_by_name = {d.name: d for d in self._field_defs}
@@ -72,7 +72,7 @@ class cSRF_FormUI_Base(QWidget):
     ######################################################
     ########    Define form fields - to be implemented by subclass
 
-    def defineFields(self):
+    def defineFields(self) -> List[cQFormFieldDef]|None:
         """Define the form fields.
 
         This method should be implemented by subclasses to define the form fields

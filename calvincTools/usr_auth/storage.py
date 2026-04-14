@@ -10,10 +10,8 @@ from __future__ import absolute_import
 from .typing import Any, AnyStr, Iterable, List, Mapping, Text, Tuple
 from typing import Type
 
-import sqlite3
 from logging import getLogger
 from abc import ABCMeta, abstractmethod
-from contextlib import closing
 
 from calvincTools.database import (Repository, get_cMenu_sessionmaker)
 
