@@ -22,7 +22,7 @@ class LoginForm(cSRFSingleRecordForm):
     """
     Form for login page.
     """
-    _formname = 'Login'
+    # _formname = 'Login Form'
     _ORMmodel = User
     _ssnmaker = get_cMenu_sessionmaker()
     
@@ -69,18 +69,20 @@ class LoginForm(cSRFSingleRecordForm):
             cQFormFieldDef(
                 name='loginmsg',
                 field_type=cQFormFieldDef.cQFormFieldType.INTERNAL,
-                label='',
+                label=' ',
                 position=(0, 0),
                 widget_type=QLabel,
             ),
             cQFormFieldDef(
                 name='username', 
                 label='Username', 
+                widget_type=QLineEdit,
                 position=(1,0)
                 ),
             cQFormFieldDef(
                 name='password', 
                 label='Password', 
+                widget_type=QLineEdit,
                 position=(2,0),
                 ),
             cQFormFieldDef(
@@ -94,18 +96,21 @@ class LoginForm(cSRFSingleRecordForm):
             cQFormFieldDef(
                 name='greeting',
                 field_type=cQFormFieldDef.cQFormFieldType.INTERNAL,
-                label='',
+                label=' ',
                 position=(6,0),
                 widget_type=QLabel,
             ),
             cQFormFieldDef(
                 name='appnews',
                 field_type=cQFormFieldDef.cQFormFieldType.INTERNAL,
-                label='',
+                label=' ',
                 position=(0, 1, 7, 1),
                 widget_type=QTextEdit,
+                readonly=True,
             ),
         ]
+        
+        return flds
 
     def _build_fields(self):
         flds = super()._build_fields()
@@ -114,21 +119,30 @@ class LoginForm(cSRFSingleRecordForm):
         pwfld = self._formWidgets.get('password')
         if pwfld is not None:
             widg = pwfld.widget
-            assert isinstance(widg, QLineEdit)
-            widg.setEchoMode(QLineEdit.EchoMode.Password)
-            widg.setPlaceholderText('Enter your password')
+            widg.setEchoMode(QLineEdit.EchoMode.Password)   # type: ignore
+            widg.setPlaceholderText('Enter your password')  # type: ignore
         
+        # set appnews background transparent and remove border to make it look more like a label than an edit box
+        appnewsfld = self._formWidgets.get('appnews')
+        if appnewsfld is not None:
+            widg = appnewsfld.widget
+            widg.setStyleSheet("background: transparent; border: none;")  # type: ignore
         
         return flds
         
     def defineActionButtons(self):
         return []
-    
+
+    def showNewRecordFlag(self) -> None:
+        # no, let's not
+        return 
+        
     def _on_login_clicked(self):
         """Handle login button click event."""
         """Perform login logic. Return True if successful, False otherwise."""
         # Placeholder for actual authentication logic
         # send signal to parent or main app to indicate login attempt
+        print("Login button clicked")
         pass
     
     def login(self, username: str, password: str) -> bool:

@@ -23,7 +23,8 @@ class cSRF_Formdb_Base(object):
         ssnmaker: sessionmaker[Session] | None = None,
         *args, **kwargs
         ):
-        super(cSRF_Formdb_Base, self).__init__(*args, **kwargs)
+        # super(cSRF_Formdb_Base, self).__init__(*args, **kwargs)
+        super().__init__()
 
         # set model, primary key
         if self._ORMmodel is not None:

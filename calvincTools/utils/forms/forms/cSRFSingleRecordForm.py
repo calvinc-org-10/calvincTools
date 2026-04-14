@@ -84,6 +84,7 @@ class cSRFSingleRecordForm(cSRF_FormUI_Base, cSRF_Formdb_Base):
         fontNewRec.setItalic(True)
         newrecFlag.setFont(fontNewRec)
         newrecFlag.setStyleSheet("color: red;")
+        newrecFlag.setVisible(False)  # start hidden; will be shown when appropriate
         layoutFormHdr.addWidget(newrecFlag)
 
         # put it together

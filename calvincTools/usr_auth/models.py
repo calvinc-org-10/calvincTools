@@ -1,6 +1,13 @@
-from sqlalchemy.orm import (DeclarativeBase, Mapped, mapped_column, relationship, Session, )
-from sqlalchemy import (Column, Integer, MetaData, String, Boolean, ForeignKey, SmallInteger, UniqueConstraint, inspect, )
+from datetime import datetime
+from typing import Any, cast
 
+from sqlalchemy.orm import (DeclarativeBase, Mapped, mapped_column, relationship, Session, )
+from sqlalchemy import (Table, Column, Integer, MetaData, String, Boolean, DateTime, ForeignKey, SmallInteger, UniqueConstraint, inspect, )
+
+from calvincTools.database import get_cMenu_sessionmaker
+from calvincTools.models import (
+    menuGroups, menuItems,
+    )
 
 ix_naming_convention = {
     "ix": "ix_%(column_0_label)s",
@@ -24,18 +31,18 @@ class UserBase(DeclarativeBase):
     __hash__ = object.__hash__
 
     @property
-    def is_active(self):
+    def is_active(self) -> bool:
         return True
 
     @property
-    def is_authenticated(self):
+    def is_authenticated(self) -> bool:
         return self.is_active
 
     @property
-    def is_anonymous(self):
+    def is_anonymous(self) -> bool:
         return False
 
-    def get_id(self):
+    def get_id(self) -> str:
         try:
             return str(self.id)     #type: ignore
         except AttributeError:
@@ -58,7 +65,6 @@ class UserBase(DeclarativeBase):
             return NotImplemented
         return not equal
 
-
 class AnonymousUserBase(DeclarativeBase):
     """
     This is the default object for representing an anonymous user.
@@ -67,18 +73,18 @@ class AnonymousUserBase(DeclarativeBase):
     metadata = ix_metadata_obj
 
     @property
-    def is_authenticated(self):
+    def is_authenticated(self) -> bool:
         return False
 
     @property
-    def is_active(self):
+    def is_active(self) -> bool:
         return False
 
     @property
-    def is_anonymous(self):
+    def is_anonymous(self) -> bool:
         return True
 
-    def get_id(self):
+    def get_id(self) -> None:
         return
 
 
@@ -88,8 +94,9 @@ class User(UserBase):
     Inherit from UserMixin to get default implementations for:
     - is_authenticated, is_active, is_anonymous, get_id()
     """
-    __bind_key__ =  cTools_bind_key
-    __tablename__ = cTools_tablenames.get('User', 'users')
+    __tablename__ = 'User'
+    _ssnmkr = get_cMenu_sessionmaker()
+    # __tablename__ = cTools_tablenames.get('User', 'users')
 
     id:Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     username:Mapped[str] = mapped_column(String(80), unique=True, nullable=False, index=True)
@@ -111,11 +118,15 @@ class User(UserBase):
     
     def set_password(self, password):
         """Hash and set the user's password."""
-        self.password_hash = generate_password_hash(password)
+        ...
+        # self.password_hash = generate_password_hash(password)
+        
 
     def check_password(self, password):
         """Check if the provided password matches the hash."""
-        verdict = check_password_hash(self.password_hash, password)
+        ...
+        verdict = True  # placeholder - replace with actual password hash check
+        # verdict = check_password_hash(self.password_hash, password)
         return verdict
 
     def has_permission(self, permission_name: str) -> bool:
@@ -128,16 +139,18 @@ class User(UserBase):
     def update_last_login(self):
         """Update the last login timestamp."""
         self.last_login = datetime.now()
-        db_instance.session.commit()
+        # db_instance.session.commit()
 
     def __repr__(self):
         return f'<User {self.username}>'
 
     def __init__(self, **kw: Any):
         """Initialize a user instance."""
-        inspector = inspect(db_instance.engine)
-        if not inspector.has_table(self.__tablename__):
-            # If the table does not exist, create it
-            db_instance.create_all()
+        with self._ssnmkr() as session:
+            engine = session.get_bind()
+            inspector = inspect(engine)
+            if not inspector.has_table(self.__tablename__):
+                # If the table does not exist, create it
+                UserBase.metadata.create_all(engine, tables=[cast(Table, User.__table__)])
         super().__init__(**kw)
 # User
