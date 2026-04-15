@@ -1,6 +1,13 @@
 from typing import (List, Type, Any, )
+from dateutil import parser
+import datetime
 
-from sqlalchemy import (FromClause, Table, Select, select, text, inspect, )
+from sqlalchemy import (
+    FromClause, Table, 
+    Select, select, text, 
+    DateTime,
+    inspect, TypeDecorator, 
+    )
 from sqlalchemy.orm import (Session, sessionmaker, DeclarativeMeta, )
 from sqlalchemy.sql.elements import ClauseElement
 
@@ -154,3 +161,29 @@ def get_primary_key_column(model: Type[Any]) -> Any:
         raise ValueError(f"{model.__name__} must have exactly one primary key")
     return pks[0]
 #enddef get_primary_key_column
+
+class SQLite_FlexibleDateTime(TypeDecorator):
+    """Handles various datetime string formats from SQLite."""
+    impl = DateTime
+    cache_ok = True
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        
+        # If it's already a datetime object, just return it
+        if isinstance(value, datetime.datetime):
+            return value
+            
+        # If it's a string (common in SQLite), attempt flexible parsing
+        try:
+            return parser.parse(value)
+        except (ValueError, TypeError):
+            # Fallback or logging if the format is truly unreadable
+            return None
+
+    def process_bind_param(self, value, dialect):
+        # Ensures that when YOU save data, it stays in standard ISO format
+        if isinstance(value, datetime.datetime):
+            return value
+        return value

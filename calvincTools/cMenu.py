@@ -45,10 +45,6 @@ class cMenu(QWidget):
     FormNameToURL_Map : Dict[str,Tuple[Any,Any]] = {}
     ExternalWebPageURL_Map : Dict[str,str] = {}
     
-    # don't try to do this here - QWidgets cannot be created before QApplication
-    # menuScreen: QWidget = QWidget()
-    # menuLayout: QGridLayout = QGridLayout()
-    # menuButton: Dict[int, QPushButton] = {}
     class menuBUTTON(QPushButton):
         btnNumber:int = 0
         def __init__(self, btnNumber:int):

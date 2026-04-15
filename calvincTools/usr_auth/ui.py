@@ -15,8 +15,6 @@ from calvincTools.database import (get_cMenu_sessionmaker, Repository, )
 from calvincTools.utils.forms import (cSRFSingleRecordForm, cQFormFieldDef)
 from calvincTools.utils.forms.definitions.cQFormLayout import cQFormLayout
 
-from calvincTools.usr_auth import current_user
-
 from .auth import MiniAuth
 from .models import User
 
@@ -148,11 +146,19 @@ class LoginForm(cSRFSingleRecordForm):
     def showNewRecordFlag(self) -> None:
         # no, let's not
         return 
-        
+    
+    def initialdisplay(self):
+        """
+        Initializes a new record and displays it in the form. Also performs any necessary setup for the initial display of the form.
+        """
+        self.initializeRec()
+    # initialdisplay()
+
     def _on_login_clicked(self):
         """Handle login button click event."""
         """Perform login logic. Return True if successful, False otherwise."""
-        
+        from . import current_user
+
         uname = self._formWidgets.get('username').get_value()   # type: ignore
         usrRec = self.userRecord(uname)
         if usrRec is None:
@@ -163,6 +169,8 @@ class LoginForm(cSRFSingleRecordForm):
             self._formWidgets.get('greeting').set_value(f"Welcome, {usrRec.first_name}!")  # type: ignore
             self._formWidgets.get('loginmsg').set_value("")  # type: ignore
             current_user = usrRec
+            # log the login time
+            usrRec.update_last_login()
             # emit signal or call callback to indicate successful login, if needed
             self.login_successful.emit()
             return
@@ -190,6 +198,12 @@ class LoginForm(cSRFSingleRecordForm):
         # Placeholder for actual authentication logic
         return False
 
+    def reset_fields(self):
+        # This one-liner clears the text and moves focus back to the username
+        interactive_fields = ['username', 'password']
+        [field.set_value('') for field in [self._formWidgets[FFF].widget for FFF in interactive_fields]]    # type: ignore
+        self._formWidgets['username'].widget.setFocus()
+
     def userRecord(self, username):
         # type: (Text) -> Any
         modl = self.ORMmodel()
@@ -198,7 +212,7 @@ class LoginForm(cSRFSingleRecordForm):
         
         userwhere = self.ORMmodel().username == username    # type: ignore
         userRecs = Repository(ssnmkr, modl).get_all(userwhere)
-        if userRecs is not None:
+        if userRecs is not None and len(userRecs) > 0:
             return userRecs[0]
         return None
 

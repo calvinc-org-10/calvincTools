@@ -2,9 +2,10 @@ from datetime import datetime
 from typing import Any, cast
 
 from sqlalchemy.orm import (DeclarativeBase, Mapped, mapped_column, relationship, Session, )
-from sqlalchemy import (Table, Column, Integer, MetaData, String, Boolean, DateTime, ForeignKey, SmallInteger, UniqueConstraint, inspect, )
+from sqlalchemy import (Table, Column, Integer, MetaData, String, Boolean, ForeignKey, SmallInteger, UniqueConstraint, inspect, )
 
-from calvincTools.database import get_cMenu_sessionmaker
+from calvincTools.database import (get_cMenu_sessionmaker, Repository, )
+from calvincTools.utils.SQLAlcTools import SQLite_FlexibleDateTime
 from calvincTools.models import (
     menuGroups, menuItems,
     )
@@ -65,7 +66,8 @@ class UserBase(DeclarativeBase):
             return NotImplemented
         return not equal
 
-class AnonymousUserBase(DeclarativeBase):
+# class AnonymousUserBase(DeclarativeBase):
+class AnonymousUserBase(object):
     """
     This is the default object for representing an anonymous user.
     """
@@ -109,8 +111,8 @@ class User(UserBase):
     is_superuser:Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     permissions:Mapped[str] = mapped_column(String(1024), nullable=False, default='')
     menuGroup:Mapped[int] = mapped_column(Integer, ForeignKey(menuGroups.id), nullable=True)
-    date_joined:Mapped[datetime] = mapped_column(DateTime, default=datetime.now, nullable=False)
-    last_login:Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    date_joined:Mapped[datetime] = mapped_column(SQLite_FlexibleDateTime, default=datetime.now, nullable=False)
+    last_login:Mapped[datetime] = mapped_column(SQLite_FlexibleDateTime, nullable=True)
 
     @property
     def is_active(self):
@@ -139,6 +141,7 @@ class User(UserBase):
     def update_last_login(self):
         """Update the last login timestamp."""
         self.last_login = datetime.now()
+        Repository(self._ssnmkr, User).update(self)
         # db_instance.session.commit()
 
     def __repr__(self):
