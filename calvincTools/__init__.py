@@ -12,8 +12,8 @@ from .__version__ import (
 from PySide6.QtGui import QPixmap
 
 from .apphooks import cTools_apphooks
-from .usr_auth.models import User
-from .usr_auth import LoginForm
+from .usr_auth.models import (User, User_usrauth_not_used, )
+from .usr_auth import (LoginForm, current_user)
 from calvincTools.cMenu import cMenu
 
 
@@ -46,21 +46,8 @@ def calvincTools_init(usr_auth: bool,
             appver=appver,
             **kwargs
         )
-        
-        # login, if usr_auth is True
-        if usr_auth:
-            init_form = LoginForm(
-                formname=appname + " Login",
-                logo=logo,
-                )
-        else:
-            init_form = cMenu(
-                parent=None,
-                # logo=logo,
-                )
-        # endif usr_auth
-        
-        return init_form
+
+        return        
     
     # implement later (???)
     # cTools_tables = (None, None, None, None, None)   # will be set by init_cDatabase
@@ -72,7 +59,3 @@ def calvincTools_init(usr_auth: bool,
 
 # calvinCTools_init
 
-def create_calvin():
-    calvinUser = User(
-        username='calvinc111',
-    )

@@ -9,18 +9,20 @@ from __future__ import absolute_import
 import string
 import random
 from hashlib import sha512, sha384, sha256, sha224, sha1, md5
-from .storage import AbstractStorage, SqliteStorage
-from .typing import Text
+# from .storage import AbstractStorage, SqliteStorage
+from .typing import (Text, Any, )
 
+from calvincTools.database import (get_cMenu_sessionmaker, Repository, )
 
 DEFAULT_HASH_FUNC = 'sha512'  # type: str
 
 
 def create_salt(length=8):
     # type: (int) -> str
-    chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
-    return ''.join(random.choice(chars) for _ in range(length))
-
+    # chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
+    # return ''.join(random.choice(chars) for _ in range(length))
+    # at the moment, we don't salt our passwords, but we want to be able to add it in the future if we want, so we'll just return an empty string for now
+    return ''
 
 class MiniAuth(object):
     hash_functions = {
@@ -31,34 +33,41 @@ class MiniAuth(object):
         'md5': md5,
     }
 
-    def __init__(self, db_path, storage=None):
-        # type: (Text, AbstractStorage) -> None
+    def __init__(self, modl:Any, ssnmaker:Any):
         """MiniAuth library, provides methods to modify a local user/password
         DB and methods to verify user information.
         Most operations are idempotant unless specified otherwise.
         """
-        self._db_path = db_path
-        if storage and not isinstance(storage, AbstractStorage):
-            raise ValueError('storage should subclass AbstractStorage')
-        self._storage = storage or SqliteStorage(db_path)  # type: AbstractStorage
-        self._default_hash_func = self._storage.choose_default_hash_func(
-                self.hash_functions.keys()) or DEFAULT_HASH_FUNC  # type: str
+        
+        self._ORMmodl = modl
+        self._ssnmaker = ssnmaker
+        
+    @property
+    def ORMmodel(self):
+        # type: () -> Any
+        return self._ORMmodl
+    @ORMmodel.setter
+    def ORMmodel(self, modl:Any):
+        self._ORMmodl = modl
 
     @property
-    def storage(self):
-        # type: () -> AbstractStorage
-        return self._storage
+    def ssnmaker(self):
+        # type: () -> Any
+        return self._ssnmaker
+    @ssnmaker.setter
+    def ssnmaker(self, ssnmkr:Any):
+        self._ssnmaker = ssnmkr
 
     @property
     def default_hash_func(self):
         # type: () -> str
-        return self._default_hash_func
+        return DEFAULT_HASH_FUNC
 
     def password_hash(self, password, hash_func='', salt=''):
         # type: (Text, str, Text) -> Text
         hash_input = salt + password if salt else password
         if not hash_func:
-            hash_func = self._default_hash_func
+            hash_func = self.default_hash_func
         hash_ = self.hash_functions[hash_func](hash_input.encode('utf-8'))
         return hash_.hexdigest() if hasattr(hash_, 'hexdigest') else str(hash_)
 
@@ -71,13 +80,22 @@ class MiniAuth(object):
         and just was updated.
         """
         if not hash_func:
-            hash_func = self._default_hash_func
+            hash_func = self.default_hash_func
         salt = create_salt()
         password_hash = self.password_hash(password, hash_func, salt)
-        if self.user_exists(username):
-            self._storage.update_record(username, password_hash, hash_func, salt)
+        userRec = self.userRecord(username)
+        if userRec is not None:
+            userRec.password_hash = password_hash
+            Repository(self.ORMmodel, self.ssnmaker).update(userRec)
             return False
-        self._storage.create_record(username, password_hash, hash_func, salt)
+        userRec = self.ORMmodel(
+            username=username,
+            password_hash=password_hash,
+            first_name='',
+            last_name='',
+            email='',
+            )
+        Repository(self.ORMmodel, self.ssnmaker).add(userRec)
         return True
 
     def delete_user(self, username):
@@ -85,8 +103,9 @@ class MiniAuth(object):
         """Delete the user record, returning True if user existed, or False
         otherwise.
         """
-        if self.user_exists(username):
-            self._storage.delete_record(username)
+        userRec = self.userRecord(username)
+        if userRec is not None:
+            Repository(self.ORMmodel, self.ssnmaker).remove(userRec)
             return True
         return False
 
@@ -95,29 +114,46 @@ class MiniAuth(object):
         """Disable the user record, returning True if user existed, or False
         otherwise.
         """
-        if self.user_exists(username):
-            return self._storage.disable_record(username)
+        userRec = self.userRecord(username)
+        if userRec is not None:
+            userRec.active_status = False
+            Repository(self.ORMmodel, self.ssnmaker).update(userRec)
+            return True
         return False
 
     def enable_user(self, username):
         # type: (Text) -> bool
-        if self.user_exists(username):
-            return self._storage.enable_record(username)
+        """Enable the user record, returning True if user existed, or False
+        otherwise.
+        """
+        userRec = self.userRecord(username)
+        if userRec is not None:
+            userRec.active_status = True
+            Repository(self.ORMmodel, self.ssnmaker).update(userRec)
+            return True
         return False
 
-    def user_exists(self, username):
-        # type: (Text) -> bool
-        return self._storage.record_exists(username)
+    def userRecord(self, username):
+        # type: (Text) -> Any
+        userwhere = self.ORMmodel.username == username
+        userRecs = Repository(self.ssnmaker, self.ORMmodel).get_all(userwhere)
+        if userRecs is not None:
+            return userRecs[0]
+        return None
 
     def user_is_disabled(self, username):
         # type: (Text) -> bool
-        record = self._storage.get_record(username)
-        return bool(record.get('disabled', False))
+        userRec = self.userRecord(username)
+        if userRec is None:
+            return False
+        return not userRec.active_status
 
     def verify_user(self, username, password, check_disabled=True):
         # type: (Text, Text, bool) -> bool
-        record = self._storage.get_record(username)
-        if check_disabled and record['disabled']:
+        userRec = self.userRecord(username)
+        if userRec is None:
             return False
-        password_hash = self.password_hash(password, record['hash_func'], record['salt'])
-        return password_hash == record['password']
+        if check_disabled and not userRec.active_status:
+            return False
+        password_hash = self.password_hash(password)
+        return password_hash == userRec.password_hash

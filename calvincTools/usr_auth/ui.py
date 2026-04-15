@@ -1,8 +1,8 @@
 from typing import (
-    Any, List, Type
+    Any, List, Type, Text, 
 )
 
-from PySide6.QtCore import Qt, QObject
+from PySide6.QtCore import (Qt, QObject, Signal, )
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (QWidget, 
     QLabel, QLineEdit, QTextEdit,
@@ -11,10 +11,13 @@ from PySide6.QtWidgets import (QWidget,
 
 from sqlalchemy.orm import Session, sessionmaker
 
-from calvincTools.database import get_cMenu_sessionmaker
+from calvincTools.database import (get_cMenu_sessionmaker, Repository, )
 from calvincTools.utils.forms import (cSRFSingleRecordForm, cQFormFieldDef)
 from calvincTools.utils.forms.definitions.cQFormLayout import cQFormLayout
 
+from calvincTools.usr_auth import current_user
+
+from .auth import MiniAuth
 from .models import User
 
 
@@ -25,6 +28,8 @@ class LoginForm(cSRFSingleRecordForm):
     # _formname = 'Login Form'
     _ORMmodel = User
     _ssnmaker = get_cMenu_sessionmaker()
+    
+    login_successful = Signal()
     
     
     def __init__(self, 
@@ -40,6 +45,7 @@ class LoginForm(cSRFSingleRecordForm):
         
         self._logo = logo
         self._retries = retries
+        self._numtries = 0
         
         super().__init__(
             formname=formname,
@@ -115,6 +121,12 @@ class LoginForm(cSRFSingleRecordForm):
     def _build_fields(self):
         flds = super()._build_fields()
         
+        # set text color of login failure message to red
+        loginmsgfld = self._formWidgets.get('loginmsg')
+        if loginmsgfld is not None:
+            widg = loginmsgfld.widget
+            widg.setStyleSheet("color: red;")  # type: ignore
+        
         # set password field to Password mode
         pwfld = self._formWidgets.get('password')
         if pwfld is not None:
@@ -140,12 +152,78 @@ class LoginForm(cSRFSingleRecordForm):
     def _on_login_clicked(self):
         """Handle login button click event."""
         """Perform login logic. Return True if successful, False otherwise."""
-        # Placeholder for actual authentication logic
-        # send signal to parent or main app to indicate login attempt
-        print("Login button clicked")
-        pass
+        
+        uname = self._formWidgets.get('username').get_value()   # type: ignore
+        usrRec = self.userRecord(uname)
+        if usrRec is None:
+            self.try_again()
+            return
+        pw = self._formWidgets.get('password').get_value()     # type: ignore
+        if self.verify_user(uname, pw):
+            self._formWidgets.get('greeting').set_value(f"Welcome, {usrRec.first_name}!")  # type: ignore
+            self._formWidgets.get('loginmsg').set_value("")  # type: ignore
+            current_user = usrRec
+            # emit signal or call callback to indicate successful login, if needed
+            self.login_successful.emit()
+            return
+        self.try_again()
+    # on_login_clicked
+    
+    def try_again(self):
+        generic_fail_msg = "Login failed. Please check your username and password and try again."
+        self._numtries += 1
+        if self._numtries >= self._retries:
+            self._formWidgets.get('loginmsg').set_value("Maximum login attempts exceeded. Please try again later.")  # type: ignore
+            # disable login button
+            login_btn = self._formWidgets.get('login').widget  # type: ignore
+            login_btn.setEnabled(False)  # type: ignore
+            
+            # better yet, close the form and require reopening to try again, which will reset the retry count and re-enable the button
+            self.close()
+        else:
+            self._formWidgets.get('loginmsg').set_value(generic_fail_msg)  # type: ignore
+        # endif retries
+    # try_again
     
     def login(self, username: str, password: str) -> bool:
         """Perform login logic. Return True if successful, False otherwise."""
         # Placeholder for actual authentication logic
+        return False
+
+    def userRecord(self, username):
+        # type: (Text) -> Any
+        modl = self.ORMmodel()
+        ssnmkr = self.ssnmaker()
+        assert modl is not None and ssnmkr is not None, "ORM model and sessionmaker must be defined"
+        
+        userwhere = self.ORMmodel().username == username    # type: ignore
+        userRecs = Repository(ssnmkr, modl).get_all(userwhere)
+        if userRecs is not None:
+            return userRecs[0]
+        return None
+
+    def verify_user(self, username, password):
+        """
+        verify that the password presented for the user is actually the passwoprd stored
+        returns True if the password is correct or if password_optional=True for the user,
+            False if not or if the user doesn't exist
+
+        Args:
+            username (_type_): _description_
+            password (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        # Placeholder for actual authentication logic
+        # For example, you could query the database for the user and check the password hash
+        usrRec = self.userRecord(username)
+        if usrRec is not None:
+            if not usrRec.is_active:
+                return False
+            if usrRec.password_optional:
+                return True
+            # TODO: start bringing MiniAuth in here - that module duplicates a lot of db touches.
+            miniAuth = MiniAuth(self.ORMmodel(), self.ssnmaker())
+            return miniAuth.verify_user(usrRec.username,  password)
         return False

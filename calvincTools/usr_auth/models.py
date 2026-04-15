@@ -161,11 +161,13 @@ class AnonymousUser(AnonymousUserBase):
     Inherit from AnonymousUserMixin to get default implementations for:
     - is_authenticated, is_active, is_anonymous, get_id()
     """
-    __tablename__ = 'AnonymousUser'
     # __tablename__ = cTools_tablenames.get('AnonymousUser', 'anonymous_users')
+    ...
 
 User_usrauth_not_used = User(
+    id=-1,
     username='usr_auth_not_used',
     first_name='N/A',
     last_name='N/A',
+    menuGroup=-1,
 )
