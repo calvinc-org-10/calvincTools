@@ -1,11 +1,14 @@
-from typing import (Any, Dict, List, Optional, )
+from typing import (TYPE_CHECKING, Any, Dict, List, Optional, )
 
 from sqlalchemy import Row, RowMapping, Select, Table, select, text
 
-from .menucommand_constants import (MENUCOMMANDS, COMMANDNUMBER, )
-from .database import get_cMenu_session, get_cMenu_sessionmaker
+if TYPE_CHECKING:
+    from calvincTools.models import menuGroups, menuItems
 
-from .utils import (retListofQSQLRecord, recordsetList, select_with_join_excluding, )
+from .menucommand_constants import (MENUCOMMANDS, COMMANDNUMBER, )
+from ..database import get_cMenu_session, get_cMenu_sessionmaker
+
+from ..utils import (retListofQSQLRecord, recordsetList, select_with_join_excluding, )
 
 # self, menuID: str, menuName: str, menuItems:Dict[int,Dict]):
 # {'keys': {'MenuGroup': 1, 'MenuID': 0, 'OptionNumber': 0}, 
@@ -38,14 +41,19 @@ newmenu_menulist = [
 ]
 
 
-from .models import menuGroups, menuItems
-
 class MenuRecords:
     """A class for managing menu items in the database."""
     # all methods of this class are classmethods
-    
-    _tbl = menuItems
-    _tblGroup = menuGroups
+    _tbl: Optional[type['menuItems']] = None
+    _tblGroup: Optional[type['menuGroups']] = None
+
+    @classmethod
+    def _ensure_tables_loaded(cls) -> None:
+        """Lazy load the table references to avoid circular imports."""
+        if cls._tbl is None:
+            from calvincTools.models import menuGroups, menuItems
+            cls._tbl = menuItems
+            cls._tblGroup = menuGroups
 
     # def __init__(self):
     #     self.session = None
@@ -63,8 +71,10 @@ class MenuRecords:
     #         self.session.close()
 
     @classmethod
-    def create(cls, persist:bool = True, **kwargs) -> menuItems:
+    def create(cls, persist:bool = True, **kwargs):
         """Create a new menu item record."""
+        cls._ensure_tables_loaded()
+        assert cls._tbl is not None, "MenuRecords class not properly initialized with table reference."
         new_item = cls._tbl(**kwargs)
         if persist:
             with get_cMenu_session() as session:
@@ -74,15 +84,19 @@ class MenuRecords:
         return new_item
     
     @classmethod
-    def get(cls, record_id: int) -> Optional[menuItems]:
+    def get(cls, record_id: int):
         """Get a menu item by its primary key."""
+        cls._ensure_tables_loaded()
+        assert cls._tbl is not None, "MenuRecords class not properly initialized with table reference."
         with get_cMenu_session() as session:
             return session.get(cls._tbl, record_id)
         
     
     @classmethod
-    def update(cls, record_id: int, **kwargs) -> Optional[menuItems]:
+    def update(cls, record_id: int, **kwargs):
         """Update an existing menu item record."""
+        cls._ensure_tables_loaded()
+        assert cls._tbl is not None, "MenuRecords class not properly initialized with table reference."
         with get_cMenu_session() as session:
             item = session.get(cls._tbl, record_id)
             if item:
@@ -95,6 +109,8 @@ class MenuRecords:
     @classmethod
     def delete(cls, record_id: int) -> bool:
         """Delete a menu item record."""
+        cls._ensure_tables_loaded()
+        assert cls._tbl is not None, "MenuRecords class not properly initialized with table reference."
         with get_cMenu_session() as session:
             item = session.get(cls._tbl, record_id)
             if item:
@@ -106,6 +122,8 @@ class MenuRecords:
     @classmethod
     def menuAttr(cls, mGroup: int, mID: int, Opt: int, AttrName: str) -> Any:
         """Get a specific attribute from a menu item."""
+        cls._ensure_tables_loaded()
+        assert cls._tbl is not None, "MenuRecords class not properly initialized with table reference."
         stmt = select(getattr(cls._tbl, AttrName)).where(
             cls._tbl.MenuGroup_id == mGroup,
             cls._tbl.MenuID == mID,
@@ -119,6 +137,8 @@ class MenuRecords:
         """
         Returns the minimum MenuID for the given MenuGroup.
         """
+        cls._ensure_tables_loaded()
+        assert cls._tbl is not None, "MenuRecords class not properly initialized with table reference."
         stmt = select(cls._tbl.MenuID).where(
             cls._tbl.MenuGroup_id == mGroup,
             cls._tbl.OptionNumber == 0
@@ -129,6 +149,8 @@ class MenuRecords:
 
     @classmethod
     def dfltMenuID_forGroup(cls, mGroup:int) -> Optional[int]:
+        cls._ensure_tables_loaded()
+        assert cls._tbl is not None, "MenuRecords class not properly initialized with table reference."
         stmt = select(cls._tbl.MenuID).where(
             cls._tbl.MenuGroup_id == mGroup,
             cls._tbl.Argument.ilike('default'),
@@ -146,6 +168,8 @@ class MenuRecords:
         """
         Returns the minimum MenuGroup.
         """
+        cls._ensure_tables_loaded()
+        assert cls._tbl is not None, "MenuRecords class not properly initialized with table reference."
         stmt = select(cls._tbl.MenuGroup_id).order_by(cls._tbl.MenuGroup_id.asc())
         with get_cMenu_session() as session:
             retval = session.scalars(stmt).first()
@@ -154,6 +178,9 @@ class MenuRecords:
     @classmethod
     def menuDict(cls, mGroup:int, mID:int) ->  Dict[int,Dict[str, Any]]:
         # use selectjoin
+        cls._ensure_tables_loaded()
+        assert cls._tbl is not None, "MenuRecords class not properly initialized with table reference."
+        assert cls._tblGroup is not None, "MenuRecords class not properly initialized with table reference."
         stmt = (
             select(*cls._tbl.__table__.columns)
             .join(cls._tblGroup, cls._tbl.MenuGroup_id == cls._tblGroup.id)
@@ -174,16 +201,15 @@ class MenuRecords:
     def menuGroupsDict(cls) -> Dict[str, int]:
         """Return a dictionary mapping GroupName to id for all menu groups."""
         # TODO: generalize this to work with any table (return a dict of {id:record})
-        listmenuGroups = recordsetList(menuGroups, retFlds=['GroupName', 'id'], ssnmaker=get_cMenu_sessionmaker(), orderby='GroupName')
-        # stmt = select(menuGroups.GroupName, menuGroups.id).select_from(menuGroups).order_by(menuGroups.GroupName)
-        # with get_cMenu_session() as session:
-        #     retDict = {row.GroupName: row.id for row in session.execute(stmt).all()}
+        cls._ensure_tables_loaded()
+        listmenuGroups = recordsetList(cls._tblGroup, retFlds=['GroupName', 'id'], ssnmaker=get_cMenu_sessionmaker(), orderby='GroupName')
         retDict = {row['GroupName']: row['id'] for row in listmenuGroups}
         return retDict
 
     @classmethod
     def menuListDict(cls, mGroup:int) ->  Dict[str, int]:
-        listmenuItems = recordsetList(menuItems, 
+        cls._ensure_tables_loaded()
+        listmenuItems = recordsetList(cls._tbl, 
             retFlds=['OptionText', 'MenuID'], 
             where=f'OptionNumber=0 AND MenuGroup_id={mGroup}', 
             ssnmaker=get_cMenu_sessionmaker(), 
@@ -195,8 +221,11 @@ class MenuRecords:
    
     @classmethod
     # def menuDBRecs(self, mGroup:int, mID:int) ->  QuerySet:
-    def menuDBRecs(cls, mGroup:int, mID:int) ->  Dict[int, menuItems]:
+    def menuDBRecs(cls, mGroup:int, mID:int):
         # use selectjoin
+        cls._ensure_tables_loaded()
+        assert cls._tbl is not None, "MenuRecords class not properly initialized with table reference."
+        assert cls._tblGroup is not None, "MenuRecords class not properly initialized with table reference."
         stmt = (
             select(cls._tbl)
             .join(cls._tblGroup, cls._tbl.MenuGroup_id == cls._tblGroup.id)
@@ -214,6 +243,8 @@ class MenuRecords:
 
     @classmethod
     def menuExist(cls, mGroup:int, mID:int) ->  bool:
+        cls._ensure_tables_loaded()
+        assert cls._tbl is not None, "MenuRecords class not properly initialized with table reference."
         stmt = select(cls._tbl).where(
             cls._tbl.MenuGroup_id == mGroup,
             cls._tbl.MenuID == mID,
@@ -229,6 +260,9 @@ class MenuRecords:
     @classmethod
     def recordsetList(cls, retFlds:int|List[str] = retListofQSQLRecord, filter:Optional[str] = None) -> List:
         #TODO: deprecate this method in favor of using recordsetList utility function directly
+        cls._ensure_tables_loaded()
+        assert cls._tbl is not None, "MenuRecords class not properly initialized with table reference."
+        assert cls._tblGroup is not None, "MenuRecords class not properly initialized with table reference."
         stmt:Select = select_with_join_excluding(cls._tbl.__table__, cls._tblGroup.__table__, (cls._tbl.MenuGroup_id == cls._tblGroup.id), ['id'])
         if retFlds == '*' or (isinstance(retFlds,List) and retFlds[0]=='*') or retFlds == retListofQSQLRecord:
             stmt = stmt

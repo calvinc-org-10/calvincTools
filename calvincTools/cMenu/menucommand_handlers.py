@@ -1,8 +1,11 @@
-from typing import (Dict, List, Mapping, Tuple, Any, )
+from typing import (TYPE_CHECKING, Dict, List, Mapping, Tuple, Any, )
 import copy
 
 import webbrowser
 import qtawesome
+
+if TYPE_CHECKING:
+    from ..models import menuItems, menuGroups
 
 from PySide6.QtCore import (Qt, QObject,
     Signal, Slot, 
@@ -22,27 +25,28 @@ from openpyxl import Workbook
 from sqlalchemy import (inspect, select, Engine, ) 
 from sqlalchemy.orm.session import make_transient
 
-from .utils.forms.forms.cSRFSingleRecordForm import cSRFSingleRecordForm
+from ..utils.forms.forms.cSRFSingleRecordForm import cSRFSingleRecordForm
 
-from .utils.forms.widgets import (cQFmNameLabel, cSimpRecFmElement_Base, )
+from ..utils.forms.widgets import (cQFmNameLabel, cSimpRecFmElement_Base, )
 
-from .utils.forms.definitions.cQFmConstants import cQFmConstants
+from ..utils.forms.definitions.cQFmConstants import cQFmConstants
 
-from .utils.forms.subforms.cSRFRecordList import cSRFRecordList_Record
+from ..utils.forms.subforms.cSRFRecordList import cSRFRecordList_Record
 
 # there's no need to import cMenu, plus it's a circular ref - cMenu depends heavily on this module
 # from .kls_cMenu import cMenu 
 
-from .apphooks import cTools_apphooks
-from .database import (
+from ..apphooks import cTools_apphooks
+from ..database import (
     get_cMenu_sessionmaker, get_cMenu_session, 
     Repository,
     )
 from .dbmenulist import (MenuRecords, newgroupnewmenu_menulist, newmenu_menulist, )
 # from sysver import sysver
 from .menucommand_constants import MENUCOMMANDS, COMMANDNUMBER
-from .models import (menuItems, menuGroups, )
-from .utils import (
+# Removed circular import: from ..models import (menuItems, menuGroups, )
+# These are imported lazily via _get_models() below
+from ..utils import (
     recordsetList,
     cQFormFieldDef, cQFormLayout, cQFormBtnDef, cComboBoxFromDict, 
     cstdTabWidget, cGridWidget,
@@ -60,9 +64,16 @@ _NUM_menuBTNperCOL: int = int(_NUM_menuBUTTONS/_NUM_menuBUTNCOLS)
 
 Nochoice = {'---': None}    # only needed for combo boxes, not datalists
 
-# fontFormTitle = QFont()
-# fontFormTitle.setFamilies([u"Copperplate Gothic"])
-# fontFormTitle.setPointSize(24)
+# Lazy loading cache for avoiding circular imports
+_models_cache: Dict[str, Any] = {}
+
+def _get_model(name: str):
+    """Lazy load model classes to avoid circular imports."""
+    if name not in _models_cache:
+        from ..models import menuItems, menuGroups
+        _models_cache['menuItems'] = menuItems
+        _models_cache['menuGroups'] = menuGroups
+    return _models_cache[name]
 
 
 def FormBrowse(parntWind, 
@@ -538,9 +549,15 @@ class cWidgetMenuItem(cSRFRecordList_Record):
             w.requestMenuReload.connect(on_reload_needed)
     This docstring documents the public behaviors and expectations of cWidgetMenuItem_tst.
     """
-    _ORMmodel = menuItems
+    _ORMmodel = None  # Lazy-loaded to avoid circular import
     _ssnmaker = get_cMenu_sessionmaker()
     _compact_spacing = 2
+
+    @classmethod
+    def _ensure_model_loaded(cls):
+        """Ensure _ORMmodel is loaded (lazy import to avoid circular dependency)."""
+        if cls._ORMmodel is None:
+            cls._ORMmodel = _get_model('menuItems')
 
     # formFields:Dict[str, QWidget] = {}
 
@@ -652,7 +669,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
         
         def dictmenuOptions(self, mnuID:int) -> Mapping[str, int|None]:
             mnuGrp:int = self.combobxMenuGroupID.currentData()
-            listmenuItems = recordsetList(menuItems, retFlds=['OptionNumber'], where=f'MenuID={mnuID} AND MenuGroup_id={mnuGrp}', ssnmaker=get_cMenu_sessionmaker())
+            listmenuItems = recordsetList(_get_model('menuItems'), retFlds=['OptionNumber'], where=f'MenuID={mnuID} AND MenuGroup_id={mnuGrp}', ssnmaker=get_cMenu_sessionmaker())
             definedOptions = {rec['OptionNumber'] for rec in listmenuItems}
             # Nochoice = {'---': None}  # only needed for combo boxes, not datalists
             return Nochoice | { str(n+1): n+1 for n in range(_NUM_menuBUTTONS) if n+1 not in definedOptions }
@@ -717,8 +734,8 @@ class cWidgetMenuItem(cSRFRecordList_Record):
         # enableOKButton
 
 
-    def __init__(self, menuitmRec:menuItems, parent:QWidget = None):   # type: ignore
-
+    def __init__(self, menuitmRec, parent:QWidget = None):   # type: ignore
+        self.__class__._ensure_model_loaded()        
         self.setPrimary_key()   # why is super().__init__() not working to call this in the base class?  need to call it here to initialize the primary key field for the record handling in the base class
         super().__init__(rec = menuitmRec, parent=parent) # - commented out because a phantom window gets created with this call here - need to figure out why - but for now, just call the base class init without the rec argument and then set the current record manually
 
@@ -1080,7 +1097,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 class cEditMenu(cSRFSingleRecordForm):
-    _ORMmodel = menuItems
+    _ORMmodel = None  # Lazy-loaded to avoid circular import
     _ssnmaker = get_cMenu_sessionmaker()
     _formname = 'Edit Menu'
     # more class constants
@@ -1088,6 +1105,12 @@ class cEditMenu(cSRFSingleRecordForm):
     _DFLT_menuID: int = -1
     intmenuGroup:int = _DFLT_menuGroup
     intmenuID:int = _DFLT_menuID
+
+    @classmethod
+    def _ensure_model_loaded(cls):
+        """Ensure _ORMmodel is loaded (lazy import to avoid circular dependency)."""
+        if cls._ORMmodel is None:
+            cls._ORMmodel = _get_model('menuItems')
     
     class wdgtmenuITEM(cWidgetMenuItem):
         # if this __init__ doesn't exist, the base class __init__ will be called, which expects a menuItems record, but the cEditMenu constructor doesn't have one to give it, so we need this __init__ to prevent the base class __init__ from running and trying to access a non-existent menuItems record
@@ -1202,7 +1225,8 @@ class cEditMenu(cSRFSingleRecordForm):
     # cEdtMnuDlgCopyMoveMenu
 
     def __init__(self, parent:QWidget|None = None, MainMenuWindow:QWidget|None = None):
-
+        self.__class__._ensure_model_loaded()
+        
         self.MainMenuWindow = MainMenuWindow
         
         # variables unique to this class
@@ -1452,7 +1476,7 @@ class cEditMenu(cSRFSingleRecordForm):
     ########    Display 
 
     def displayMenu(self):
-        from .cMenu import cMenu as cMenuClass
+        from . import cMenu as cMenuClass
 
         menuGroup = self.intmenuGroup
         menuID = self.intmenuID
@@ -1465,7 +1489,7 @@ class cEditMenu(cSRFSingleRecordForm):
         self.lblnummenuGroupID.display(str(menuGroup) + "@")       # we add the "@" to the value to force the LCD to display a trailing space
         self.fldmenuGroup.setValue(str(menuGroup)) # type: ignore
 
-        r = Repository(get_cMenu_sessionmaker(), menuGroups).get_by_id(menuGroup)
+        r = Repository(get_cMenu_sessionmaker(), _get_model('menuGroups')).get_by_id(menuGroup)
         # stmt = select(menuGroups.GroupName).where(menuGroups.id == menuGroup)
         # with cMenu_Session() as session:
         #     result = session.execute(stmt)
@@ -1549,7 +1573,7 @@ class cEditMenu(cSRFSingleRecordForm):
                 GroupName=grpName,
                 GroupInfo=grpInfo,
             )
-            newrec = Repository(get_cMenu_sessionmaker(), menuGroups).add(newrec)
+            newrec = Repository(get_cMenu_sessionmaker(), _get_model('menuGroups')).add(newrec)
             grppk = newrec.id            
             # with cMenu_Session() as session:
             #     session.add(newrec)
@@ -1576,7 +1600,7 @@ class cEditMenu(cSRFSingleRecordForm):
                     BottomLine=rec.get('BottomLine'),
                 )
                 # save the new record
-                Repository(get_cMenu_sessionmaker(), menuItems).add(newmenurec)
+                Repository(get_cMenu_sessionmaker(), _get_model('menuItems')).add(newmenurec)
                 # with cMenu_Session() as session:
                 #     session.add(newmenurec)
                 #     session.commit()
@@ -1696,15 +1720,15 @@ class cEditMenu(cSRFSingleRecordForm):
         
         if fldmenuGroupName.isDirty():  # type: ignore
             # update the menu group name in menuGroups table
-            groupRec = Repository(get_cMenu_sessionmaker(), menuGroups).get_by_id(self.intmenuGroup)
+            groupRec = Repository(get_cMenu_sessionmaker(), _get_model('menuGroups')).get_by_id(self.intmenuGroup)
             if groupRec is None:
                 print("Menu group not found:", self.intmenuGroup)
                 return
             groupRec.GroupName = str(fldmenuGroupName.Value())  # type: ignore
-            Repository(get_cMenu_sessionmaker(), menuGroups).update(groupRec)
+            Repository(get_cMenu_sessionmaker(), _get_model('menuGroups')).update(groupRec)
 
         if cRec is not None:
-            Repository(get_cMenu_sessionmaker(), menuItems).update(cRec)
+            Repository(get_cMenu_sessionmaker(), _get_model('menuItems')).update(cRec)
 
         # save the menu item records
         for bNum in range(_NUM_menuBUTTONS):

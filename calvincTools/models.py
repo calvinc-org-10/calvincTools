@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (QApplication, )
 from .utils import (pleaseWriteMe, )
 
 from .database import (get_cMenu_sessionmaker, get_cMenu_session, )
-from .menucommand_constants import MENUCOMMANDS, COMMANDNUMBER
+from .cMenu.menucommand_constants import MENUCOMMANDS, COMMANDNUMBER
 
 
 tblName_menuGroups = 'cMenu_menuGroups'

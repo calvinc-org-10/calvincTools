@@ -17,11 +17,11 @@ from PySide6.QtWidgets import (QApplication, QWidget, QGridLayout, QHBoxLayout, 
     )
 # from PySide6.QtSvgWidgets import QSvgWidget
 
-from .apphooks import cTools_apphooks
+from calvincTools import cTools_apphooks
 from .dbmenulist import MenuRecords
 from .menucommand_constants import MENUCOMMANDS, COMMANDNUMBER
 from . import menucommand_handlers
-from .utils import (cComboBoxFromDict, pleaseWriteMe, cGridWidget, )
+from calvincTools.utils import (cComboBoxFromDict, pleaseWriteMe, cGridWidget, )
 
 # TODO: put in class?
 # cMenu-related constants
