@@ -1,29 +1,3 @@
-"""
-miniauth.auth
-~~~~~~~~~~~~~
-MiniAuth authentication library.
-
-from https://github.com/farzadghanei/miniauth/tree/master
-"""
-from __future__ import absolute_import
-import string
-import random
-from hashlib import sha512, sha384, sha256, sha224, sha1, md5
-# from .storage import AbstractStorage, SqliteStorage
-from .typing import (Text, Any, )
-
-from calvincTools.database import (get_cMenu_sessionmaker, Repository, )
-
-DEFAULT_HASH_FUNC = 'sha512'  # type: str
-
-
-def create_salt(length=8):
-    # type: (int) -> str
-    # chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
-    # return ''.join(random.choice(chars) for _ in range(length))
-    # at the moment, we don't salt our passwords, but we want to be able to add it in the future if we want, so we'll just return an empty string for now
-    return ''
-
 class MiniAuth(object):
     hash_functions = {
         'sha512': sha512,
@@ -157,3 +131,4 @@ class MiniAuth(object):
             return False
         password_hash = self.password_hash(password)
         return password_hash == userRec.password_hash
+
