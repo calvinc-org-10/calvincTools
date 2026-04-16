@@ -15,8 +15,8 @@ from calvincTools.database import (get_cMenu_sessionmaker, Repository, )
 from calvincTools.utils.forms import (cSRFSingleRecordForm, cQFormFieldDef)
 from calvincTools.utils.forms.definitions.cQFormLayout import cQFormLayout
 
-from .auth import MiniAuth
 from .models import User
+from .pwegg import verify_password
 
 
 class LoginForm(cSRFSingleRecordForm):
@@ -53,6 +53,7 @@ class LoginForm(cSRFSingleRecordForm):
             parent=parent,
             *args, **kwds
             )
+        self.setcurrRec(None)
     
         
     def _buildFormLayout(self) -> cQFormLayout:
@@ -154,6 +155,10 @@ class LoginForm(cSRFSingleRecordForm):
         self.initializeRec()
     # initialdisplay()
 
+    def fillFormFromcurrRec(self):
+        # nope, let's not show any user info on the login form, that would be weird. Just show the blank form ready for input.
+        return 
+    
     def _on_login_clicked(self):
         """Handle login button click event."""
         """Perform login logic. Return True if successful, False otherwise."""
@@ -161,11 +166,12 @@ class LoginForm(cSRFSingleRecordForm):
 
         uname = self._formWidgets.get('username').get_value()   # type: ignore
         usrRec = self.userRecord(uname)
+        self.setcurrRec(usrRec)
         if usrRec is None:
             self.try_again()
             return
         pw = self._formWidgets.get('password').get_value()     # type: ignore
-        if self.verify_user(uname, pw):
+        if self.verify_user(pw):
             self._formWidgets.get('greeting').set_value(f"Welcome, {usrRec.first_name}!")  # type: ignore
             self._formWidgets.get('loginmsg').set_value("")  # type: ignore
             current_user = usrRec
@@ -216,7 +222,7 @@ class LoginForm(cSRFSingleRecordForm):
             return userRecs[0]
         return None
 
-    def verify_user(self, username, password):
+    def verify_user(self, password):
         """
         verify that the password presented for the user is actually the passwoprd stored
         returns True if the password is correct or if password_optional=True for the user,
@@ -231,13 +237,12 @@ class LoginForm(cSRFSingleRecordForm):
         """
         # Placeholder for actual authentication logic
         # For example, you could query the database for the user and check the password hash
-        usrRec = self.userRecord(username)
+        # usrRec = self.userRecord(username)
+        usrRec = self.currRec()
         if usrRec is not None:
             if not usrRec.is_active:
                 return False
             if usrRec.password_optional:
                 return True
-            # TODO: start bringing MiniAuth in here - that module duplicates a lot of db touches.
-            miniAuth = MiniAuth(self.ORMmodel(), self.ssnmaker())
-            return miniAuth.verify_user(usrRec.username,  password)
+            return verify_password(usrRec.password_hash,  password)
         return False
