@@ -97,8 +97,8 @@ class User(UserBase):
     - is_authenticated, is_active, is_anonymous, get_id()
     """
     __tablename__ = 'User'
-    _ssnmkr = get_cMenu_sessionmaker()
     # __tablename__ = cTools_tablenames.get('User', 'users')
+    _ssnmkr = get_cMenu_sessionmaker()
 
     id:Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     username:Mapped[str] = mapped_column(String(80), unique=True, nullable=False, index=True)

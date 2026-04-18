@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import (Dict, List, Tuple, Any, Callable, )
 
 from PySide6.QtCore import (QCoreApplication, 
@@ -17,11 +18,14 @@ from PySide6.QtWidgets import (QApplication, QWidget, QGridLayout, QHBoxLayout, 
     )
 # from PySide6.QtSvgWidgets import QSvgWidget
 
+from qtawesome import icon_browser
+
 from calvincTools import cTools_apphooks
 from .dbmenulist import MenuRecords
 from .menucommand_constants import MENUCOMMANDS, COMMANDNUMBER
 from . import menucommand_handlers
 from calvincTools.utils import (cComboBoxFromDict, pleaseWriteMe, cGridWidget, )
+from calvincTools.usr_auth import editusers
 
 # TODO: put in class?
 # cMenu-related constants
@@ -53,24 +57,37 @@ class cMenu(QWidget):
             self.setText("\n\n")
             self.setObjectName(f'cMenuBTN-{btnNumber}')
             
-    class _internalForms:
-        EditMenu = '.-EDT-menu.-'
-        OpenTable = '-.OPN-tbL.-'
+    class _internalForms(Enum):
+
+        # values are a tuple:
+        #   (
+        #   FormNameToURL_Map keys for internal use only; 
+        #   the view: a reference to the form class/function that should be called to open the form;
+        #   )
+        # these will be loaded into FormNameToURL_Map in _addInternalForms. From that point on, they can be used like any other form reference in FormNameToURL_Map, but they won't have a URL since they're for internal use only.
+        # NOTE: unlike external FormNameToURL_Map keys, these internal keys ARE case sensitive, since they're only for internal use and we can control how they're called. So they don't have to be all lowercase like external keys do.
+
+        EditMenu = ('.-EDT-menu.-', menucommand_handlers.cEditMenu)
+        OpenTable = ('-.OPN-tbL.-', menucommand_handlers.OpenTable)
         # RunCode = ''
-        RunSQLStatement = '.-ruN-sql.-'
+        RunSQLStatement = ('.-ruN-sql.-', menucommand_handlers.cMRunSQL)
         # ConstructSQLStatement = ''
         # LoadExtWebPage = '.-lod-ext-wbpg.-'
         # ChangePW = ''
         # EditParameters = ''
         # EditGreetings = ''
-        IconThemeViewer = '.-icn-thm-vwr.-'
+        EditUsers = ('.-eDT-usrs.-', editusers.editUsersForm)
+        # ShowHelp = ''
+        # ShowRoutes_URLs = ''
+        # ShowForms = ''
+        IconThemeViewer = ('.-icn-thm-vwr.-', icon_browser.IconBrowser)
     def _addInternalForms(self):
-        
         # FormNameToURL_Maps for internal use only
         # FormNameToURL_Map['menu Argument'.lower()] = (url, view)
-        self.FormNameToURL_Map[self._internalForms.EditMenu] = (None, menucommand_handlers.cEditMenu)
-        self.FormNameToURL_Map[self._internalForms.OpenTable] = (None, menucommand_handlers.OpenTable)
-        self.FormNameToURL_Map[self._internalForms.RunSQLStatement] = (None, menucommand_handlers.cMRunSQL)
+        # NOTE: unlike external FormNameToURL_Map keys, these internal keys ARE case sensitive, since they're only for internal use and we can control how they're called. So they don't have to be all lowercase like external keys do.
+        for internalForm in self._internalForms:
+            formName, formView = internalForm.value
+            self.FormNameToURL_Map[formName] = (None, formView)
 
     def __init__(self, 
         parent:QWidget|None, 
@@ -249,12 +266,12 @@ class cMenu(QWidget):
             if frm is not None: 
                 self.open_childScreen(CommandArg, frm)
         elif CommandText == 'OpenTable' :
-            CmdFm = self._internalForms.OpenTable
+            CmdFm = self._internalForms.OpenTable.value[0]
             frm = menucommand_handlers.FormBrowse(self, CmdFm, CommandArg)
             if frm is not None: 
                 self.open_childScreen(CmdFm, frm)
         elif CommandText == 'RunSQLStatement':
-            CmdFm = self._internalForms.RunSQLStatement
+            CmdFm = self._internalForms.RunSQLStatement.value[0]
             frm = menucommand_handlers.FormBrowse(self, CmdFm)
             if frm is not None: 
                 self.open_childScreen(CmdFm, frm)
@@ -271,7 +288,7 @@ class cMenu(QWidget):
         # elif CommandText == 'ChangeUser':
         # elif CommandText == 'ChangeMenuGroup':
         elif CommandText == 'EditMenu':
-            CmdFm = self._internalForms.EditMenu
+            CmdFm = self._internalForms.EditMenu.value[0]
             frm = menucommand_handlers.FormBrowse(self, CmdFm, MainMenuWindow=self)
             if frm: 
                 self.open_childScreen(CmdFm, frm)
@@ -281,6 +298,13 @@ class cMenu(QWidget):
         # elif CommandText == 'EditGreetings':
         #     return
             # return redirect('Greetings')
+        elif CommandText == 'EditUsers':
+            CmdFm = self._internalForms.EditUsers.value[0]
+            frm = menucommand_handlers.FormBrowse(self, CmdFm, MainMenuWindow=self)
+            if frm: 
+                self.open_childScreen(CmdFm, frm)
+        # elif CommandText == 'ShowHelp':
+        # elif CommandText == 'ShowRoutes_URLs':
         elif CommandText == 'ExitApplication':
             # exit the application
             appinst = QApplication.instance()

@@ -34,7 +34,10 @@ class cSRF_FormUI_Base(QWidget):
         parent: QWidget | None = None,
         *args, **kwargs
         ):
-        super().__init__(parent, *args, **kwargs)
+        
+        # cMenu passes in a kwarg which is not a valid QWidget property, so we pop it here to avoid errors.
+        QWid_kwargs = {k: v for k, v in kwargs.items() if hasattr(QWidget, k)}
+        super().__init__(parent, *args, **QWid_kwargs)
 
         # set field definitions 
         if getattr(self, '_field_defs', None) is not None:

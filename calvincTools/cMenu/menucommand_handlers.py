@@ -113,8 +113,8 @@ def FormBrowse(parntWind,
                 theForm = fn(*args, **kwargs)
             except NameError:
                 # fn = None
-                formname = f'{formname} exists but view {FormNameToURL_Map[formname][viewIndex]}'
-            #end try
+                formname = f'{formname} exists but view {FormNameToURL_Map[formname][viewIndex]} is either not defined, not imported, or has fatal errors.  Calvin needs more coffee.\n'
+            # #end try
         # endif FormNameToURL_Map[formname][viewIndex]:
     # endif formname in FormNameToURL_Map:
     if not theForm:
@@ -1477,6 +1477,7 @@ class cEditMenu(cSRFSingleRecordForm):
 
     def displayMenu(self):
         from . import cMenu as cMenuClass
+        from ..models import menuItems
 
         menuGroup = self.intmenuGroup
         menuID = self.intmenuID

@@ -12,9 +12,9 @@ from .__version__ import (
 from PySide6.QtGui import QPixmap
 
 from .apphooks import cTools_apphooks
-from .usr_auth.models import (User, User_usrauth_not_used, )
-from .usr_auth import (LoginForm, current_user)
-from calvincTools.cMenu import cMenu
+# from .usr_auth.models import (User, User_usrauth_not_used, )
+# from .usr_auth import (LoginForm, current_user)
+# from calvincTools.cMenu import cMenu
 
 
 def calvincTools_init(usr_auth: bool,
