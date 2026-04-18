@@ -36,6 +36,8 @@ class cQFormFieldDef:
     # UI options
     readonly: bool = False
     tooltip: str | None = None
+    minimum_width: int | None = None
+    minimum_height: int | None = None
     maximum_width: int | None = None
     maximum_height: int | None = None
     bg_color: str | None = None

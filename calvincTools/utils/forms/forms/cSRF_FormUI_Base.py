@@ -251,8 +251,16 @@ class cSRF_FormUI_Base(QWidget):
         return factory(defn)
     # _create_widget
     def _configure_widget(self, widget: QWidget, defn: cQFormFieldDef):
-        if defn.readonly and hasattr(widget, "setReadOnly"):
-            widget.setReadOnly(True)    # type: ignore
+        # if defn.readonly and callable(getattr(widget, "setReadOnly")):
+        #     widget.setReadOnly(True)    # type: ignore
+        if defn.readonly:
+            if callable(getattr(widget, "setReadOnly")):
+                widget.setReadOnly(True)    # type: ignore    
+            else:
+                widget.setProperty('readonly', True)
+            #endif has setReadOnly
+        #endif readonly
+
 
         if defn.tooltip:
             widget.setToolTip(defn.tooltip)
@@ -268,14 +276,17 @@ class cSRF_FormUI_Base(QWidget):
         if focusPolicy:
             widget.setFocusPolicy(focusPolicy)
 
-        if defn.readonly:
-            if hasattr(widget, "setReadOnly"):
-                widget.setReadOnly(True)    # type: ignore    
+        if defn.minimum_width is not None:
+            if hasattr(widget, "setMinimumWidth"):
+                widget.setMinimumWidth(defn.minimum_width)
             else:
-                widget.setProperty('readonly', True)
-            #endif has setReadOnly
-        #endif readonly
-
+                widget.setProperty('minimumWidth', defn.minimum_width)
+        if defn.minimum_height is not None:
+            if hasattr(widget, "setMinimumHeight"):
+                widget.setMinimumHeight(defn.minimum_height)
+            else:
+                widget.setProperty('minimumHeight', defn.minimum_height)
+        #enddef minimum width/height
         if defn.maximum_width is not None:
             if hasattr(widget, "setMaximumWidth"):
                 widget.setMaximumWidth(defn.maximum_width)
