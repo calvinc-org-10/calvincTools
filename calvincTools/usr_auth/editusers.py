@@ -19,7 +19,7 @@ from .models import User
 class userEditFmRecord(cSRFRecordList_Record):
     _ORMmodel = User
     _primary_key = get_primary_key_column(User)
-    _ssnmmaker = get_cMenu_sessionmaker()
+    _ssnmaker = get_cMenu_sessionmaker()
         
     def defineFields(self) -> List[cQFormFieldDef] | None:
         flds = [
@@ -58,7 +58,7 @@ class userEditFmRecord(cSRFRecordList_Record):
 class userEditFm(cSRFRecordList):
     _ORMmodel = User
     _primary_key = get_primary_key_column(User)
-    _ssnmmaker = get_cMenu_sessionmaker()
+    _ssnmaker = get_cMenu_sessionmaker()
     _recordClass = userEditFmRecord
     
     def defineFields(self) -> List[cQFormFieldDef] | None:
