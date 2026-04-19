@@ -10,13 +10,19 @@ from calvincTools.utils.forms import (
     cSRFMultiRecordWrapper, cSRFRecordList, cSRFRecordList_Record,
     cQFormFieldDef, cQFormLayout,
     )
-
+from calvincTools.models import cParameters
 from calvincTools.utils import get_primary_key_column
-from calvincTools.database import get_cMenu_sessionmaker
+from calvincTools.database import (get_cMenu_sessionmaker, Repository, )
 from calvincTools.utils.forms.definitions.cQFormLayout import cQFormLayout
 
 from .models import User
+from .pwegg import hash_password
 
+
+_parmKey = cParameters.ParmName == "DFLT-NEW-PW"
+_dfltNewPW_rec = Repository(get_cMenu_sessionmaker(), cParameters).get_all(_parmKey)
+_dfltNewPW_rec = _dfltNewPW_rec[0] if _dfltNewPW_rec else None
+_dfltNewPW = getattr(_dfltNewPW_rec, "ParmValue", "password123")
 
 class userEditFmRecord(cSRFRecordList_Record):
     _ORMmodel = User
@@ -47,7 +53,7 @@ class userEditFmRecord(cSRFRecordList_Record):
             cQFormFieldDef(name="password_btn", field_type=cQFormFieldDef.cQFormFieldType.INTERNAL,
                 label="Change\nPW", widget_type=QPushButton,
                 on_change = self.change_password,  # type: ignore
-                position=(0, 6), minimum_height=80, maximum_width=80, minimum_width=80,),
+                position=(0, 6),),
             cQFormFieldDef(name="active_status", label="|", widget_type=QCheckBox,
                 lblChkBxYesNo={True: "ACTV", False: "INACTV"},
                 position=(0, 7),),
@@ -120,7 +126,7 @@ class userEditFm(cSRFRecordList):
             last_name="User",
             email="",
             password_optional=False,
-            password_hash="",  # set_password should be called to set this properly, but we'll set it to empty string for now
+            password_hash=hash_password(_dfltNewPW),
             active_status=True,
             is_superuser=False,
             permissions="",
@@ -147,7 +153,7 @@ class editUsersForm(cSRFMultiRecordWrapper):
         self.setMinimumWidth(1500)
         
         # add hints in header
-        PWhint = QLabel("default PW is 'password123', but you should change it")
+        PWhint = QLabel(f"default PW is '{_dfltNewPW}' for new users - change after creating user")
         layouts.fixed_top.addWidget(PWhint, 0, 0)
         
         return layouts

@@ -1,0 +1,169 @@
+    class cEdtMnuItmDlg_CopyMove_MenuItm(QDialog):
+
+        intCMChoiceCopy:int = 10
+        intCMChoiceMove:int = 20
+
+        def __init__(self, menuGrp:int, menuID:int, optionNumber:int, parent = None):   # parent:QWidget = None
+            super().__init__(parent)
+
+            self.setWindowModality(Qt.WindowModality.WindowModal)
+            self.setWindowTitle(parent.windowTitle() if parent else 'Copy/Move Menu Item')
+
+            self.dlgButtons = None # self.dlgButtons:QDialogButtonBoxto be defined later, but must exist now
+
+            lblDlgTitle = QLabel(self.tr(f' Copy or Move Menu Item {menuID}, {optionNumber}'))
+
+            ##################################################
+            # set up menuGroup, menuID, menuOption comboboxes
+            layoutNewItemID = QGridLayout()
+
+            lblMenuGroupID = QLabel(self.tr('Menu Group'))
+            self.combobxMenuGroupID = cComboBoxFromDict(self.dictmenuGroup(), parent=self)
+            self.combobxMenuGroupID.activated.connect(self.loadMenuIDs)
+
+            lblMenuID = QLabel(self.tr('Menu'))
+            self.combobxMenuID = cComboBoxFromDict(dict(self.dictmenus(menuGrp)), parent=self)
+            # self.loadMenuIDs(menuGrp) - not necessary - done with initialization
+            self.combobxMenuID.activated.connect(self.loadMenuOptions)
+
+            lblMenuOption = QLabel(self.tr('Option'))
+            self.combobxMenuOption = cComboBoxFromDict({}, parent=self)
+            self.combobxMenuOption.activated.connect(self.menuOptionChosen)
+
+            layoutNewItemID.addWidget(lblMenuGroupID,0,0)
+            layoutNewItemID.addWidget(self.combobxMenuGroupID,1,0)
+            layoutNewItemID.addWidget(lblMenuID,0,1)
+            layoutNewItemID.addWidget(self.combobxMenuID,1,1)
+            layoutNewItemID.addWidget(lblMenuOption,0,2)
+            layoutNewItemID.addWidget(self.combobxMenuOption,1,2)
+
+            self.combobxMenuGroupID.setCurrentIndex(self.combobxMenuGroupID.findData(menuGrp))
+            self.loadMenuIDs(menuGrp)
+            ##################################################            
+
+            visualgrpboxCopyMove = QGroupBox(self.tr("Copy / Move"))
+            layoutgrpCopyMove = QHBoxLayout()
+            # Create radio buttons
+            radioCopy = QRadioButton(self.tr("Copy"))
+            radioMove = QRadioButton(self.tr("Move"))
+            # Add radio buttons to the layout
+            layoutgrpCopyMove.addWidget(radioCopy)
+            layoutgrpCopyMove.addWidget(radioMove)
+            visualgrpboxCopyMove.setLayout(layoutgrpCopyMove)
+            # Create a QButtonGroup for logical grouping
+            self.lgclbtngrpCopyMove = QButtonGroup()
+            self.lgclbtngrpCopyMove.addButton(radioCopy, id=self.intCMChoiceCopy)
+            self.lgclbtngrpCopyMove.addButton(radioMove, id=self.intCMChoiceMove)
+            # Add the QGroupBox to the main layout
+
+            self.dlgButtons = QDialogButtonBox(
+                QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.Cancel,
+                Qt.Orientation.Horizontal,
+                )
+            self.dlgButtons.accepted.connect(self.accept)
+            self.dlgButtons.rejected.connect(self.reject)
+            self.dlgButtons.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
+
+            layoutMine = QVBoxLayout()
+            layoutMine.addWidget(lblDlgTitle)
+            layoutMine.addWidget(visualgrpboxCopyMove)
+            layoutMine.addLayout(layoutNewItemID)
+            layoutMine.addWidget(self.dlgButtons)
+
+            self.setLayout(layoutMine)
+        # __init__
+        
+        ##########################################
+        ########    execute this dialog
+
+        def exec_CM_MItm(self) -> Tuple[int|bool, bool, Tuple[int, int, int]]:
+            ret = super().exec()
+            copymove = self.lgclbtngrpCopyMove.checkedId()
+            chosenMenuGroup = self.combobxMenuGroupID.currentData()
+            chosenMenuID = self.combobxMenuID.currentData()
+            chosenMenuOption = self.combobxMenuOption.currentData()
+            return (
+                ret,
+                copymove != self.intCMChoiceMove,   # True unless Move checked
+                # return (Group, Menu, OptrNum) tuple
+                (chosenMenuGroup, chosenMenuID, chosenMenuOption),
+                )
+        # exec_CM_MItm
+
+        ##########################################
+        ########    menu and Group dicts
+
+        def dictmenuGroup(self) -> Dict[str, int]:
+            return MenuRecords.menuGroupsDict()
+        # dictmenuGroup
+            
+        def dictmenus(self, mnuGrp:int) -> Mapping[str, int|None]:
+            retDict = Nochoice | MenuRecords.menuListDict(mnuGrp)
+            return retDict
+        # dictmenus
+        
+        def dictmenuOptions(self, mnuID:int) -> Mapping[str, int|None]:
+            mnuGrp:int = self.combobxMenuGroupID.currentData()
+            listmenuItems = recordsetList(_get_model('menuItems'), retFlds=['OptionNumber'], where=f'MenuID={mnuID} AND MenuGroup_id={mnuGrp}', ssnmaker=get_cMenu_sessionmaker())
+            definedOptions = {rec['OptionNumber'] for rec in listmenuItems}
+            # Nochoice = {'---': None}  # only needed for combo boxes, not datalists
+            return Nochoice | { str(n+1): n+1 for n in range(_NUM_menuBUTTONS) if n+1 not in definedOptions }
+            # MenuRecords.menuDict(mnuGrp, mnuID)
+        # dictmenuOptions
+
+        ##########################################
+        ########    getters/setters
+
+        ##########################################
+        ########    Create
+
+        ##########################################
+        ########    Read
+
+        @Slot(int)  #type: ignore
+        def loadMenuIDs(self, idx:int):
+            mnuGrp:int = self.combobxMenuGroupID.currentData()
+            # if self.combobxMenuGroupID.currentIndex() != -1:
+            if mnuGrp is not None:
+                self.combobxMenuID.replaceDict(dict(self.dictmenus(mnuGrp)))
+            self.combobxMenuID.setCurrentIndex(-1)
+            self.combobxMenuOption.clear()
+            self.enableOKButton()
+        # loadMenuIDs
+        
+        @Slot(int) #type: ignore
+        def loadMenuOptions(self, idx:int):
+            mnuID:int = self.combobxMenuID.currentData()
+            #if self.combobxMenuID.currentIndex() != -1:
+            if mnuID is not None:
+                self.combobxMenuOption.replaceDict(dict(self.dictmenuOptions(mnuID)))
+            self.combobxMenuOption.setCurrentIndex(-1)
+            self.enableOKButton()
+        # loadMenuOptions
+        
+        ##########################################
+        ########    Update
+
+        ##########################################
+        ########    Delete
+
+        ##########################################
+        ########    object status
+
+        ##########################################
+        ########    widget-responding procs
+
+        @Slot(int)  #type: ignore
+        def menuOptionChosen(self, idx:int):
+            self.enableOKButton()
+        # menuOptionChosen
+        def enableOKButton(self):
+            if not self.dlgButtons:
+                return
+            all_GrpIdOption_chosen = all([
+                self.combobxMenuGroupID.currentIndex() != -1,
+                self.combobxMenuID.currentIndex() != -1,
+                self.combobxMenuOption.currentIndex() != -1,
+            ])
+            self.dlgButtons.button(QDialogButtonBox.StandardButton.Ok).setEnabled(all_GrpIdOption_chosen)
+        # enableOKButton

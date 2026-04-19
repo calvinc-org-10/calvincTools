@@ -38,7 +38,11 @@ def hash_password(password: str, pepper:str = _DEFAULT_PEPPER, hash_func:str = D
 
 def verify_password(stored_string: str, provided_password: str, pepper:str = _DEFAULT_PEPPER, hash_func:str = DEFAULT_HASH_FUNC) -> bool:
     # 1. Split the stored string back into salt and hash
-    salt_hex, stored_hash_hex = stored_string.split('$')
+    splitstr = stored_string.split('$')
+    if len(splitstr) != 2:
+        # raise ValueError("Stored password string is not in the expected 'salt$hash' format.")
+        return False 
+    salt_hex, stored_hash_hex = splitstr[0], splitstr[1]
     
     salt = bytes.fromhex(salt_hex)
     stored_hash = bytes.fromhex(stored_hash_hex)
