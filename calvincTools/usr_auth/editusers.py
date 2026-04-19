@@ -1,5 +1,5 @@
-
 from typing import List
+from datetime import datetime
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QWidget, 
@@ -111,6 +111,22 @@ class userEditFm(cSRFRecordList):
         add_hdr_col("Menu Group", 20, 10)
         
         return layouts
+    
+    def new_record(self):
+        # override new_record to set default values for new user records
+        rec = User(
+            username="newuser",
+            first_name="New",
+            last_name="User",
+            email="",
+            password_optional=False,
+            password_hash="",  # set_password should be called to set this properly, but we'll set it to empty string for now
+            active_status=True,
+            is_superuser=False,
+            permissions="",
+            date_joined=datetime.now(),
+        )
+        return rec
 
 class editUsersForm(cSRFMultiRecordWrapper):
     _formname = "Edit Users"

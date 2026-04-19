@@ -37,6 +37,7 @@ class cSRFRecordList_Record(
         rec (Any): ORM record to display.
         parent (QWidget | None, optional): Parent widget. Defaults to None.
     """
+    deletionFlag:bool = False   # set to True to mark the record for deletion when the parent form's commit button is clicked - this allows the record to be removed from the display immediately while still allowing the user to undo the deletion by unsetting the flag before committing, and also allows the parent form to handle the actual deletion logic in a consistent way when the commit button is clicked, rather than having each child widget handle its own deletion logic which could lead to inconsistencies and complications with undoing deletions.
 
     def __init__(self,
         rec = None,
@@ -121,6 +122,33 @@ class cSRFRecordList_Record(
 
     def _addActionButtons(self) -> None:
         return None
+
+    def _connect_widget(self, widget: QWidget, defn: cQFormFieldDef):
+        # TODO: put in guardrails - don't naively assume that every widget is a field widget with a signalFldChanged signal - only connect if it's a field widget and has the signal, otherwise just return super()._connect_widget without trying to connect the signal
+        widget.signalFldChanged.connect(lambda *_args, w=widget, d=defn: self.changeField(w, d))     # type: ignore
+        return super()._connect_widget(widget, defn)
+    
+    @Slot()
+    def changeField(self, widget, defn):
+        # do I need to tell daddy to flip the commit btn? Ans: seems that's ALL I have to do - the base class on_save_clicked() will handle the actual commit when the user clicks the commit button, but I just need to show the commit button when a change is made.  If I wanted to auto-commit on change, that would be more work, but for now I just want to show the commit button so the user can click it when they're ready to commit.
+        self.showCommitButton()  # this just shows the commit button, it doesn't actually commit anything - the user has to click the button to commit, which is when the base class on_save_clicked() will run and do the actual commit
+    # changeField
+
+    def saveToRecord(self):
+        """Save changes from the form fields back to the current record."""
+        rec = self.currRec()
+        if rec is None:
+            raise ValueError("No current record to save to")
+
+        for Wstruc in self._formWidgets.values():
+            defn = Wstruc.defn
+            widg = Wstruc.widget
+            if isinstance(widg, cSimpRecFmElement_Base) and defn and defn.field_type in [cQFormFieldDef.cQFormFieldType.SCALAR, cQFormFieldDef.cQFormFieldType.SUBFORM]:
+                # only save to record if it's a field widget with a valid field definition - prevents trying to save to record for buttons, labels, or other non-field widgets, which would cause errors
+                widg.saveToRecord(rec)
+        # endfor
+    # saveToRecord
+    
 
     ######################################################
     ########    Display 
@@ -381,6 +409,7 @@ class cSRFRecordList(cSRFSingleRecordForm):     # is cSRFSingleRecordForm = cSRF
         return [
             cQFormBtnDef(text="Add", action=self.add_row),
             cQFormBtnDef(text="Delete", action=self.del_row),
+            cQFormBtnDef(text="Save Records", action=self.save_clicked, commitBtn=True),  
         ]
     # defineActionButtons
 
@@ -398,6 +427,10 @@ class cSRFRecordList(cSRFSingleRecordForm):     # is cSRFSingleRecordForm = cSRF
         # does NOT add to _childRecs - that must be done separately (document why)
         assert self._recordClass is not None, "recordClass must be set to add display rows"
         wdgt = self._recordClass(rec, parent=self)
+
+        # we need the child btnCommit to trigger the parent form's commit button when it has changes to save, so we set a reference to the parent form's commit button on the child widget - this is a bit hacky, but it allows the child widget to show the commit button when it has changes without needing to implement a more complex signal/slot mechanism for communicating between the child widget and the parent form's commit button - the child widget can just call self.btnCommit.
+        wdgt.btnCommit = self.btnCommit   # type: ignore - this is a bit hacky, but it allows the menu item widgets to trigger the commit button on the main form when they need to save changes, without having to implement a more complex signal/slot mechanism for communicating between the widgets and the form
+        
         QLWitm = QListWidgetItem()
         QLWitm.setSizeHint(wdgt.sizeHint())
         self.dispArea.addItem(QLWitm)
@@ -412,7 +445,7 @@ class cSRFRecordList(cSRFSingleRecordForm):     # is cSRFSingleRecordForm = cSRF
 
     def add_row(self):
         """Add a new subrecord row to the list."""
-        modl = self.ORMmodel()
+        modl = self.new_record if callable(getattr(self, 'new_record', None)) else self.ORMmodel()    # type: ignore  # if the record class has a new_record method, call it to create a new record - this allows for custom initialization of new records if needed, while still providing a default way to create new records if the method is not defined
         assert modl is not None, "ORMmodel must be set before adding a row"
         row = modl()
         linkFld = self.linkFld()
@@ -472,6 +505,11 @@ class cSRFRecordList(cSRFSingleRecordForm):     # is cSRFSingleRecordForm = cSRF
     ##########################################
     ########    Update
 
+    @Slot()
+    def save_clicked(self):
+        """Slot for save button click - calls saveToRecord to persist changes."""
+        self.saveToRecord(self.parentRec())
+
     def saveToRecord(self, rec):
         """Save subrecords back to database.
 
@@ -489,17 +527,21 @@ class cSRFRecordList(cSRFSingleRecordForm):     # is cSRFSingleRecordForm = cSRF
         assert modl is not None, "ORMmodel must be set before saving record"
         linkFld = self.linkFld()
         with ssnmkr() as session:
-            # reattach new/edited
-            for rec in self._childRecs:
+            for i in range(self.dispArea.count()):
+                wdgt = self.dispArea.itemWidget(self.dispArea.item(i))
+                wdgt.saveToRecord() # type: ignore   # make sure any changes in the widget get saved to the widget's current record before we merge it - this is important since the widget's current record is what we're merging, and if we don't save changes to it first, those changes won't be included in the merge and won't get saved to the database
+                rec = getattr(wdgt, 'currRec', lambda: None)() if wdgt else None
+                deleteFlag = getattr(wdgt, 'deletionFlag', False)
+                if rec is None:
+                    continue
+                if deleteFlag:
+                    if pRec is None or getattr(rec, self.primary_key().key, None) is not None:
+                        obj = session.merge(rec)
+                        session.delete(obj)
+                    continue
                 if pRec is not None:
                     setattr(rec, linkFld.key, getattr(pRec, self.parent_linkFld_keystr())) # type: ignore
                 session.merge(rec)
-
-            # delete removed
-            for rec in self._deleted_childRecs:
-                if pRec is None or getattr(rec, self.primary_key().key, None) is not None:
-                    obj = session.merge(rec)
-                    session.delete(obj)
 
             session.commit()
         # endwith
@@ -509,8 +551,6 @@ class cSRFRecordList(cSRFSingleRecordForm):     # is cSRFSingleRecordForm = cSRF
         self.loadFromRecord(pRec)   # reload to refresh display area
     # saveForParent
 
-
-
     ##########################################
     ########    Delete
 
@@ -518,6 +558,10 @@ class cSRFRecordList(cSRFSingleRecordForm):     # is cSRFSingleRecordForm = cSRF
     def del_row(self):
         """Delete selected subrecord rows (not yet fully implemented)."""
         idxs = self.dispArea.selectionModel().selectedRows()    # does dispArea have selectionModel()?
+        for idx in idxs:
+            item = self.dispArea.item(idx.row())   # does dispArea have item()?
+            wdgt = self.dispArea.itemWidget(item)   # does dispArea have itemWidget()?
+            # set deletionFlag on the widget's record and add to _deleted_childRecs so it will be deleted when saveToRecord is called, and also remove from _childRecs so it won't be re-displayed if the user clicks delete but then cancels by not clicking save
             # end for
         # del_row
 # cSRFRecordList_Record
