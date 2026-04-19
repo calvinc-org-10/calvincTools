@@ -251,8 +251,6 @@ class cSRF_FormUI_Base(QWidget):
         return factory(defn)
     # _create_widget
     def _configure_widget(self, widget: QWidget, defn: cQFormFieldDef):
-        # if defn.readonly and callable(getattr(widget, "setReadOnly")):
-        #     widget.setReadOnly(True)    # type: ignore
         if defn.readonly:
             if callable(getattr(widget, "setReadOnly")):
                 widget.setReadOnly(True)    # type: ignore    
@@ -260,7 +258,6 @@ class cSRF_FormUI_Base(QWidget):
                 widget.setProperty('readonly', True)
             #endif has setReadOnly
         #endif readonly
-
 
         if defn.tooltip:
             widget.setToolTip(defn.tooltip)

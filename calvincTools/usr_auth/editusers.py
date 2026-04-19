@@ -1,6 +1,7 @@
 
 from typing import List
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QWidget, 
     QLineEdit, QCheckBox, QLabel, QPushButton,
     )
@@ -24,41 +25,49 @@ class userEditFmRecord(cSRFRecordList_Record):
         
     def defineFields(self) -> List[cQFormFieldDef] | None:
         flds = [
-            cQFormFieldDef(name="id", label="|", widget_type=QLabel, readonly=True,
+            cQFormFieldDef(name="id", label="|", label_alignment = Qt.AlignmentFlag.AlignRight, 
+                widget_type=QLabel, readonly=True,
                 position=(0, 0), minimum_width=50,),
-            cQFormFieldDef(name="username", label="|", widget_type=QLineEdit,
+            cQFormFieldDef(name="username", label="|", label_alignment = Qt.AlignmentFlag.AlignRight, 
+                widget_type=QLineEdit,
                 position=(0, 1), minimum_width=150,),
-            cQFormFieldDef(name="first_name", label="|", widget_type=QLineEdit,
+            cQFormFieldDef(name="first_name", label="|", label_alignment = Qt.AlignmentFlag.AlignRight, 
+                widget_type=QLineEdit,
                 position=(0, 2), minimum_width=150,),
-            cQFormFieldDef(name="last_name", label="|", widget_type=QLineEdit,
+            cQFormFieldDef(name="last_name", label="|", label_alignment = Qt.AlignmentFlag.AlignRight, 
+                widget_type=QLineEdit,
                 position=(0, 3), minimum_width=150,),
-            cQFormFieldDef(name="email", label="|", widget_type=QLineEdit,
+            cQFormFieldDef(name="email", label="|", label_alignment = Qt.AlignmentFlag.AlignRight, 
+                widget_type=QLineEdit,
                 position=(0, 4), minimum_width=175, ),
             cQFormFieldDef(name="password_optional", label="|", widget_type=QCheckBox,
                 lblChkBxYesNo={True: "PW-OPT", False: ""},
                 position=(0, 5),),
             cQFormFieldDef(name="password_hash", label=" ", widget_type=QLabel,),
-            cQFormFieldDef(name="password_btn", label="Change\nPW", widget_type=QPushButton,
+            cQFormFieldDef(name="password_btn", field_type=cQFormFieldDef.cQFormFieldType.INTERNAL,
+                label="Change\nPW", widget_type=QPushButton,
                 on_change = self.change_password,  # type: ignore
-                position=(0, 6),),
+                position=(0, 6), minimum_height=80, maximum_width=80, minimum_width=80,),
             cQFormFieldDef(name="active_status", label="|", widget_type=QCheckBox,
                 lblChkBxYesNo={True: "ACTV", False: "INACTV"},
                 position=(0, 7),),
             cQFormFieldDef(name="is_superuser", label="|", widget_type=QCheckBox,
                 lblChkBxYesNo={True: "SPUSR", False: ""},
                 position=(0, 8),),
-            cQFormFieldDef(name="permissions", label="|", widget_type=QLineEdit,
+            cQFormFieldDef(name="permissions", label="|", label_alignment = Qt.AlignmentFlag.AlignRight, 
+                widget_type=QLineEdit,
                 position=(0, 9), minimum_width=200,),
-            cQFormFieldDef(name="menuGroup", label="|", widget_type=QLineEdit,
+            cQFormFieldDef(name="menuGroup", label="|", label_alignment = Qt.AlignmentFlag.AlignRight, 
+                widget_type=QLineEdit,
                 position=(0, 10), minimum_width=50,),
-            cQFormFieldDef(name="date_joined:", label="date joined", widget_type=QLabel,
+            cQFormFieldDef(name="date_joined", label="date joined:", widget_type=QLabel, readonly=True,
                 position=(1, 0, 1, 2),),
-            cQFormFieldDef(name="last_login:", label="last login", widget_type=QLabel,
+            cQFormFieldDef(name="last_login", label="last login:", widget_type=QLabel, readonly=True,
                 position=(1, 3, 1, 2),),
             ]
         return flds
     # defineFields
-    
+
     def change_password(self):
         # # for security, changing PW requires entering new PW in a dialog
         # from .change_password_dialog import changePasswordDialog
@@ -67,6 +76,7 @@ class userEditFmRecord(cSRFRecordList_Record):
         #     new_pw = dlg.new_password
         #     self.set_password(new_pw)
         print ("change_password called - implement dialog to enter new password, then call set_password with new PW")
+        print(f'button text is {self._formWidgets["password_btn"].widget.text()}')  # type: ignore
     # change_password
         
 class userEditFm(cSRFRecordList):
@@ -88,17 +98,17 @@ class userEditFm(cSRFRecordList):
             layouts.fixed_top.addWidget(wdgt, 0, col)
 
         # add header row
-        layouts.fixed_top.addWidget(QLabel("ID"), 0, 0)
-        layouts.fixed_top.addWidget(QLabel("Username"), 0, 1)
-        layouts.fixed_top.addWidget(QLabel("First Name"), 0, 2)
-        layouts.fixed_top.addWidget(QLabel("Last Name"), 0, 3)
-        layouts.fixed_top.addWidget(QLabel("Email"), 0, 4)
-        layouts.fixed_top.addWidget(QLabel("Password"), 0, 5)
-        layouts.fixed_top.addWidget(QLabel(""), 0, 6)  # for change PW button
-        layouts.fixed_top.addWidget(QLabel("Status"), 0, 7)
-        layouts.fixed_top.addWidget(QLabel("Superuser"), 0, 8)
-        layouts.fixed_top.addWidget(QLabel("Permissions"), 0, 9)
-        layouts.fixed_top.addWidget(QLabel("Menu Group"), 0, 10)
+        add_hdr_col("ID", 50, 0)
+        add_hdr_col("Username", 150, 1)
+        add_hdr_col("First Name", 150, 2)
+        add_hdr_col("Last Name", 150, 3)
+        add_hdr_col("Email", 175, 4)
+        add_hdr_col("Password", 30, 5)
+        # add_hdr_col(" ", 10, 6)  # for change PW button
+        add_hdr_col("Status", 80, 7)
+        add_hdr_col("Superuser", 80, 8)
+        add_hdr_col("Permissions", 60, 9)
+        add_hdr_col("Menu Group", 20, 10)
         
         return layouts
 

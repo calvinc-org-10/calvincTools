@@ -290,7 +290,7 @@ class cQFmFldWidg(cSimpRecFmElement_Base):
             self._lblChkYN.setProperty('noedit', True)
             self._lblChkYN.setReadOnly(True)
             self._lblChkYN.setFrame(False)
-            self._lblChkYN.setMaximumWidth(40)
+            self._lblChkYN.setMaximumWidth(60)
             self._lblChkYN.setFocusPolicy(Qt.FocusPolicy.NoFocus)
 
         wdgt.checkStateChanged.connect(self.fldChanged)

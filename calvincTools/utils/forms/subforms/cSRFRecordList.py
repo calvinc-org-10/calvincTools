@@ -7,12 +7,17 @@ from PySide6.QtCore import Slot, QTimer
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QStatusBar, QVBoxLayout, QWidget
 
-from calvincTools.utils.forms.definitions.cQFormLayout import cQFormLayout
-from calvincTools.utils.forms.definitions.cQFormBtnDef import cQFormBtnDef
-from calvincTools.utils.forms.forms.cSRF_FormUI_Base import cSRF_FormUI_Base
-from calvincTools.utils.forms.forms.cSRF_Formdb_Base import cSRF_Formdb_Base
-from calvincTools.utils.forms.forms.cSRFSingleRecordForm import cSRFSingleRecordForm
-from calvincTools.utils.forms.widgets.cSimpRecFmElement_Base import cSimpRecFmElement_Base
+from calvincTools.utils.forms.definitions import (
+    cQFormFieldDef, 
+    cQFormLayout,
+    cQFormBtnDef,
+    )
+from calvincTools.utils.forms.widgets import cSimpRecFmElement_Base
+from calvincTools.utils.forms.forms import (
+    cSRF_FormUI_Base,
+    cSRF_Formdb_Base,
+    cSRFSingleRecordForm,
+    )
 from calvincTools.utils.SQLAlcTools import get_primary_key_column
 from calvincTools.utils.cQWidgets import cGridWidget, cstdTabWidget
 
@@ -131,8 +136,10 @@ class cSRFRecordList_Record(
         and updates the dirty and new record flags.
         """
         for Wstruc in self._formWidgets.values():
+            defn = Wstruc.defn
             widg = Wstruc.widget
-            if isinstance(widg, cSimpRecFmElement_Base):
+            if isinstance(widg, cSimpRecFmElement_Base) and defn and defn.field_type in [cQFormFieldDef.cQFormFieldType.SCALAR, cQFormFieldDef.cQFormFieldType.SUBFORM]:
+                # only load from record if it's a field widget with a valid field definition - prevents trying to load from record for buttons, labels, or other non-field widgets, which would cause errors
                 widg.loadFromRecord(self.currRec())
 
         self.showNewRecordFlag()

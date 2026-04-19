@@ -185,8 +185,9 @@ class cSRFSingleRecordForm(cSRF_FormUI_Base, cSRF_Formdb_Base):
         and updates the dirty and new record flags.
         """
         for widgStructure in self._formWidgets.values():
+            defn = widgStructure.defn
             widg = widgStructure.widget
-            if isinstance(widg, cSimpRecFmElement_Base):
+            if isinstance(widg, cSimpRecFmElement_Base) and defn.field_type in [cQFormFieldDef.cQFormFieldType.SUBFORM, cQFormFieldDef.cQFormFieldType.SCALAR]:
                 widg.loadFromRecord(self.currRec())
 
         self.showNewRecordFlag()
