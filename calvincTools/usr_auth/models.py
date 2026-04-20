@@ -9,6 +9,8 @@ from calvincTools.utils.SQLAlcTools import SQLite_FlexibleDateTime
 from calvincTools.models import (
     menuGroups, menuItems,
     )
+from .pwegg import hash_password, verify_password
+
 
 ix_naming_convention = {
     "ix": "ix_%(column_0_label)s",
@@ -121,14 +123,14 @@ class User(UserBase):
     def set_password(self, password):
         """Hash and set the user's password."""
         ...
-        # self.password_hash = generate_password_hash(password)
+        self.password_hash = hash_password(password)
         
 
     def check_password(self, password):
         """Check if the provided password matches the hash."""
         ...
         verdict = True  # placeholder - replace with actual password hash check
-        # verdict = check_password_hash(self.password_hash, password)
+        verdict = verify_password(self.password_hash, password)
         return verdict
 
     def has_permission(self, permission_name: str) -> bool:

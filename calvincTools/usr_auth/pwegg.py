@@ -8,6 +8,7 @@ DEFAULT_HASH_FUNC:str = 'sha512'
 SALT_LENGTH:int = 16
 _DEFAULT_PEPPER: str = 'sH0uLdBEsecrit'
 HASH_ITERATIONS: int = 100000
+_PW_DELIMITER:str = '2$3g'   # to separate salt and hash in the stored string
 
 
 # def password_hash(password:Text, hash_func:str='', salt:Text=''):
@@ -34,11 +35,11 @@ def hash_password(password: str, pepper:str = _DEFAULT_PEPPER, hash_func:str = D
     
     # 3. Store as salt.hex() + "$" + hash.hex()
     # This makes it one single string for your DB
-    return f"{salt.hex()}${pw_hash.hex()}"
+    return f"{salt.hex()}{_PW_DELIMITER}{pw_hash.hex()}"
 
 def verify_password(stored_string: str, provided_password: str, pepper:str = _DEFAULT_PEPPER, hash_func:str = DEFAULT_HASH_FUNC) -> bool:
     # 1. Split the stored string back into salt and hash
-    splitstr = stored_string.split('$')
+    splitstr = stored_string.split(_PW_DELIMITER)
     if len(splitstr) != 2:
         # raise ValueError("Stored password string is not in the expected 'salt$hash' format.")
         return False 

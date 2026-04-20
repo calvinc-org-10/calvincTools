@@ -17,6 +17,7 @@ from calvincTools.utils.forms.definitions.cQFormLayout import cQFormLayout
 
 from .models import User
 from .pwegg import hash_password
+from .chngPW_dlg import chngPW_dlg
 
 
 _parmKey = cParameters.ParmName == "DFLT-NEW-PW"
@@ -49,7 +50,8 @@ class userEditFmRecord(cSRFRecordList_Record):
             cQFormFieldDef(name="password_optional", label="|", widget_type=QCheckBox,
                 lblChkBxYesNo={True: "PW-OPT", False: ""},
                 position=(0, 5),),
-            cQFormFieldDef(name="password_hash", label=" ", widget_type=QLabel,),
+            cQFormFieldDef(name="password_hash", label=" ", widget_type=QLabel,
+                position=(1, 9, 1, 3),),  # just to show that a password exists - not editable. Remove the position (BUT NOT THE FIELD) after testing
             cQFormFieldDef(name="password_btn", field_type=cQFormFieldDef.cQFormFieldType.INTERNAL,
                 label="Change\nPW", widget_type=QPushButton,
                 on_change = self.change_password,  # type: ignore
@@ -76,13 +78,9 @@ class userEditFmRecord(cSRFRecordList_Record):
 
     def change_password(self):
         # # for security, changing PW requires entering new PW in a dialog
-        # from .change_password_dialog import changePasswordDialog
-        # dlg = changePasswordDialog()
-        # if dlg.exec():
-        #     new_pw = dlg.new_password
-        #     self.set_password(new_pw)
-        print ("change_password called - implement dialog to enter new password, then call set_password with new PW")
-        print(f'button text is {self._formWidgets["password_btn"].widget.text()}')  # type: ignore
+        dlg = chngPW_dlg()
+        id = self.currRec().id  # type: ignore
+        dlg.exec_chg_PW(id, require_oldPW=False)  # type: ignore
     # change_password
         
 class userEditFm(cSRFRecordList):
@@ -126,12 +124,13 @@ class userEditFm(cSRFRecordList):
             last_name="User",
             email="",
             password_optional=False,
-            password_hash=hash_password(_dfltNewPW),
+            password_hash='',
             active_status=True,
             is_superuser=False,
             permissions="",
             date_joined=datetime.now(),
         )
+        rec.set_password(_dfltNewPW)  # set default password for new users
         return rec
 
 class editUsersForm(cSRFMultiRecordWrapper):
