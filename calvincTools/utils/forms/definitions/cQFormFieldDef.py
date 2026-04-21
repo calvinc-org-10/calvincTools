@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Callable, Type, Dict
+from typing import Any, Callable, Type, Dict, Literal
 from enum import Enum
 
 from PySide6.QtCore import Qt
@@ -27,7 +27,8 @@ class cQFormFieldDef:
     lblChkBxYesNo: dict[bool, str] | None = None
     
     page: int | str | cQFmConstants = 0
-    position: tuple[int, int, int, int] | tuple[int, int] = (0, 0)
+    position: tuple[int, int, int, int] | tuple[int, int] = (0, 0)      # position is (row, column, rowspan, colspan) or (row, column)
+    invisible: bool = False  # for fields that should not be rendered at all (e.g. password hash)
 
     # behavior
     transform: Callable[[Any], Any] | None = None

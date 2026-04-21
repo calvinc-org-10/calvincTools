@@ -50,8 +50,7 @@ class userEditFmRecord(cSRFRecordList_Record):
             cQFormFieldDef(name="password_optional", label="|", widget_type=QCheckBox,
                 lblChkBxYesNo={True: "PW-OPT", False: ""},
                 position=(0, 5),),
-            cQFormFieldDef(name="password_hash", label=" ", widget_type=QLabel,
-                position=(1, 9, 1, 3),),  # just to show that a password exists - not editable. Remove the position (BUT NOT THE FIELD) after testing
+            cQFormFieldDef(name="password_hash", label=" ", widget_type=QLabel, invisible=True,),  # hidden field to store PW hash, not editable
             cQFormFieldDef(name="password_btn", field_type=cQFormFieldDef.cQFormFieldType.INTERNAL,
                 label="Change\nPW", widget_type=QPushButton,
                 on_change = self.change_password,  # type: ignore

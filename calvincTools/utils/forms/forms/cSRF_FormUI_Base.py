@@ -319,6 +319,14 @@ class cSRF_FormUI_Base(QWidget):
         # endif lookup vs scalar
     # _connect_widget
     def _place_widget(self, widget: QWidget, defn: cQFormFieldDef):
+        if defn.invisible:
+            widget.setVisible(False)
+            return  # if invisible, don't place the widget at all (but we still want to create it and keep it in self._formWidgets so we can manipulate it later if needed, e.g. make it visible based on some condition)
+                    # note: we don't want to place invisible widgets in the layout at all because it can mess up the layout and spacing - better to just not place them and then make them visible when needed, at which point we can place them in the layout if needed to get the spacing right
+                    # TODO: think about this - we might want to place the widget but set it to invisible so that it takes up space in the layout even when it's not visible, to avoid layout issues when showing/hiding the widget - this will depend on the specific layout and how we want it to behave when widgets are shown/hidden, so we might want to make this configurable based on the field definition or the form layout
+                    # for now, we'll just not place invisible widgets and see how it goes - we can always change this later if we find that it causes layout issues when showing/hiding widgets
+        # endif invisible
+        
         layout = self.FormPage(defn.page)
         if layout is None:
             raise ValueError(f"Invalid page {defn.page} for field {defn.name}")

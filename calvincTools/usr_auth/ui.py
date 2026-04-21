@@ -150,7 +150,7 @@ class LoginForm(cSRFSingleRecordForm):
     
     def initialdisplay(self):
         """
-        Initializes a new record and displays it in the form. Also performs any necessary setup for the initial display of the form.
+        Initializes a new record (truly a dummy record - it will not be saved) and displays it in the form. Also performs any necessary setup for the initial display of the form.
         """
         self.initializeRec()
     # initialdisplay()
@@ -199,11 +199,6 @@ class LoginForm(cSRFSingleRecordForm):
         # endif retries
     # try_again
     
-    def login(self, username: str, password: str) -> bool:
-        """Perform login logic. Return True if successful, False otherwise."""
-        # Placeholder for actual authentication logic
-        return False
-
     def reset_fields(self):
         # This one-liner clears the text and moves focus back to the username
         interactive_fields = ['username', 'password']

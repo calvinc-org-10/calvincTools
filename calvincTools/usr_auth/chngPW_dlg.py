@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (
 )
 
 from calvincTools.database import get_cMenu_sessionmaker, Repository
+from calvincTools.utils.forms import cQFmFldWidg
 
 from .models import User
 from .pwegg import change_password, verify_password
@@ -21,14 +22,14 @@ class chngPW_dlg(QDialog):
 
         lblDlgTitle = QLabel(self.tr('Change Password'))
 
-        self.pw_old = QLineEdit(self)
-        self.pw_old.editingFinished.connect(self.enableOKButton)   # enable OK button only when all PW info is given and valid
+        self.pw_old = cQFmFldWidg(widgType=QLineEdit, lblText=self.tr('Old Password'), parent=self)
+        self.pw_old.signalFldChanged.connect(self.enableOKButton)   # enable OK button only when all PW info is given and valid
         # self.pw_old.setEchoMode(QLineEdit.EchoMode.Password)
-        self.pw_new = QLineEdit(self)
-        self.pw_new.editingFinished.connect(self.check_pwnew_confirm)   # check if new PW and confirm match whenever new PW is changed
+        self.pw_new = cQFmFldWidg(widgType=QLineEdit, lblText=self.tr('New Password'), parent=self)
+        self.pw_new.signalFldChanged.connect(self.check_pwnew_confirm)   # check if new PW and confirm match whenever new PW is changed
         # self.pw_new.setEchoMode(QLineEdit.EchoMode.Password)
-        self.pw_new_confirm = QLineEdit(self)
-        self.pw_new_confirm.editingFinished.connect(self.check_pwnew_confirm)   # check if new PW and confirm match whenever confirm PW is changed
+        self.pw_new_confirm = cQFmFldWidg(widgType=QLineEdit, lblText=self.tr('Confirm New Password'), parent=self)
+        self.pw_new_confirm.signalFldChanged.connect(self.check_pwnew_confirm)   # check if new PW and confirm match whenever confirm PW is changed
         # self.pw_new_confirm.setEchoMode(QLineEdit.EchoMode.Password)
         
         self.dlgButtons = QDialogButtonBox(
@@ -54,6 +55,8 @@ class chngPW_dlg(QDialog):
 
     def exec_chg_PW(self, userID:int, require_oldPW:bool = True) -> None:
         self.required_oldPW = require_oldPW
+        if not require_oldPW:
+            self.pw_old.setVisible(False)
         ret = super().exec()
         if ret == QDialog.DialogCode.Accepted:
             self.usrRec = Repository(get_cMenu_sessionmaker(),User).get_by_id(userID)
