@@ -25,7 +25,7 @@ from .dbmenulist import MenuRecords
 from .menucommand_constants import MENUCOMMANDS, COMMANDNUMBER
 from . import menucommand_handlers
 from calvincTools.utils import (cComboBoxFromDict, pleaseWriteMe, cGridWidget, )
-from calvincTools.usr_auth import editusers
+from calvincTools.usr_auth import (editusers, current_user, )
 
 # TODO: put in class?
 # cMenu-related constants
@@ -146,6 +146,9 @@ class cMenu(QWidget):
         self.menuHdrLayout.addLayout(self.layoutMenuID, stretch=0)
         self.menuHdrLayout.addSpacing(30)
         self.menuHdrLayout.addWidget(self.lblmenuName, stretch=1)
+        self.menuHdrLayout.addSpacing(30)
+        self.lblcurUsrName = QLabel('')
+        self.menuHdrLayout.addWidget(self.lblcurUsrName, stretch=0)
         self.MasterLayout.addLayout(self.menuHdrLayout)
         
         for bNum in range(_NUM_menuBTNperCOL):
@@ -186,6 +189,8 @@ class cMenu(QWidget):
         self.lblmenuGroupID.display(menuGroup)
         self.lblmenuID.display(menuID)
         self.lblVersion.setText(self.sysver)
+        cUsr = current_user()
+        self.lblcurUsrName.setText(f'{cUsr.username}' if cUsr else '---')
         self.lblmenuName.setText(str(menuItems[0]['OptionText']))
         for n in range(_NUM_menuBUTTONS):
             if n+1 in menuItems:

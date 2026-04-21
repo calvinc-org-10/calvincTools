@@ -44,7 +44,8 @@ def login_required(func):
 
     @wraps(func)
     def decorated_view(*args, **kwargs):
-        if current_user is None or not current_user.is_authenticated:
+        cUsr = current_user()
+        if cUsr is None or not cUsr.is_authenticated:
             return uauth_notify_mustlogin()
         return func(*args, **kwargs)
 
@@ -72,10 +73,11 @@ def superuser_required(f):
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if current_user is None or not current_user.is_authenticated:
+        cUsr = current_user()
+        if cUsr is None or not cUsr.is_authenticated:
             return uauth_notify_mustlogin()
         
-        if not current_user.is_superuser:
+        if not cUsr.is_superuser:
             return uauth_notify_nopermission()
         
         return f(*args, **kwargs)
@@ -88,10 +90,11 @@ def active_user_required(f):
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if current_user is None or not current_user.is_authenticated:
+        cUsr = current_user()
+        if cUsr is None or not cUsr.is_authenticated:
             return uauth_notify_mustlogin()
         
-        if not current_user.is_active:
+        if not cUsr.is_active:
             return uauth_notify_inactive()
         
         return f(*args, **kwargs)
@@ -105,7 +108,8 @@ def anonymous_required(f):
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if current_user is not None and current_user.is_authenticated:
+        cUsr = current_user()
+        if cUsr is not None and cUsr.is_authenticated:
             return uauth_notify_mustbeanon()
 
         return f(*args, **kwargs)

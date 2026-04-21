@@ -162,7 +162,7 @@ class LoginForm(cSRFSingleRecordForm):
     def _on_login_clicked(self):
         """Handle login button click event."""
         """Perform login logic. Return True if successful, False otherwise."""
-        from . import current_user
+        from . import current_user, set_current_user
 
         uname = self._formWidgets.get('username').get_value()   # type: ignore
         usrRec = self.userRecord(uname)
@@ -174,7 +174,7 @@ class LoginForm(cSRFSingleRecordForm):
         if self.verify_user(pw):
             self._formWidgets.get('greeting').set_value(f"Welcome, {usrRec.first_name}!")  # type: ignore
             self._formWidgets.get('loginmsg').set_value("")  # type: ignore
-            current_user = usrRec
+            set_current_user(usrRec)
             # log the login time
             usrRec.update_last_login()
             # emit signal or call callback to indicate successful login, if needed
