@@ -4,7 +4,7 @@ from .ui import LoginForm
 _current_user: User|None = None
 
 def current_user() -> User|None:
-    global _current_user
+    # global _current_user  # not needed since we're only reading _current_user, not assigning to it
     return _current_user
 def set_current_user(user: User):
     global _current_user

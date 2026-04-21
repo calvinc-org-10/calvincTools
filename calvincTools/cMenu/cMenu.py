@@ -25,7 +25,7 @@ from .dbmenulist import MenuRecords
 from .menucommand_constants import MENUCOMMANDS, COMMANDNUMBER
 from . import menucommand_handlers
 from calvincTools.utils import (cComboBoxFromDict, pleaseWriteMe, cGridWidget, )
-from calvincTools.usr_auth import (editusers, current_user, )
+from calvincTools.usr_auth import (editusers, )
 
 # TODO: put in class?
 # cMenu-related constants
@@ -185,6 +185,7 @@ class cMenu(QWidget):
             self.menuButton[bNum+_NUM_menuBTNperCOL].setEnabled(False)
     
     def displayMenu(self, menuGroup:int, menuID:int, menuItems:Dict[int,Dict]):
+        from calvincTools.usr_auth import current_user
         # self.lblmenuID.setText(f'{menuGroup},{menuID}\n{sysver["DEV"]}')
         self.lblmenuGroupID.display(menuGroup)
         self.lblmenuID.display(menuID)
