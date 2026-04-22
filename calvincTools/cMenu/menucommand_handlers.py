@@ -36,6 +36,13 @@ from ..utils.forms.subforms.cSRFRecordList import cSRFRecordList_Record
 # there's no need to import cMenu, plus it's a circular ref - cMenu depends heavily on this module
 # from .kls_cMenu import cMenu 
 
+from calvincTools.usr_auth import current_user
+from calvincTools.usr_auth.decorators import (
+    active_user_required,
+    superuser_required,
+    )
+from calvincTools.usr_auth.chngPW_dlg import chngPW_dlg
+
 from ..apphooks import cTools_apphooks
 from ..database import (
     get_cMenu_sessionmaker, get_cMenu_session, 
@@ -1096,6 +1103,9 @@ class cWidgetMenuItem(cSRFRecordList_Record):
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+
+@superuser_required
+# perhaps this should be admin_required instead of superuser_required, but for now I'll leave it as superuser_required since that's what I have available and it will work for testing - I can always change it to admin_required later when I have that available if I decide that's more appropriate
 class cEditMenu(cSRFSingleRecordForm):
     _ORMmodel = None  # Lazy-loaded to avoid circular import
     _ssnmaker = get_cMenu_sessionmaker()
@@ -1996,10 +2006,6 @@ class loadExternalWebPage():
 
 #############################################
 #############################################
-
-from calvincTools.usr_auth import current_user
-from calvincTools.usr_auth.decorators import active_user_required
-from calvincTools.usr_auth.chngPW_dlg import chngPW_dlg
 
 @active_user_required
 class changePassword():

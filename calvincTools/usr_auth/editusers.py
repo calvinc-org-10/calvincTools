@@ -18,7 +18,7 @@ from calvincTools.utils.forms.definitions.cQFormLayout import cQFormLayout
 from .models import User
 from .pwegg import hash_password
 from .chngPW_dlg import chngPW_dlg
-
+from .decorators import (active_user_required, superuser_required, )
 
 _parmKey = cParameters.ParmName == "DFLT-NEW-PW"
 _dfltNewPW_rec = Repository(get_cMenu_sessionmaker(), cParameters).get_all(_parmKey)
@@ -132,6 +132,8 @@ class userEditFm(cSRFRecordList):
         rec.set_password(_dfltNewPW)  # set default password for new users
         return rec
 
+@superuser_required
+# mebbe later create a permission specifically for user management and require that instead of superuser status, but for now I'll just require superuser status since that's easier and will work for testing - I can always change it to a specific permission later when I have that available if I decide that's more appropriate
 class editUsersForm(cSRFMultiRecordWrapper):
     _formname = "Edit Users"
     
