@@ -288,9 +288,9 @@ class cMenu(QWidget):
             menucommand_handlers.loadExternalWebPage(url)
             return
             # retHTTP = fn_LoadExtWebPage(req, CommandArg)
-        # elif CommandText == 'ChangePW':
-        #     return
-            # return redirect('change_password')
+        elif CommandText == 'ChangePW':
+            menucommand_handlers.changePassword()
+            return
         # elif CommandText == 'ChangeUser':
         # elif CommandText == 'ChangeMenuGroup':
         elif CommandText == 'EditMenu':

@@ -1996,5 +1996,23 @@ class loadExternalWebPage():
 
 #############################################
 #############################################
+
+from calvincTools.usr_auth import current_user
+from calvincTools.usr_auth.decorators import active_user_required
+from calvincTools.usr_auth.chngPW_dlg import chngPW_dlg
+
+@active_user_required
+class changePassword():
+    def __init__(self, parent:QWidget|None = None):
+        uRec = current_user()
+        pwDlg = chngPW_dlg()
+        id = uRec.id if uRec else None
+        if id is None:
+            return
+        pwDlg.exec_chg_PW(id, require_oldPW=True)
+    # __init__
+
+#############################################
+#############################################
 #############################################
 

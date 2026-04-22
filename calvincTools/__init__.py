@@ -17,7 +17,7 @@ from .apphooks import cTools_apphooks
 # from calvincTools.cMenu import cMenu
 
 
-def calvincTools_init(usr_auth: bool,
+def calvincTools_init(
         app_sessionmaker=None, 
         FormNameToURL_Map={},
         ExternalWebPageURL_Map={},
@@ -28,10 +28,10 @@ def calvincTools_init(usr_auth: bool,
         ):
         """
         Initialize calvincTools
-        Pass in structures that calvincTools will need which are cntrolled by calling app
+        Pass in structures that calvincTools will need which are controlled by calling app
 
         Returns:
-            Login screen (if usr_auth=True) or menu screen (if usr_auth=False), depending on usr_auth
+            None
         """
         ## dirty little secret: this started life as calvincTools_apphooks, but I wanted to add some more app-specific initialization here.
         ## so I renamed it to calvincTools_init, but calvincTools_apphooks still exists and still does the heavy lifting. 
