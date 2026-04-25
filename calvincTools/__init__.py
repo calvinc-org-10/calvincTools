@@ -39,7 +39,7 @@ def calvincTools_init(
         ## apps should call calvincTools_init, not calvincTools_apphooks, but calvincTools_init will call calvincTools_apphooks.initialize to set up the hooks.
 
         # Initialize app hooks - this is the main point of this function, to ensure that the hooks are set up before any
-        cTools_apphooks.initialize(
+        return cTools_apphooks.initialize(
             app_sessionmaker=app_sessionmaker, 
             FormNameToURL_Map=FormNameToURL_Map,
             ExternalWebPageURL_Map=ExternalWebPageURL_Map,
@@ -47,7 +47,6 @@ def calvincTools_init(
             **kwargs
         )
 
-        return        
     
     # implement later (???)
     # cTools_tables = (None, None, None, None, None)   # will be set by init_cDatabase

@@ -90,7 +90,7 @@ def FormBrowse(parntWind,
     urlIndex = 0
     viewIndex = 1
 
-    FormNameToURL_Map:Dict[str,Tuple[str,Any]] = cTools_apphooks().get_FormNameToURL_Map()
+    FormNameToURL_Map:Dict[str,Tuple[str,Any]] = cTools_apphooks().FormNameToURL_Map
     
     # theForm = 'Form ' + formname + ' is not built yet.  Calvin needs more coffee.'
     theForm = None
@@ -360,7 +360,7 @@ class cMRunSQL(QWidget):
     def __init__(self, parent = None):
         super().__init__(parent)
 
-        app_sessionmaker = cTools_apphooks().get_app_sessionmaker()
+        app_sessionmaker = cTools_apphooks().app_sessionmaker
         assert app_sessionmaker is not None, "app_sessionmaker must be provided"
         self.app_sessionmaker = app_sessionmaker
         
@@ -1798,7 +1798,7 @@ class OpenTable(QWidget):
         def __init__(self, parent:QWidget|None = None):
             super().__init__(parent)
             
-            app_sessionmaker = cTools_apphooks().get_app_sessionmaker()
+            app_sessionmaker = cTools_apphooks().app_sessionmaker
             
             self.setWindowModality(Qt.WindowModality.WindowModal)
             self.setWindowTitle(parent.windowTitle() if parent else 'Choose Table')
@@ -1854,7 +1854,7 @@ class OpenTable(QWidget):
         # font.setPointSize(12)
         # self.setFont(font)
     
-        app_sessionmaker = cTools_apphooks().get_app_sessionmaker()
+        app_sessionmaker = cTools_apphooks().app_sessionmaker
         assert app_sessionmaker is not None, "app_sessionmaker must be provided"
         db:Engine=app_sessionmaker().get_bind()
         

@@ -12,6 +12,8 @@ class cTools_apphooks:
     _appver = ''
     _FormNameToURL_Map = {}
     _ExternalWebPageURL_Map = {}
+    _appname='Application'
+    _logo=None
     _MUSTBEINITIALIZED: set = {
         'app_sessionmaker',
         'FormNameToURL_Map', 
@@ -29,7 +31,9 @@ class cTools_apphooks:
             app_sessionmaker=None, 
             FormNameToURL_Map={},
             ExternalWebPageURL_Map={},
+            appname='Application',
             appver='',
+            logo=None,
             **kwargs
             ):
         """
@@ -39,14 +43,18 @@ class cTools_apphooks:
         """
         instance = cls() # This ensures the instance exists
         if app_sessionmaker is not None:
-            instance.set_app_sessionmaker(app_sessionmaker)
+            instance.app_sessionmaker = app_sessionmaker
         if FormNameToURL_Map:
-            instance.set_FormNameToURL_Map(FormNameToURL_Map)
+            instance.FormNameToURL_Map = FormNameToURL_Map
         if ExternalWebPageURL_Map:
-            instance.set_ExternalWebPageURL_Map(ExternalWebPageURL_Map)
+            instance.ExternalWebPageURL_Map = ExternalWebPageURL_Map
         if appver:
-            instance.set_appver(appver)
-        
+            instance.appver = appver
+        if appname:
+            instance.appname = appname
+        if logo:
+            instance.logo = logo
+                    
         # You can add other app-specific resources here
         # Example: instance._external_config = kwargs.get('config')
         
@@ -61,8 +69,8 @@ class cTools_apphooks:
         return not any(getattr(instance, f'_{attr}', None) is None for attr in cls._MUSTBEINITIALIZED)
     # is_initialized
 
-
-    def get_app_sessionmaker(self):
+    @property
+    def app_sessionmaker(self):
         """
         Retrieve the configured application database sessionmaker.
         """
@@ -73,38 +81,59 @@ class cTools_apphooks:
             )
         return self._app_sessionmaker
     # get_app_sessionmaker
-    def set_app_sessionmaker(self, app_sessionmaker):
+    @app_sessionmaker.setter
+    def app_sessionmaker(self, app_sessionmaker):
         """
         Set the application database sessionmaker.
         """
         self._app_sessionmaker = app_sessionmaker
     # set_app_sessionmaker
 
-    def get_appver(self):
+    @property
+    def appver(self):
         return self._appver
-    def set_appver(self, appver):
+    @appver.setter
+    def appver(self, appver):
         self._appver = appver
 
-    def get_FormNameToURL_Map(self):
+    @property
+    def FormNameToURL_Map(self):
         if self._app_sessionmaker is None:
             raise RuntimeError(
                 "cTools_apphooks has not been initialized with 'FormNameToURL_Map'. "
                 "Call cTools_apphooks.initialize() first."
             )
         return self._FormNameToURL_Map
-    def set_FormNameToURL_Map(self, FormNameToURL_Map):
+    @FormNameToURL_Map.setter
+    def FormNameToURL_Map(self, FormNameToURL_Map):
         self._FormNameToURL_Map = FormNameToURL_Map
 
-    def get_ExternalWebPageURL_Map(self):
+    @property
+    def ExternalWebPageURL_Map(self):
         if self._app_sessionmaker is None:
             raise RuntimeError(
                 "cTools_apphooks has not been initialized with 'ExternalWebPageURL_Map'. "
                 "Call cTools_apphooks.initialize() first."
             )
         return self._ExternalWebPageURL_Map
-    def set_ExternalWebPageURL_Map(self, ExternalWebPageURL_Map):
+    @ExternalWebPageURL_Map.setter
+    def ExternalWebPageURL_Map(self, ExternalWebPageURL_Map):
         self._ExternalWebPageURL_Map = ExternalWebPageURL_Map
-    
+
+    @property
+    def appname(self):
+        return self._appname
+    @appname.setter
+    def appname(self, appname):
+        self._appname = appname
+
+    @property
+    def logo(self):
+        return self._logo
+    @logo.setter
+    def logo(self, logo):
+        self._logo = logo
+            
     # Additional getters/setters can be added as needed
 
 # Convenience function to get the instance

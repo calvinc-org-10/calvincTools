@@ -96,10 +96,10 @@ class cMenu(QWidget):
         super().__init__(parent)
 
         # TODO: deprecate these - get it from apphooks where needed
-        sysver:str = cTools_apphooks().get_appver()
-        FormNameToURL_Map:Dict[str,Tuple[Any,Any]] = cTools_apphooks().get_FormNameToURL_Map()
-        ExternalWebPageURL_Map:Dict[str,str] = cTools_apphooks().get_ExternalWebPageURL_Map()
-        app_sessionmaker = cTools_apphooks().get_app_sessionmaker()
+        sysver:str = cTools_apphooks().appver
+        FormNameToURL_Map:Dict[str,Tuple[Any,Any]] = cTools_apphooks().FormNameToURL_Map
+        ExternalWebPageURL_Map:Dict[str,str] = cTools_apphooks().ExternalWebPageURL_Map
+        app_sessionmaker = cTools_apphooks().app_sessionmaker
         self.sysver = sysver
         self.FormNameToURL_Map = FormNameToURL_Map
         self._addInternalForms()
