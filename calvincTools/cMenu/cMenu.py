@@ -96,7 +96,6 @@ class cMenu(QWidget):
 
         from calvincTools import calvincTools
         
-        # TODO: deprecate these - get it from apphooks where needed
         sysver:str = calvincTools().appver
         FormNameToURL_Map:Dict[str,Tuple[Any,Any]] = calvincTools().FormNameToURL_Map
         ExternalWebPageURL_Map:Dict[str,str] = calvincTools().ExternalWebPageURL_Map
@@ -165,6 +164,9 @@ class cMenu(QWidget):
 
         self.MasterLayout.addWidget(self.menuLayout)
 
+        calvincTools().LogoutRequested.connect(self.logout)  # connect logout requested signal to logout method to trigger logout process when logout is requested
+        calvincTools().ShutdownRequested.connect(self.shutdown)  # connect shutdown requested signal to shutdown method to trigger app shutdown when shutdown is requested
+        
         self.loadMenu()
     # __init__
 
@@ -336,6 +338,29 @@ class cMenu(QWidget):
         # case MENUCOMMANDS.get(CommandNum) aka CommandText
     # handleMenuButtonClick
 
+    def killAllChildScreens(self):
+        for scrn in self.childScreens.values():
+            scrn.close()
+        self.childScreens = {}
+
+    def logout(self):
+        from calvincTools import calvincTools
+        self.endmenu()  # close child screens and clear out menu (but keep app running and show login form again if usr_auth is enabled)
+        calvincTools().Logout.emit()  # emit logout signal to trigger showing login form again if usr_auth is enabled (if usr_auth is not enabled, then just endmenu without showing login form again since there's no login form to show)
+
+    @Slot()        
+    def shutdown(self):
+        appinst = QApplication.instance()
+        if appinst is not None:
+            appinst.quit()
+    
+    def endmenu(self):
+        from calvincTools import calvincTools
+        usr_auth_enabled = calvincTools().usr_auth
+
+        self.killAllChildScreens()
+        calvincTools().show_login_form()
+        # any other cleanup if needed
 # cMenu 
 
 ###############################################################

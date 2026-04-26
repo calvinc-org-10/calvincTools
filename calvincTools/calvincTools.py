@@ -254,6 +254,14 @@ class calvincTools(QObject):
                 return
             set_current_user(User_usrauth_not_used)  # set to dummy user since we're not using authentication
             self.show_menu_form()
+
+    def logout(self):
+        # Emit the LogoutRequested signal to trigger any necessary cleanup in the app (e.g. clearing user session data)
+        self.LogoutRequested.emit()
+        # After cleanup is done, emit the Logout signal to indicate logout has been completed
+        self.show_login_form()      # this will show the login form if usr_auth, else shutdown the app (since there's no login form to show if usr_auth is False, we just trigger the logout process which should lead to app shutdown in that case)
+        self.Logout.emit()
+    # logout
             
     # implement later (???)
     # cTools_tables = (None, None, None, None, None)   # will be set by init_cDatabase
