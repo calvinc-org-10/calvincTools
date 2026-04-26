@@ -93,6 +93,7 @@ def FormBrowse(parntWind,
     
     # theForm = 'Form ' + formname + ' is not built yet.  Calvin needs more coffee.'
     theForm = None
+    authorized = True
     # formname = formname.lower()
     if formname in FormNameToURL_Map:
         if FormNameToURL_Map[formname][urlIndex]:
@@ -120,17 +121,16 @@ def FormBrowse(parntWind,
             except NameError:
                 # fn = None
                 formname = f'{formname} exists but view {FormNameToURL_Map[formname][viewIndex]} is either not defined, not imported, or has fatal errors.  Calvin needs more coffee.\n'
+            except PermissionError:
+                authorized = False
             # #end try
         # endif FormNameToURL_Map[formname][viewIndex]:
     # endif formname in FormNameToURL_Map:
-    if not theForm:
+    if authorized and not theForm:
         formname = f'Form {formname} is not built yet.  Calvin needs more coffee.'
         # print(formname)
         UnderConstruction_Dialog(parntWind, formname).show()
     else:
-        # print(f'about to show {theForm}')
-        # theForm.show()
-        # print(f'done showing')
         return theForm
     # endif
 

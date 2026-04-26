@@ -46,7 +46,8 @@ def login_required(func):
         from . import current_user
         cUsr = current_user()
         if cUsr is None or not cUsr.is_authenticated:
-            return uauth_notify_mustlogin()
+            uauth_notify_mustlogin()
+            raise PermissionError("User must be logged in to access this view.")
         return func(*args, **kwargs)
 
     return decorated_view
@@ -76,10 +77,12 @@ def superuser_required(f):
         from . import current_user
         cUsr = current_user()
         if cUsr is None or not cUsr.is_authenticated:
-            return uauth_notify_mustlogin()
+            uauth_notify_mustlogin()
+            raise PermissionError("User must be logged in to access this view.")
         
         if not cUsr.is_superuser:
-            return uauth_notify_nopermission()
+            uauth_notify_nopermission()
+            raise PermissionError("User does not have permission to access this view.")
         
         return f(*args, **kwargs)
     return decorated_function
@@ -94,10 +97,12 @@ def active_user_required(f):
         from . import current_user
         cUsr = current_user()
         if cUsr is None or not cUsr.is_authenticated:
-            return uauth_notify_mustlogin()
+            uauth_notify_mustlogin()
+            raise PermissionError("User must be logged in to access this view.")
         
         if not cUsr.is_active:
-            return uauth_notify_inactive()
+            uauth_notify_inactive()
+            raise PermissionError("User account is inactive.")
         
         return f(*args, **kwargs)
     return decorated_function
@@ -113,7 +118,8 @@ def anonymous_required(f):
         from . import current_user
         cUsr = current_user()
         if cUsr is not None and cUsr.is_authenticated:
-            return uauth_notify_mustbeanon()
+            uauth_notify_mustbeanon()
+            raise PermissionError("Authenticated users cannot access this view.")
 
         return f(*args, **kwargs)
     return decorated_function

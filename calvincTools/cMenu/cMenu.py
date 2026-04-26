@@ -166,10 +166,20 @@ class cMenu(QWidget):
 
         calvincTools().LogoutRequested.connect(self.logout)  # connect logout requested signal to logout method to trigger logout process when logout is requested
         calvincTools().ShutdownRequested.connect(self.shutdown)  # connect shutdown requested signal to shutdown method to trigger app shutdown when shutdown is requested
+        LFm = calvincTools().login_form()
+        if LFm is not None:
+            LFm.login_successful.connect(self.setUser)  # connect login form's login_successful signal to setUser slot to update displayed username when login is successful
         
         self.loadMenu()
     # __init__
 
+    @Slot()
+    def setUser(self):
+        from calvincTools.usr_auth import current_user
+        user = current_user()
+        uName = user.username if user else '---'
+        self.lblcurUsrName.setText(f'{uName}')
+        
     def open_childScreen(self, window_id:str, childScreen: QWidget):
         if window_id not in self.childScreens:
             childScreen.setProperty('id', window_id)
@@ -193,8 +203,7 @@ class cMenu(QWidget):
         self.lblmenuGroupID.display(menuGroup)
         self.lblmenuID.display(menuID)
         self.lblVersion.setText(self.sysver)
-        cUsr = current_user()
-        self.lblcurUsrName.setText(f'{cUsr.username}' if cUsr else '---')
+        self.setUser()
         self.lblmenuName.setText(str(menuItems[0]['OptionText']))
         for n in range(_NUM_menuBUTTONS):
             if n+1 in menuItems:

@@ -201,7 +201,7 @@ class LoginForm(cSRFSingleRecordForm):
     
     def reset_fields(self):
         # This one-liner clears the text and moves focus back to the username
-        interactive_fields = ['username', 'password']
+        interactive_fields = ['username', 'password', 'greeting', 'loginmsg']
         [field.set_value('') for field in [self._formWidgets[FFF] for FFF in interactive_fields]]    # type: ignore
         self._formWidgets['username'].widget.setFocus()
 
