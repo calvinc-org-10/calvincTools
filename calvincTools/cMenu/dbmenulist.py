@@ -198,6 +198,15 @@ class MenuRecords:
         return retDict
 
     @classmethod
+    def menuGroupName(cls, mGroup:int) -> str|None:
+        cls._ensure_tables_loaded()
+        assert cls._tblGroup is not None, "MenuRecords class not properly initialized with table reference."
+        stmt = select(cls._tblGroup.GroupName).where(cls._tblGroup.id == mGroup)
+        with get_cMenu_session() as session:
+            retval = session.scalar(stmt)
+        return retval
+    
+    @classmethod
     def menuGroupsDict(cls) -> Dict[str, int]:
         """Return a dictionary mapping GroupName to id for all menu groups."""
         # TODO: generalize this to work with any table (return a dict of {id:record})
