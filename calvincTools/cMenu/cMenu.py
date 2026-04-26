@@ -314,10 +314,11 @@ class cMenu(QWidget):
         # elif CommandText == 'ShowHelp':
         # elif CommandText == 'ShowRoutes_URLs':
         elif CommandText == 'ExitApplication':
-            # exit the application
-            appinst = QApplication.instance()
-            if appinst is not None:
-                appinst.quit()
+            self.logout()  # trigger logout process which should lead to app shutdown if usr_auth is False (since there's no login form to show if usr_auth is False, we just trigger the logout process which should lead to app shutdown in that case; if usr_auth is True, then this will show the login form again after logging out)
+            # # exit the application
+            # appinst = QApplication.instance()
+            # if appinst is not None:
+            #     appinst.quit()
         elif CommandNum in MENUCOMMANDS:
             # command recognized but not yet implemented
             # TODO: QMessageBox.information ?
