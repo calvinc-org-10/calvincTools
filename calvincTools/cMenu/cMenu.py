@@ -4,7 +4,7 @@ from typing import (Dict, List, Tuple, Any, Callable, )
 from PySide6.QtCore import (QCoreApplication, 
     QDate, QDateTime, QLocale,
     QMetaObject, QObject, QPoint, QRect,
-    QSize, QTime, QUrl, Qt,
+    QSize, QTime, QUrl, Qt, QEvent,
     Signal, Slot, )
 from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
@@ -25,6 +25,7 @@ from .menucommand_constants import MENUCOMMANDS, COMMANDNUMBER
 from . import menucommand_handlers
 from calvincTools.utils import (cComboBoxFromDict, pleaseWriteMe, cGridWidget, )
 from calvincTools.usr_auth import (editusers, )
+from calvincTools.usr_auth.decorators import (superuser_required,  )
 
 # TODO: put in class?
 # cMenu-related constants
@@ -37,6 +38,26 @@ _NUM_menuBTNperCOL: int = int(_NUM_menuBUTTONS/_NUM_menuBUTNCOLS)
 #############################################
 #############################################
 #############################################
+
+# TODO: consider making ClickableRect a more general ClickableWidget that can be used for other purposes as well, and then make ClickableRect a subclass of ClickableWidget that just sets a background color and size to look like a rectangle. For now, just making it a simple ClickableRect for testing double click handling in a widget.
+class cClickableRect(QWidget):
+    clicked = Signal()
+    rightclicked = Signal()
+    doubleclicked = Signal()
+    
+    def __init__(self):
+        super().__init__()
+
+    def mousePressEvent(self, event):
+        # I think I can handle doubleclicks here, but the separate event handler for double clicks is more reliable
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+        if event.button() == Qt.MouseButton.RightButton:
+            self.rightclicked.emit()
+
+    def mouseDoubleClickEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.doubleclicked.emit()
 
 class cMenu(QWidget):
     # more class constants
@@ -88,6 +109,47 @@ class cMenu(QWidget):
             formName, formView = internalForm.value
             self.FormNameToURL_Map[formName] = (None, formView)
 
+    class DlgChgMenuGroup(QDialog):
+        def __init__(self, mnuGrp:int, mnuGrpNam:str|None, parent:QWidget|None = None):
+            super().__init__(parent)
+            
+            self.setWindowModality(Qt.WindowModality.WindowModal)
+            self.setWindowTitle(parent.windowTitle() if parent else 'Select Menu Group')
+
+            lblDlgTitle = QLabel(self.tr(f'Select Menu Group to load\nCurrent: {mnuGrpNam} ({mnuGrp})'))
+            
+            # pop current menu group from dictMenuGroups so it doesn't show as an option to select since we're already on that menu group
+            dictMenuGroups = { gName:gID for gName, gID in MenuRecords.menuGroupsDict().items() if gID != mnuGrp }
+
+            layoutMenuID = QHBoxLayout()
+            lblMenuID = QLabel(self.tr('Menu Group ID'))
+            self.combobxMenuID = cComboBoxFromDict(dictMenuGroups, self)
+            
+            layoutMenuID.addWidget(lblMenuID)
+            layoutMenuID.addWidget(self.combobxMenuID)
+            
+            dlgButtons = QDialogButtonBox(
+                QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.Cancel,
+                Qt.Orientation.Horizontal,
+                )
+            dlgButtons.accepted.connect(self.accept)
+            dlgButtons.rejected.connect(self.reject)            
+
+            layoutMine = QVBoxLayout()
+            layoutMine.addWidget(lblDlgTitle)
+            layoutMine.addLayout(layoutMenuID)
+            layoutMine.addWidget(dlgButtons)
+            
+            self.setLayout(layoutMine)
+            
+        def exec_CMMnu(self):
+            ret = super().exec()
+            return (
+                ret, 
+                int(self.combobxMenuID.currentData()) if ret==self.DialogCode.Accepted else None,
+                )
+    # cEdtMnuDlgCopyMoveMenu
+
     def __init__(self, 
         parent:QWidget|None, 
         initMenu=(0,0)
@@ -111,8 +173,15 @@ class cMenu(QWidget):
         self.menuLayout = cGridWidget(scrollable=True)
         self.menuButton: Dict[int, cMenu.menuBUTTON] = {}
         self.menuHdrLayout: QHBoxLayout = QHBoxLayout()
-        self.lblmenuGroupID:  QLCDNumber = QLCDNumber(3)
-        self.lblmenuID:  QLCDNumber = QLCDNumber(3)
+        
+        b:QWidget = cClickableRect()
+        b.setMinimumWidth(10)
+        b.setMaximumWidth(10)
+        b.doubleclicked.connect(self.changeMenuGroup)
+        self.btnChgMenuGroup: QWidget = b
+        self.lblmenuGroupID: QLCDNumber = QLCDNumber(3)
+        self.lblmenuID: QLCDNumber = QLCDNumber(3)
+        
         self.lblVersion: QLabel = QLabel('')
         self.layoutMenuID:QGridLayout = QGridLayout()
         self.lblmenuName: QLabel = QLabel("")
@@ -139,9 +208,10 @@ class cMenu(QWidget):
         # self.menuName.setMargin(20)
         self.lblmenuName.setWordWrap(False)
         
-        self.layoutMenuID.addWidget(self.lblmenuGroupID,0,0)
-        self.layoutMenuID.addWidget(self.lblmenuID,0,1)
-        self.layoutMenuID.addWidget(self.lblVersion,1,0,1,2)
+        self.layoutMenuID.addWidget(self.btnChgMenuGroup,0,0)
+        self.layoutMenuID.addWidget(self.lblmenuGroupID,0,1)
+        self.layoutMenuID.addWidget(self.lblmenuID,0,2)
+        self.layoutMenuID.addWidget(self.lblVersion,1,0,1,3)
         
         self.menuHdrLayout.addLayout(self.layoutMenuID, stretch=0)
         self.menuHdrLayout.addSpacing(30)
@@ -261,7 +331,15 @@ class cMenu(QWidget):
     def refreshMenu(self):
         self.loadMenu(self.intmenuGroup, self.intmenuID)
     # refreshMenu
-    
+
+    @Slot()
+    @superuser_required    
+    def changeMenuGroup(self):
+        dialogAccepted, newMenuGroup = self.DlgChgMenuGroup(self.intmenuGroup, MenuRecords.menuGroupName(self.intmenuGroup), self).exec_CMMnu()
+        if dialogAccepted:
+            self.loadMenu(newMenuGroup or self._DFLT_menuGroup, self._DFLT_menuID)
+    # changeMenuGroup
+
     @Slot()
     def handleMenuButtonClick(self):
         pressedBtn = self.sender()  # sender() should be a menuBUTTON
