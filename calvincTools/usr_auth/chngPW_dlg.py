@@ -6,7 +6,6 @@ from PySide6.QtWidgets import (
 from calvincTools.database import get_cMenu_sessionmaker, Repository
 from calvincTools.utils.forms import cQFmFldWidg
 
-from .models import User
 from .pwegg import change_password, verify_password
 
 
@@ -14,6 +13,9 @@ class chngPW_dlg(QDialog):
 
     def __init__(self, parent = None):   # parent:QWidget = None
         super().__init__(parent)
+        
+        from .models import User
+        self._ORMmodel = User
 
         self.setWindowModality(Qt.WindowModality.WindowModal)
         self.setWindowTitle(self.tr('Change Password'))
@@ -59,7 +61,7 @@ class chngPW_dlg(QDialog):
             self.pw_old.setVisible(False)
         ret = super().exec()
         if ret == QDialog.DialogCode.Accepted:
-            self.usrRec = Repository(get_cMenu_sessionmaker(),User).get_by_id(userID)
+            self.usrRec = Repository(get_cMenu_sessionmaker(),self._ORMmodel).get_by_id(userID)
             assert self.usrRec, f"User with ID {userID} not found."
             
             oldPW_entrd = self.pw_old.text() if require_oldPW else None
@@ -75,7 +77,7 @@ class chngPW_dlg(QDialog):
             else:
                 # change PW logic should be implemented here
                 self.usrRec.set_password(newPW)
-                Repository(get_cMenu_sessionmaker(), User).update(self.usrRec)
+                Repository(get_cMenu_sessionmaker(), self._ORMmodel).update(self.usrRec)
         else:
             return None
     # exec_CM_MItm

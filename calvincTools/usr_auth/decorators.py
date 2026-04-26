@@ -1,6 +1,5 @@
 from functools import wraps
 
-from . import current_user
 from .notify import (
     uauth_notify_mustlogin,
     uauth_notify_nopermission,
@@ -44,6 +43,7 @@ def login_required(func):
 
     @wraps(func)
     def decorated_view(*args, **kwargs):
+        from . import current_user
         cUsr = current_user()
         if cUsr is None or not cUsr.is_authenticated:
             return uauth_notify_mustlogin()
@@ -73,6 +73,7 @@ def superuser_required(f):
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        from . import current_user
         cUsr = current_user()
         if cUsr is None or not cUsr.is_authenticated:
             return uauth_notify_mustlogin()
@@ -90,6 +91,7 @@ def active_user_required(f):
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        from . import current_user
         cUsr = current_user()
         if cUsr is None or not cUsr.is_authenticated:
             return uauth_notify_mustlogin()
@@ -108,6 +110,7 @@ def anonymous_required(f):
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        from . import current_user
         cUsr = current_user()
         if cUsr is not None and cUsr.is_authenticated:
             return uauth_notify_mustbeanon()

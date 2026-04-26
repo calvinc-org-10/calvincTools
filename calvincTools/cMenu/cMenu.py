@@ -20,7 +20,6 @@ from PySide6.QtWidgets import (QApplication, QWidget, QGridLayout, QHBoxLayout, 
 
 from qtawesome import icon_browser
 
-from calvincTools import cTools_apphooks
 from .dbmenulist import MenuRecords
 from .menucommand_constants import MENUCOMMANDS, COMMANDNUMBER
 from . import menucommand_handlers
@@ -95,11 +94,13 @@ class cMenu(QWidget):
         ): # , mWidth=None, mHeight=None):
         super().__init__(parent)
 
+        from calvincTools import calvincTools
+        
         # TODO: deprecate these - get it from apphooks where needed
-        sysver:str = cTools_apphooks().appver
-        FormNameToURL_Map:Dict[str,Tuple[Any,Any]] = cTools_apphooks().FormNameToURL_Map
-        ExternalWebPageURL_Map:Dict[str,str] = cTools_apphooks().ExternalWebPageURL_Map
-        app_sessionmaker = cTools_apphooks().app_sessionmaker
+        sysver:str = calvincTools().appver
+        FormNameToURL_Map:Dict[str,Tuple[Any,Any]] = calvincTools().FormNameToURL_Map
+        ExternalWebPageURL_Map:Dict[str,str] = calvincTools().ExternalWebPageURL_Map
+        app_sessionmaker = calvincTools().app_sessionmaker
         self.sysver = sysver
         self.FormNameToURL_Map = FormNameToURL_Map
         self._addInternalForms()

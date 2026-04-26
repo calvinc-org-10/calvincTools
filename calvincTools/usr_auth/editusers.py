@@ -1,34 +1,51 @@
-from typing import List
+from typing import Any, List, Type
 from datetime import datetime
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (QWidget, 
+from PySide6.QtWidgets import (QListWidget, QWidget, 
     QLineEdit, QCheckBox, QLabel, QPushButton,
     )
+from sqlalchemy.orm import Session, sessionmaker
 
 from calvincTools.utils.forms import (
     cSRFMultiRecordWrapper, cSRFRecordList, cSRFRecordList_Record,
     cQFormFieldDef, cQFormLayout,
     )
-from calvincTools.models import cParameters
 from calvincTools.utils import get_primary_key_column
 from calvincTools.database import (get_cMenu_sessionmaker, Repository, )
 from calvincTools.utils.forms.definitions.cQFormLayout import cQFormLayout
 
-from .models import User
 from .pwegg import hash_password
-from .chngPW_dlg import chngPW_dlg
 from .decorators import (active_user_required, superuser_required, )
 
-_parmKey = cParameters.ParmName == "DFLT-NEW-PW"
-_dfltNewPW_rec = Repository(get_cMenu_sessionmaker(), cParameters).get_all(_parmKey)
-_dfltNewPW_rec = _dfltNewPW_rec[0] if _dfltNewPW_rec else None
-_dfltNewPW = getattr(_dfltNewPW_rec, "ParmValue", "password123")
+class loaddfltNewPW:
+    _dfltNewPW = None 
+    
+    def __init__(self) -> None:
+        from calvincTools.models import cParameters
+
+        _parmKey = cParameters.ParmName == "DFLT-NEW-PW"
+        _dfltNewPW_rec = Repository(get_cMenu_sessionmaker(), cParameters).get_all(_parmKey)
+        _dfltNewPW_rec = _dfltNewPW_rec[0] if _dfltNewPW_rec else None
+        self._dfltNewPW = getattr(_dfltNewPW_rec, "ParmValue", "password123")
+    # __init__
+class loadUsermodel:
+    def __init__(self):
+        from .models import User
+        self.User = User
+class loadchgPWDlg:
+    def __init__(self):
+        from .chngPW_dlg import chngPW_dlg
+        self.chngPW_dlg = chngPW_dlg
 
 class userEditFmRecord(cSRFRecordList_Record):
-    _ORMmodel = User
-    _primary_key = get_primary_key_column(User)
+    # _ORMmodel = User
     _ssnmaker = get_cMenu_sessionmaker()
+    
+    def __init__(self, record, parentForm):
+        self._ORMmodel = loadUsermodel().User
+        self._primary_key = get_primary_key_column(self._ORMmodel)
+        super().__init__(record, parentForm)
         
     def defineFields(self) -> List[cQFormFieldDef] | None:
         flds = [
@@ -77,17 +94,21 @@ class userEditFmRecord(cSRFRecordList_Record):
 
     def change_password(self):
         # # for security, changing PW requires entering new PW in a dialog
+        chngPW_dlg = loadchgPWDlg().chngPW_dlg
         dlg = chngPW_dlg()
         id = self.currRec().id  # type: ignore
         dlg.exec_chg_PW(id, require_oldPW=False)  # type: ignore
     # change_password
         
 class userEditFm(cSRFRecordList):
-    _ORMmodel = User
-    _primary_key = get_primary_key_column(User)
     _ssnmaker = get_cMenu_sessionmaker()
     _recordClass = userEditFmRecord
     
+    def __init__(self, ORMmodel: Type[Any] | None = None, linkFld: Any = None, parent_linkFld: Any = None, session_factory: sessionmaker[Session] | None = None, viewClass: type[QListWidget] = QListWidget, recordClass: type[cSRFRecordList_Record] | None = None, parent: QWidget | None = None, *args, **kwargs):
+        self._ORMmodel = loadUsermodel().User
+        self._primary_key = get_primary_key_column(self._ORMmodel)
+        super().__init__(ORMmodel, linkFld, parent_linkFld, session_factory, viewClass, recordClass, parent, *args, **kwargs)
+        
     def defineFields(self) -> List[cQFormFieldDef] | None:
         return None # fields are defined in record class
         # ?? return []
@@ -117,6 +138,7 @@ class userEditFm(cSRFRecordList):
     
     def new_record(self):
         # override new_record to set default values for new user records
+        User = loadUsermodel().User
         rec = User(
             username="newuser",
             first_name="New",
@@ -129,6 +151,7 @@ class userEditFm(cSRFRecordList):
             permissions="",
             date_joined=datetime.now(),
         )
+        _dfltNewPW = loaddfltNewPW()._dfltNewPW  # load default PW from database
         rec.set_password(_dfltNewPW)  # set default password for new users
         return rec
 
@@ -153,6 +176,7 @@ class editUsersForm(cSRFMultiRecordWrapper):
         self.setMinimumWidth(1500)
         
         # add hints in header
+        _dfltNewPW = loaddfltNewPW()._dfltNewPW  # load default PW from database
         PWhint = QLabel(f"default PW is '{_dfltNewPW}' for new users - change after creating user")
         layouts.fixed_top.addWidget(PWhint, 0, 0)
         

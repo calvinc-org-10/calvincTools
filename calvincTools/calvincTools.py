@@ -2,7 +2,9 @@
 from PySide6.QtCore import (QObject, Signal, Slot, )
 from PySide6.QtWidgets import (QStackedWidget, )
 
-from .usr_auth import (LoginForm, current_user, )
+from .usr_auth import (LoginForm, current_user, set_current_user, )
+from .usr_auth.models import User_usrauth_not_used
+
 from .cMenu import cMenu
 
 class calvincTools(QObject):
@@ -197,7 +199,7 @@ class calvincTools(QObject):
             # retries=self.retries,
             appver=self.appver,
             )
-        self.login_form().LoginSuccessful.connect(self._on_login_successful)    # type: ignore
+        self.login_form().login_successful.connect(self._on_login_successful)    # type: ignore
         
         self._menu_form = cMenu(
             parent=None,
@@ -246,12 +248,12 @@ class calvincTools(QObject):
         if self._main_window_stack is None or LFm is None:
             return  # main window stack or menu form not properly initialized, can't navigate
         if self.usr_auth:
-            LFm.reset_fields() # reset login form fields (e.g. clear username/password) when showing login form
-            self._main_window_stack.setCurrentWidget(LFm)
+            self.show_login_form()
         else:
             if MFm is None:
                 return
-            self._main_window_stack.setCurrentWidget(MFm)
+            set_current_user(User_usrauth_not_used)  # set to dummy user since we're not using authentication
+            self.show_menu_form()
             
     # implement later (???)
     # cTools_tables = (None, None, None, None, None)   # will be set by init_cDatabase

@@ -36,14 +36,12 @@ from ..utils.forms.subforms.cSRFRecordList import cSRFRecordList_Record
 # there's no need to import cMenu, plus it's a circular ref - cMenu depends heavily on this module
 # from .kls_cMenu import cMenu 
 
-from calvincTools.usr_auth import current_user
 from calvincTools.usr_auth.decorators import (
     active_user_required,
     superuser_required,
     )
 from calvincTools.usr_auth.chngPW_dlg import chngPW_dlg
 
-from ..apphooks import cTools_apphooks
 from ..database import (
     get_cMenu_sessionmaker, get_cMenu_session, 
     Repository,
@@ -90,7 +88,8 @@ def FormBrowse(parntWind,
     urlIndex = 0
     viewIndex = 1
 
-    FormNameToURL_Map:Dict[str,Tuple[str,Any]] = cTools_apphooks().FormNameToURL_Map
+    from calvincTools import calvincTools
+    FormNameToURL_Map:Dict[str,Tuple[str,Any]] = calvincTools().FormNameToURL_Map
     
     # theForm = 'Form ' + formname + ' is not built yet.  Calvin needs more coffee.'
     theForm = None
@@ -360,7 +359,8 @@ class cMRunSQL(QWidget):
     def __init__(self, parent = None):
         super().__init__(parent)
 
-        app_sessionmaker = cTools_apphooks().app_sessionmaker
+        from calvincTools import calvincTools
+        app_sessionmaker = calvincTools().app_sessionmaker
         assert app_sessionmaker is not None, "app_sessionmaker must be provided"
         self.app_sessionmaker = app_sessionmaker
         
@@ -1798,7 +1798,8 @@ class OpenTable(QWidget):
         def __init__(self, parent:QWidget|None = None):
             super().__init__(parent)
             
-            app_sessionmaker = cTools_apphooks().app_sessionmaker
+            from calvincTools import calvincTools
+            app_sessionmaker = calvincTools().app_sessionmaker
             
             self.setWindowModality(Qt.WindowModality.WindowModal)
             self.setWindowTitle(parent.windowTitle() if parent else 'Choose Table')
@@ -1854,7 +1855,8 @@ class OpenTable(QWidget):
         # font.setPointSize(12)
         # self.setFont(font)
     
-        app_sessionmaker = cTools_apphooks().app_sessionmaker
+        from calvincTools import calvincTools
+        app_sessionmaker = calvincTools().app_sessionmaker
         assert app_sessionmaker is not None, "app_sessionmaker must be provided"
         db:Engine=app_sessionmaker().get_bind()
         
@@ -2010,6 +2012,7 @@ class loadExternalWebPage():
 @active_user_required
 class changePassword():
     def __init__(self, parent:QWidget|None = None):
+        from calvincTools.usr_auth import current_user
         uRec = current_user()
         pwDlg = chngPW_dlg()
         id = uRec.id if uRec else None
