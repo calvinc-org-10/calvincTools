@@ -42,10 +42,10 @@ class userEditFmRecord(cSRFRecordList_Record):
     # _ORMmodel = User
     _ssnmaker = get_cMenu_sessionmaker()
     
-    def __init__(self, record, parentForm):
+    def __init__(self, record, parent=None):
         self._ORMmodel = loadUsermodel().User
         self._primary_key = get_primary_key_column(self._ORMmodel)
-        super().__init__(record, parentForm)
+        super().__init__(record, parent)
         
     def defineFields(self) -> List[cQFormFieldDef] | None:
         flds = [
