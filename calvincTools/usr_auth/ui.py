@@ -41,7 +41,7 @@ class LoginForm(cSRFSingleRecordForm):
         *args, **kwds: Any
         ) -> None:
         
-        self._logo = logo
+        self._logo = logo or QPixmap()
         self._retries = retries
         self._numtries = 0
         
@@ -60,7 +60,7 @@ class LoginForm(cSRFSingleRecordForm):
         layouts = super()._buildFormLayout()
         
         # add elements to the layout
-        if self._logo is not None:
+        if not self._logo.isNull():
             pixmap = self._logo
             logo_label = QLabel()
             logo_label.setPixmap(pixmap)
