@@ -124,21 +124,6 @@ class cExcelFile(Workbook):
             return False        
     # load_from_file
 
-    def save_to_db(self, dbsession, TargetModel, wsName:str|None = None):
-        """Save the workbook data to a database using the provided session and target model.
-        
-        Args:
-            dbsession: Database session for saving the data.
-            TargetModel: The target ORM model class for the spreadsheet data.
-            wsName: Name of the worksheet to save from. If None, the active worksheet will be used.
-            
-        Note:
-            This method is not yet implemented and should be overridden in subclasses
-            to provide specific logic for saving the workbook data to the database.
-        """
-        pass
-    # save_to_db
-
 # move this into a method of cExcelFile
 # class UpldSprdsheet():
     """Base class for handling spreadsheet uploads with field validation.
@@ -219,10 +204,10 @@ class cExcelFile(Workbook):
         TargetModel:Type[Any],
         WksheetName, 
         SprdsheetFlds:Dict[str,SprdsheetFldDescriptor]|None = None, 
-        required_columns=None,
+        required_columns=None,      # these are model field names, not spreadsheet column names - they are mapped to spreadsheet column names via SprdsheetFlds
         progress_interval=100,
         progress_callback = None
-        ):
+        ) -> bool:
       # key will be the SprdsheetName, value is a SprdsheetFldDescriptor
         """Process the imported spreadsheet data and save it to the database.
         
@@ -265,6 +250,7 @@ class cExcelFile(Workbook):
         # Process each row in the worksheet
         num_rows = ws.max_row
         nRows = 0
+        nRowsSkipped = 0
         for row in ws.iter_rows(min_row=2, values_only=True):
             nRows += 1
             if nRows % progress_interval == 0:
@@ -272,6 +258,10 @@ class cExcelFile(Workbook):
                 if callable(progress_callback):
                     progress_callback(nRows, num_rows)
             # if nRows % progress_interval == 0
+            # does this row have all required columns?
+            if any([row[dbFld_to_SsprshtCol[req_col]] is None for req_col in required_columns]):
+                nRowsSkipped += 1
+                continue
             record_data = {}
             for dbFld, colIndx in dbFld_to_SsprshtCol.items():
                 if colIndx is not None and colIndx < len(row):
@@ -286,6 +276,8 @@ class cExcelFile(Workbook):
             new_record = TargetModel(**record_data)
             Repository(ssnmaker, TargetModel).add(new_record)
         # for each row
+        
+        return True
     # save_to_SQLAlchemyModel
 
 # cExcelFile
