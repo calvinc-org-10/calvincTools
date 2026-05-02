@@ -334,11 +334,15 @@ class QWShowSQL(QWidget):
             Excel_qdict.append(record)
 
         # Create an Excel workbook and save it
-        xlws = cExcelFile().load_from_listofdict(Excel_qdict)
+        xlws = cExcelFile()
+        dfltws = xlws.active
+        xlws.load_from_listofdict(Excel_qdict, 'SQLResults')
+        if dfltws is not None:
+            xlws.remove(dfltws)
         filName, _ = QFileDialog.getSaveFileName(self, 
             caption="Enter Spreadsheet File Name",
-            filter=f'{ExcelFileNamePrefix}*{ExcelWorkbook_fileext}',
-            selectedFilter=f'*{ExcelWorkbook_fileext}'
+            filter="Excel (*.xlsx);;All files (*.*)",
+            selectedFilter="Excel (*.xlsx)",
         )
         if filName and isinstance(xlws, Workbook):
             xlws.save(filName)     
