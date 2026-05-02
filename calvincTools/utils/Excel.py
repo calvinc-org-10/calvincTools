@@ -1,4 +1,4 @@
-from typing import (Dict, List, Any, Type, )
+from typing import (Dict, List, Any, Type, cast, )
 # from warnings import deprecated  # python >= 3.13
 
 from PySide6.QtCore import (
@@ -106,22 +106,24 @@ class cExcelFile(Workbook):
         return self.load_from_listofdict(qlist, wsName, freezecols)
     # load_from_SQLAlchModel
 
-    def load_from_file(self, filename: str, *args, **kwargs) -> bool:
-        """Load an existing Excel file into the workbook.
-        
+    @classmethod
+    def load_from_file(cls, filename: str, *args, **kwargs) -> "cExcelFile | None":
+        """Load an existing Excel file and return it as cExcelFile.
+
         Args:
             filename (str): The name of the file to load, including extension.
-            For other argumewnts, see openpyxl.reader.excel.load_workbook() documentation.
-        
+            For other arguments, see openpyxl.reader.excel.load_workbook() documentation.
+
         Returns:
-            True if the file was successfully loaded, False otherwise.
+            Loaded cExcelFile instance, or None on failure.
         """
         try:
-            self = load_workbook(filename, *args, **kwargs)
-            return True
+            wb = load_workbook(filename, *args, **kwargs)
+            wb.__class__ = cls
+            return cast("cExcelFile", wb)
         except Exception as e:
             print(f"Error loading file {filename}: {e}")
-            return False        
+            return None
     # load_from_file
 
 # move this into a method of cExcelFile
@@ -142,15 +144,16 @@ class cExcelFile(Workbook):
         
         Args:
             ModelFldName (str): The name of the field in the TargetModel.
-            AllowedTypes: List of tuples (type, cleanproc) specifying allowed types
-                and their cleaning procedures. Empty list if any string is allowed.
+            AllowedTypes: tuple (or singleton) specifying allowed types
+                for the field value. If not provided, defaults to str.
+            CleanProc: Optional cleaning procedure to apply to the field value.
         
         Returns:
             dict: Field descriptor dictionary with ModelFldName and AllowedTypes.
         """
         def __init__(self, ModelFldName:str, AllowedTypes=None, CleanProc=None):
             self.ModelFldName:str = ModelFldName
-            self.AllowedTypes:list = AllowedTypes if AllowedTypes is not None else []
+            self.AllowedTypes:tuple = AllowedTypes if AllowedTypes is not None else (str, )
             self.CleanProc = CleanProc
       # key will be the SprdsheetName, value is a SprdsheetFldDescriptor
     SprdsheetFlds:Dict[str,SprdsheetFldDescriptor] = {}  # key will be the SprdsheetName, value is a SprdsheetFldDescriptor
@@ -182,19 +185,17 @@ class cExcelFile(Workbook):
             result = cleanDesc.CleanProc(val)
             if isinstance(result, tuple) and len(result) == 2:
                 usefld, cleanval = result
+                if not usefld:
+                    return usefld, cleanval
             else:
                 usefld = (result is not None)
                 cleanval = result if usefld else None
-        if not usefld:
-            return usefld, cleanval
         # if callable(cleanDesc.CleanProc)
         
-        if cleanDesc.AllowedTypes == []:
-            usefld = (val is not None)
-            if usefld: cleanval = str(val)
-        else:
-            usefld = any(isinstance(val, t) for t in cleanDesc.AllowedTypes)
-        #endif cleanDesc.AllowedTypes == []
+        allowed_types = cleanDesc.AllowedTypes
+        if not isinstance(allowed_types, tuple) or allowed_types == ():
+            allowed_types = str
+        usefld = isinstance(cleanval, allowed_types)
         
         return usefld, cleanval
     # cleanupfld
@@ -206,7 +207,8 @@ class cExcelFile(Workbook):
         SprdsheetFlds:Dict[str,SprdsheetFldDescriptor]|None = None, 
         required_columns=None,      # these are model field names, not spreadsheet column names - they are mapped to spreadsheet column names via SprdsheetFlds
         progress_interval=100,
-        progress_callback = None
+        progress_callback = None,
+        validation_callback = None,
         ) -> bool:
       # key will be the SprdsheetName, value is a SprdsheetFldDescriptor
         """Process the imported spreadsheet data and save it to the database.
@@ -271,10 +273,19 @@ class cExcelFile(Workbook):
                         if usefld:
                             record_data[dbFld] = cleanval
             # end for dbFld, colIndx in dbFld_to_SsprshtCol.items()
-            
+
+            validRecord = True            
+            if callable(validation_callback):
+                validRecord = validation_callback(record_data)
+
             # create an instance of TargetModel with record_data and add it to the session
-            new_record = TargetModel(**record_data)
-            Repository(ssnmaker, TargetModel).add(new_record)
+            if validRecord:
+                new_record = TargetModel(**record_data)
+                Repository(ssnmaker, TargetModel).add(new_record)
+            else:
+                nRowsSkipped += 1
+                print(f"Row {nRows} skipped due to validation failure.\n    {record_data}")
+            # endif validRecord
         # for each row
         
         return True
