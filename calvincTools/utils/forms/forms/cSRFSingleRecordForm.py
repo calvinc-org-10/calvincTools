@@ -1,8 +1,8 @@
 from typing import Any, List, Type
 
-from PySide6.QtCore import Slot
+from PySide6.QtCore import (Qt, Slot, )
 from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QMessageBox, QPushButton, QStatusBar, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (QGridLayout, QHBoxLayout, QLabel, QMessageBox, QPushButton, QStatusBar, QVBoxLayout, QWidget, )
 import qtawesome
 
 from sqlalchemy import func
@@ -75,7 +75,7 @@ class cSRFSingleRecordForm(cSRF_FormUI_Base, cSRF_Formdb_Base):
 
         assert isinstance(self._formname, str), "_formname must be set before building form layout"
         lblFormName = cQFmNameLabel(self.tr(self._formname), self)
-        layoutFormHdr.addWidget(lblFormName)
+        layoutFormHdr.addWidget(lblFormName, stretch=4)
 
         newrecFlag = QLabel("New Record", self)
         fontNewRec = QFont()
@@ -85,7 +85,7 @@ class cSRFSingleRecordForm(cSRF_FormUI_Base, cSRF_Formdb_Base):
         newrecFlag.setFont(fontNewRec)
         newrecFlag.setStyleSheet("color: red;")
         newrecFlag.setVisible(False)  # start hidden; will be shown when appropriate
-        layoutFormHdr.addWidget(newrecFlag)
+        layoutFormHdr.addWidget(newrecFlag, stretch=1, alignment=Qt.AlignmentFlag.AlignRight)
 
         # put it together
         layoutMain.addLayout(layoutFormHdr)

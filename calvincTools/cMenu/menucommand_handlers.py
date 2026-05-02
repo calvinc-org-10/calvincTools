@@ -58,7 +58,7 @@ from ..utils import (
     areYouSure, 
     SQLAlchemySQLQueryModel,
     UnderConstruction_Dialog,
-    Excelfile_fromqs, ExcelWorkbook_fileext,
+    cExcelFile, ExcelWorkbook_fileext,
     pleaseWriteMe,  
     )
 
@@ -334,7 +334,7 @@ class QWShowSQL(QWidget):
             Excel_qdict.append(record)
 
         # Create an Excel workbook and save it
-        xlws = Excelfile_fromqs(Excel_qdict)
+        xlws = cExcelFile().load_from_listofdict(Excel_qdict)
         filName, _ = QFileDialog.getSaveFileName(self, 
             caption="Enter Spreadsheet File Name",
             filter=f'{ExcelFileNamePrefix}*{ExcelWorkbook_fileext}',
@@ -1389,7 +1389,8 @@ class cEditMenu(cSRFSingleRecordForm):
             buttons=layoutButtons,
 
             lblFormName=None, # subforms don't have a form name label
-            newrecFlag=QLabel(),
+            # newrecFlag=QLabel(),
+            newrecFlag=None,
         )
 
         return fmlyout

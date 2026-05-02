@@ -4,9 +4,9 @@ calvincTools - A Python package
 
 _pkgname='Calvin C Tools'
 _base_ver_major=2
-_base_ver_minor=1
+_base_ver_minor=2
 _base_ver_patch='0'
-_ver_date='2026-04-26'
+_ver_date='2026-05-01'
 _base_ver = f'{_base_ver_major}.{_base_ver_minor}.{_base_ver_patch}'
 __version__ = _base_ver
 # __version__ = "2026.04.09.0000"         # Use date-based versioning for easier tracking of updates. When package stabilizes, can switch to semantic versioning if desired. Format: YYYY.MM.DD.HHMM
@@ -22,6 +22,7 @@ __author__ = "Calvin C"
 __email__ = "calvinc404@gmail.com"
 
 # Change Log:
+# 2.2.0 - 2026-05-01 - added cExcelFile class to utils/Excel.py, with methods for loading and processing Excel files; other minor bug fixes and code cleanup
 # 2.1.0 - 2026-04-11 - redesign initialization
 #               added logout method to calvincTools class to handle logout process, including emitting signals for cleanup and showing login form or shutting down app as needed
 # 2.0.1 - 2026-04-11 - deprecated calvindate class. Replaced with utility functions in utils/dates.py
