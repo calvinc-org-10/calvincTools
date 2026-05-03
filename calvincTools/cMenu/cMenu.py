@@ -61,7 +61,7 @@ class cMenu(QWidget):
     # more class constants
     _DFLT_menuGroup: int = -1
     _DFLT_menuID: int = -1
-    menuGroup:int = _DFLT_menuGroup
+    intmenuGroup:int = _DFLT_menuGroup
     intmenuID:int = _DFLT_menuID
         
     FormNameToURL_Map : Dict[str,Tuple[Any,Any]] = {}
@@ -282,7 +282,7 @@ class cMenu(QWidget):
                 self.menuButton[n].setEnabled(False)
                 pass
      
-    def loadMenu(self, menuGroup: int = menuGroup, menuID: int = _DFLT_menuID):
+    def loadMenu(self, menuGroup: int = intmenuGroup, menuID: int = _DFLT_menuID):
         SRC = self._menuSOURCE
         if menuGroup==self._DFLT_menuGroup:
             _menuGroup = SRC.dfltMenuGroup()
@@ -354,7 +354,7 @@ class cMenu(QWidget):
 
         if CommandText == 'LoadMenu' :
             CommandArg = int(CommandArg)
-            self.loadMenu(self.menuGroup, CommandArg)
+            self.loadMenu(self.intmenuGroup, CommandArg)
         elif CommandText == 'FormBrowse':
             frm = menucommand_handlers.FormBrowse(self, CommandArg.lower())
             if frm is not None: 
