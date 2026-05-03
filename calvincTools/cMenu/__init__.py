@@ -5,4 +5,4 @@ from .dbmenulist import (MenuRecords,
     newmenu_menulist, 
     newgroupnewmenu_menulist, 
     )
-from .menucommand_handlers import *
+# from .menucommand_handlers import *

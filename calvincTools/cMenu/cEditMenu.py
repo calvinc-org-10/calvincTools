@@ -1,439 +1,41 @@
-from typing import (TYPE_CHECKING, Dict, List, Mapping, Tuple, Any, )
+from typing import (Any, Dict, List, Mapping, Tuple, )
 import copy
 
-import webbrowser
-import qtawesome
+from PySide6.QtCore import Qt, Signal, Slot
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import QButtonGroup, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFrame, QGridLayout, QGroupBox, QHBoxLayout, QLCDNumber, QLabel, QLineEdit, QMessageBox, QPushButton, QRadioButton, QSizePolicy, QStatusBar, QTextEdit, QVBoxLayout, QWidget
 
-if TYPE_CHECKING:
-    from ..models import menuItems, menuGroups
-
-from PySide6.QtCore import (Qt, QObject,
-    Signal, Slot, 
-    QAbstractTableModel, QModelIndex, )
-from PySide6.QtGui import (QFont, QIcon, )
-from PySide6.QtWidgets import ( QBoxLayout, QLayout, QStyle, QTabWidget, 
-    QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QFormLayout, QFrame, 
-    QTableView, QHeaderView, QScrollArea,
-    QDialog, QMessageBox, QFileDialog, QDialogButtonBox,
-    QLabel, QLCDNumber, QLineEdit, QTextEdit, QPlainTextEdit, QPushButton, QCheckBox, QComboBox, QDateEdit,
-    QRadioButton, QGroupBox, QButtonGroup, 
-    QStatusBar,
-    QSizePolicy, 
-    )
-
-from openpyxl import Workbook
-from sqlalchemy import (inspect, select, Engine, ) 
 from sqlalchemy.orm.session import make_transient
 
-from ..utils.forms.forms.cSRFSingleRecordForm import cSRFSingleRecordForm
+from calvincTools.database import Repository, get_cMenu_session, get_cMenu_sessionmaker
+from calvincTools.models import menuGroups, menuItems
 
-from ..utils.forms.widgets import (cQFmNameLabel, cSimpRecFmElement_Base, )
+from calvincTools.cMenu.constants import _NUM_menuBTNperCOL, _NUM_menuBUTTONS, _NUM_menuBUTNCOLS
+from calvincTools.cMenu.menucommand_constants import COMMANDNUMBER
+from calvincTools.cMenu.dbmenulist import MenuRecords, newgroupnewmenu_menulist
+from calvincTools.cMenu.menucommand_handlers import Nochoice
+from calvincTools.usr_auth.decorators import superuser_required
+from calvincTools.utils import areYouSure, cComboBoxFromDict, cGridWidget, cQFormBtnDef, cQFormFieldDef, cQFormLayout, cstdTabWidget, pleaseWriteMe, recordsetList
+from calvincTools.utils.forms.definitions.cQFmConstants import cQFmConstants
+from calvincTools.utils.forms.forms.cSRFSingleRecordForm import cSRFSingleRecordForm
+from calvincTools.utils.forms.subforms.cSRFRecordList import cSRFRecordList_Record
+from calvincTools.utils.forms.widgets import cSimpRecFmElement_Base
 
-from ..utils.forms.definitions.cQFmConstants import cQFmConstants
 
-from ..utils.forms.subforms.cSRFRecordList import cSRFRecordList_Record
-
-# there's no need to import cMenu, plus it's a circular ref - cMenu depends heavily on this module
-# from .kls_cMenu import cMenu 
-
-from calvincTools.usr_auth.decorators import (
-    active_user_required,
-    superuser_required,
-    )
-from calvincTools.usr_auth.chngPW_dlg import chngPW_dlg
-
-from ..database import (
-    get_cMenu_sessionmaker, get_cMenu_session, 
-    Repository,
-    )
-from .dbmenulist import (MenuRecords, newgroupnewmenu_menulist, newmenu_menulist, )
-# from sysver import sysver
-from .menucommand_constants import MENUCOMMANDS, COMMANDNUMBER
-# Removed circular import: from ..models import (menuItems, menuGroups, )
-# These are imported lazily via _get_models() below
-from ..utils import (
-    recordsetList,
-    cQFormFieldDef, cQFormLayout, cQFormBtnDef, cComboBoxFromDict, 
-    cstdTabWidget, cGridWidget,
-    areYouSure, 
-    SQLAlchemySQLQueryModel,
-    UnderConstruction_Dialog,
-    cExcelFile, ExcelWorkbook_fileext,
-    pleaseWriteMe,  
-    )
-
-# copied from cMenu - if you change it here, change it there
-_NUM_menuBUTTONS:int = 20
-_NUM_menuBUTNCOLS:int = 2
-_NUM_menuBTNperCOL: int = int(_NUM_menuBUTTONS/_NUM_menuBUTNCOLS)
-
-Nochoice = {'---': None}    # only needed for combo boxes, not datalists
 
 # Lazy loading cache for avoiding circular imports
 _models_cache: Dict[str, Any] = {}
 
 def _get_model(name: str):
-    """Lazy load model classes to avoid circular imports."""
+    """Lazy load model classes to avoid circular imports.
+    Used by cWidgetMenuItem and cEditMenu to access menuItems and menuGroups without importing them at the top level.
+    """
     if name not in _models_cache:
         from ..models import menuItems, menuGroups
         _models_cache['menuItems'] = menuItems
         _models_cache['menuGroups'] = menuGroups
     return _models_cache[name]
 
-
-def FormBrowse(parntWind, 
-    formname, 
-    *args, **kwargs
-    ) -> Any|None:
-    urlIndex = 0
-    viewIndex = 1
-
-    from calvincTools import calvincTools
-    FormNameToURL_Map:Dict[str,Tuple[str,Any]] = calvincTools().FormNameToURL_Map
-    
-    # theForm = 'Form ' + formname + ' is not built yet.  Calvin needs more coffee.'
-    theForm = None
-    authorized = True
-    # formname = formname.lower()
-    if formname in FormNameToURL_Map:
-        if FormNameToURL_Map[formname][urlIndex]:
-            # figure out how to repurpose this later
-            # url = FormNameToURL_Map[formname][urlIndex]
-            # try:
-            #     theView = resolve(reverse(url)).func
-            #     urlExists = True
-            # except (Resolver404, NoReverseMatch):
-            #     urlExists = False
-            # # end try
-            # if urlExists:
-            #     theForm = theView(req)
-            # else:
-            #     formname = f'{formname} exists but url {url} '
-            # #endif
-            pass
-        # endif FormNameToURL_Map[formname][urlIndex]:
-        # elif FormNameToURL_Map[formname][viewIndex]:
-        if FormNameToURL_Map[formname][viewIndex]:
-            fn = None
-            try:
-                fn = FormNameToURL_Map[formname][viewIndex]
-                theForm = fn(*args, **kwargs)
-            except NameError:
-                # fn = None
-                formname = f'{formname} exists but view {FormNameToURL_Map[formname][viewIndex]} is either not defined, not imported, or has fatal errors.  Calvin needs more coffee.\n'
-            except PermissionError:
-                authorized = False
-            # #end try
-        # endif FormNameToURL_Map[formname][viewIndex]:
-    # endif formname in FormNameToURL_Map:
-    if authorized and not theForm:
-        formname = f'Form {formname} is not built yet.  Calvin needs more coffee.'
-        # print(formname)
-        UnderConstruction_Dialog(parntWind, formname).show()
-    else:
-        return theForm
-    # endif
-
-    # must be rendered if theForm came from a class-based-view
-    # if hasattr(theForm,'render'): theForm = theForm.render()
-    # return theForm
-
-def ShowTable(parntWind, tblname, FormNameToURL_Map):
-    # showing a table is nothing more than another form
-    return FormBrowse(parntWind,tblname, FormNameToURL_Map)
-
-#####################################################
-#####################################################
-
-class QWGetSQL(QWidget):
-    runSQL = Signal(str)    # Emitted with the SQL string when run is clicked
-    cancel = Signal()       # Emitted when cancel is clicked    
-    
-    def __init__(self, parent = None):
-        super().__init__(parent)
-
-        font = QFont()
-        font.setPointSize(12)
-        self.setFont(font)
-        
-        self.layoutForm = QVBoxLayout(self)
-        
-        # Form Header Layout
-        self.layoutFormHdr = QVBoxLayout()
-        
-        self.lblFormName = cQFmNameLabel()
-        self.lblFormName.setText(self.tr('Enter SQL'))
-        self.setWindowTitle(self.tr('Enter SQL'))
-        self.layoutFormHdr.addWidget(self.lblFormName)
-        self.layoutFormHdr.addSpacing(20)
-        
-        # main area for entering SQL
-        self.layoutFormMain = QFormLayout()
-        self.txtedSQL = QTextEdit()
-        self.layoutFormMain.addRow(self.tr('SQL statement'), self.txtedSQL)
-        
-        # run/Cancel buttons
-        self.layoutFormActionButtons = QHBoxLayout()
-        self.buttonRunSQL = QPushButton( QIcon.fromTheme(QIcon.ThemeIcon.Computer), self.tr('Run SQL') ) 
-        self.buttonRunSQL.clicked.connect(self._on_run_sql_clicked)
-        self.layoutFormActionButtons.addWidget(self.buttonRunSQL, alignment=Qt.AlignmentFlag.AlignRight)
-        self.buttonCancel = QPushButton( QIcon.fromTheme(QIcon.ThemeIcon.WindowClose), self.tr('Cancel') ) 
-        self.buttonCancel.clicked.connect(self._on_cancel_clicked)
-        self.layoutFormActionButtons.addWidget(self.buttonCancel, alignment=Qt.AlignmentFlag.AlignRight)
-        
-        # generic horizontal lines
-        horzline = QFrame()
-        horzline.setFrameShape(QFrame.Shape.HLine)
-        horzline.setFrameShadow(QFrame.Shadow.Sunken)
-        horzline2 = QFrame()
-        horzline2.setFrameShape(QFrame.Shape.HLine)
-        horzline2.setFrameShadow(QFrame.Shadow.Sunken)
-        
-        # status message
-        self.lblStatusMsg = QLabel()
-        self.lblStatusMsg.setText('\n\n')
-        
-        # Hints
-        self.lblHints = QPlainTextEdit()
-        self.lblHints.setReadOnly(True)
-
-        # read txtHints from file
-        hintFile = 'assets/SQLHints.txt'
-        try:
-            with open(hintFile, 'r', encoding='utf-8') as f:
-                txtHints = f.read()
-        except Exception:
-            txtHints = 'PRAGMA table_list;\nPRAGMA table_xinfo(tablname);'
-        self.lblHints.setPlainText(txtHints)
-        
-        self.layoutForm.addLayout(self.layoutFormHdr)
-        self.layoutForm.addLayout(self.layoutFormMain)
-        self.layoutForm.addLayout(self.layoutFormActionButtons)
-        self.layoutForm.addWidget(horzline)
-        self.layoutForm.addWidget(self.lblStatusMsg)
-        self.layoutForm.addWidget(horzline2)
-        self.layoutForm.addWidget(self.lblHints)
-        
-    def _on_run_sql_clicked(self):
-        # Emit the runSQL signal with the text from the editor.
-        sql_text = self.txtedSQL.toPlainText()
-        self.runSQL.emit(sql_text)
-
-    def _on_cancel_clicked(self):
-        # Emit the cancel signal.
-        self.cancel.emit()        
-
-    def closeEvent(self, event):
-        self.cancel.emit()  # Emit the signal
-        event.accept()  # Accept the close event (allows the window to close)
-
-class QWShowSQL(QWidget):
-    ReturnToSQL = Signal()
-    closeMe = Signal()
-    closeBoth = Signal()
-    
-    def __init__(self, qmodel:SQLAlchemySQLQueryModel, parent:QWidget|QObject|None = None):
-        if isinstance(parent, QWidget) or parent is None:
-            super().__init__(parent)
-
-        # save incoming for future use if needed
-        self._qmodel = qmodel
-        origSQL = qmodel.query()
-        # # rowCount will not return true count if not all rows fetched
-        # # no longer true?
-        # while qmodel.canFetchMore():
-        #     qmodel.fetchMore()
-        numrows = qmodel.rowCount()
-        colNames = [qmodel.headerData(x,Qt.Orientation.Horizontal) for x in range(qmodel.columnCount())]
-
-        font = QFont()
-        font.setPointSize(12)
-        self.setFont(font)
-        
-        self.layoutForm = QVBoxLayout(self)
-        
-        # Form Header Layout
-        self.layoutFormHdr = QVBoxLayout()
-        
-        self.lblFormName = cQFmNameLabel()
-        self.lblFormName.setText(self.tr('SQL Results'))
-        self.setWindowTitle(self.tr('SQL Results'))
-        self.layoutFormHdr.addWidget(self.lblFormName)
-        
-        self.layoutFormSQLDescription = QFormLayout()
-        lblOrigSQL = QLabel()
-        lblOrigSQL.setText(origSQL)
-        lblnRecs = QLabel()
-        lblnRecs.setText(f'{numrows}')
-        lblcolNames = QLabel()
-        lblcolNames.setText(str(colNames))
-        self.layoutFormSQLDescription.addRow('SQL Entered:', lblOrigSQL)
-        self.layoutFormSQLDescription.addRow('rows affctd:', lblnRecs)
-        self.layoutFormSQLDescription.addRow('cols:', lblcolNames)
-        
-
-        # main area for displaying SQL
-        self.layoutFormMain = QVBoxLayout()
-        
-        resultTable = QTableView()
-        # resultTable.verticalHeader().setHidden(True)
-        header = resultTable.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        # Apply stylesheet to control text wrapping
-        resultTable.setStyleSheet("""
-        QHeaderView::section {
-            padding: 5px;
-            font-size: 12px;
-            text-align: center;
-            white-space: normal;  /* Allow text to wrap */
-        }
-        """)
-        resultTable.setModel(qmodel)
-        self.layoutFormMain.addWidget(resultTable)
-        
-        #  buttons
-        self.layoutFormActionButtons = QHBoxLayout()
-        self.buttonGetSQL = QPushButton( QIcon.fromTheme(QIcon.ThemeIcon.GoPrevious), self.tr('Back to SQL') ) 
-        self.buttonGetSQL.clicked.connect(self._return_to_sql)
-        self.layoutFormActionButtons.addWidget(self.buttonGetSQL, alignment=Qt.AlignmentFlag.AlignRight)
-        self.buttonDLResults = QPushButton( QIcon.fromTheme(QIcon.ThemeIcon.DocumentSave), self.tr('D/L Results') ) 
-        self.buttonDLResults.clicked.connect(self.DLResults)
-        self.layoutFormActionButtons.addWidget(self.buttonDLResults, alignment=Qt.AlignmentFlag.AlignRight)
-        self.buttonCancel = QPushButton( QIcon.fromTheme(QIcon.ThemeIcon.WindowClose), self.tr('Close') ) 
-        self.buttonCancel.clicked.connect(self._on_cancel_clicked)
-        self.layoutFormActionButtons.addWidget(self.buttonCancel, alignment=Qt.AlignmentFlag.AlignRight)
-        
-        # generic horizontal lines
-        horzline = QFrame()
-        horzline.setFrameShape(QFrame.Shape.HLine)
-        horzline.setFrameShadow(QFrame.Shadow.Sunken)
-        
-        self.layoutForm.addLayout(self.layoutFormHdr)
-        self.layoutForm.addLayout(self.layoutFormSQLDescription)
-        self.layoutForm.addLayout(self.layoutFormMain)
-        self.layoutForm.addWidget(horzline)
-        self.layoutForm.addLayout(self.layoutFormActionButtons)
-        
-        colfctr = 90
-        self.setMinimumWidth(colfctr*len(colNames))
-        
-    @Slot()
-    def DLResults(self):
-        ExcelFileNamePrefix = "SQLresults"
-        # Create a dictionary of records from the model
-        row_count = self._qmodel.rowCount()
-        col_count = self._qmodel.columnCount()
-        column_names = [self._qmodel.headerData(i, Qt.Orientation.Horizontal) for i in range(col_count)]
-
-        Excel_qdict = []
-        for row in range(row_count):
-            record = {}
-            for col in range(col_count):
-                value = self._qmodel.data(self._qmodel.index(row, col))
-                record[column_names[col]] = value
-            Excel_qdict.append(record)
-
-        # Create an Excel workbook and save it
-        xlws = cExcelFile()
-        dfltws = xlws.active
-        xlws.load_from_listofdict(Excel_qdict, 'SQLResults')
-        if dfltws is not None:
-            xlws.remove(dfltws)
-        filName, _ = QFileDialog.getSaveFileName(self, 
-            caption="Enter Spreadsheet File Name",
-            filter="Excel (*.xlsx);;All files (*.*)",
-            selectedFilter="Excel (*.xlsx)",
-        )
-        if filName and isinstance(xlws, Workbook):
-            xlws.save(filName)     
-        
-    def _return_to_sql(self):
-        self.ReturnToSQL.emit()
-
-    def _on_cancel_clicked(self):
-        # Emit the cancel signal.
-        self.closeBoth.emit()        
-
-    def closeEvent(self, event):
-        self.closeMe.emit()  # Emit the signal
-        event.accept()  # Accept the close event (allows the window to close)
-# QWShowSQL
-
-class cMRunSQL(QWidget):
-    def __init__(self, parent = None):
-        super().__init__(parent)
-
-        from calvincTools import calvincTools
-        app_sessionmaker = calvincTools().app_sessionmaker
-        assert app_sessionmaker is not None, "app_sessionmaker must be provided"
-        self.app_sessionmaker = app_sessionmaker
-        
-        self.inputSQL:str|None = None
-        self.qmodel:SQLAlchemySQLQueryModel
-        self.colNames:str|List[str]|None = None
-        self.wndwAlive:Dict[str,bool] = {}
-        
-        self.wndwGetSQL = QWGetSQL(parent)
-        self.wndwGetSQL.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
-        self.wndwGetSQL.runSQL.connect(self.rawSQLexec)
-        self.wndwGetSQL.cancel.connect(self._on_cancel)
-        self.wndwAlive['Get'] = True
-        self.wndwGetSQL.destroyed.connect(lambda: self.wndwDest('Get'))
-        
-        self.wndwShowSQL: QWShowSQL     # will be redefined later
-
-    def wndwDest(self, whichone:str):
-        self.wndwAlive[whichone] = False
-        
-    def show(self):
-        self.wndwGetSQL.show()
-
-    @Slot(str)  #type: ignore
-    def rawSQLexec(self, inputSQL:str):
-        #TODO: choose session - put in user control
-        engine = self.app_sessionmaker().get_bind()
-
-        self.qmodel = SQLAlchemySQLQueryModel(inputSQL, engine)
-
-        self.rawSQLshow()
-            
-    def rawSQLshow(self):
-        self.wndwShowSQL = QWShowSQL(self.qmodel, self.parent())
-        self.wndwShowSQL.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
-        self.wndwShowSQL.ReturnToSQL.connect(self._ShowToGetSQL)
-        self.wndwShowSQL.closeBoth.connect(self._on_cancel)
-
-        self.wndwAlive['Show'] = True
-        self.wndwShowSQL.destroyed.connect(lambda: self.wndwDest('Show'))
-
-
-        self.wndwGetSQL.hide()
-        self.wndwShowSQL.show()
-
-    @Slot()
-    def _ShowToGetSQL(self):
-        if self.wndwAlive.get('Show'):
-            self.wndwShowSQL.close()
-        self.wndwGetSQL.show()
-        
-    @Slot()
-    def _on_cancel(self):
-        # Handle the cancellation by closing both windows.
-        self._close_all()
-
-    def _close_all(self):
-        # Close the child widget if it exists.
-        if self.wndwAlive.get('Get'):
-            self.wndwGetSQL.close()
-        if self.wndwAlive.get('Show'):
-            self.wndwShowSQL.close()
-        # Close this widget (cMRunSQL) as well.
-        self.close()
-# cMRunSQL
-
-#############################################
-#############################################
-#############################################
 
 class cWidgetMenuItem(cSRFRecordList_Record):
     """
@@ -648,7 +250,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
 
             self.setLayout(layoutMine)
         # __init__
-        
+
         ##########################################
         ########    execute this dialog
 
@@ -672,12 +274,12 @@ class cWidgetMenuItem(cSRFRecordList_Record):
         def dictmenuGroup(self) -> Dict[str, int]:
             return MenuRecords.menuGroupsDict()
         # dictmenuGroup
-            
+
         def dictmenus(self, mnuGrp:int) -> Mapping[str, int|None]:
             retDict = Nochoice | MenuRecords.menuListDict(mnuGrp)
             return retDict
         # dictmenus
-        
+
         def dictmenuOptions(self, mnuID:int) -> Mapping[str, int|None]:
             mnuGrp:int = self.combobxMenuGroupID.currentData()
             listmenuItems = recordsetList(_get_model('menuItems'), retFlds=['OptionNumber'], where=f'MenuID={mnuID} AND MenuGroup_id={mnuGrp}', ssnmaker=get_cMenu_sessionmaker())
@@ -706,7 +308,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
             self.combobxMenuOption.clear()
             self.enableOKButton()
         # loadMenuIDs
-        
+
         @Slot(int) #type: ignore
         def loadMenuOptions(self, idx:int):
             mnuID:int = self.combobxMenuID.currentData()
@@ -716,7 +318,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
             self.combobxMenuOption.setCurrentIndex(-1)
             self.enableOKButton()
         # loadMenuOptions
-        
+
         ##########################################
         ########    Update
 
@@ -746,7 +348,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
 
 
     def __init__(self, menuitmRec, parent:QWidget = None):   # type: ignore
-        self.__class__._ensure_model_loaded()        
+        self.__class__._ensure_model_loaded()
         self.setPrimary_key()   # why is super().__init__() not working to call this in the base class?  need to call it here to initialize the primary key field for the record handling in the base class
         super().__init__(rec = menuitmRec, parent=parent) # - commented out because a phantom window gets created with this call here - need to figure out why - but for now, just call the base class init without the rec argument and then set the current record manually
 
@@ -827,14 +429,14 @@ class cWidgetMenuItem(cSRFRecordList_Record):
                 widget_type=QLineEdit,
                 on_change=self.changeField,
                 position=(1,4,1,2),
-            ),    
+            ),
         ]
 
     ##########################################
     ########    Layout
 
     def _buildFormLayout(self) -> cQFormLayout:
-        
+
         # layoutMain = QVBoxLayout(self)
         layoutMain = QVBoxLayout(self)
         layoutMain.setContentsMargins(0,0,0,0)
@@ -855,7 +457,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
         layoutFormMain.addLayout(layoutFormMainRight)
 
         layoutMain.addLayout(layoutFormMain)
-                
+
         rtnobj = cQFormLayout(
             main=layoutMain,
             form=QWidget(),
@@ -865,7 +467,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
             status_bar=QStatusBar(),
             header=QHBoxLayout(),  # subforms don't have a header
             buttons=layoutFormMainRight,
-            
+
             lblFormName=None, # subforms don't have a form name label
             # newrecFlag=QLabel(),
             newrecFlag=None,
@@ -881,17 +483,18 @@ class cWidgetMenuItem(cSRFRecordList_Record):
 
         widget.setContentsMargins(0,0,0,0)
         widget.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
-    
+
     def defineActionButtons(self):
-        _iconlib = qtawesome.icon
+        from qtawesome import icon as _iconlib      # _iconlib = qtawesome.icon
+        
         r = [
             cQFormBtnDef(name='btnMoveCopy',
                 text=self.tr("Copy /\nMove"),
                 action=self.copyMenuOption),
             cQFormBtnDef(type=cQFormBtnDef.ButtonType.NEW_VSECTION),
             cQFormBtnDef(name='btnRemove',
-                text=self.tr("Remove"), 
-                icon=_iconlib("mdi.delete"), 
+                text=self.tr("Remove"),
+                icon=_iconlib("mdi.delete"),
                 action=self.on_delete_clicked),
             ]
         return r
@@ -925,10 +528,10 @@ class cWidgetMenuItem(cSRFRecordList_Record):
             else:
                 btn = QPushButton(btndef.text)
                 btn.setStyleSheet("padding: 2px; margin: 0;")  # Remove extra padding
-                
+
                 if btndef.name:
                     setattr(self, btndef.name, btn)
-                
+
                 if btndef.icon is not None:
                     btn.setIcon(btndef.icon)
                 if callable(btndef.action):
@@ -970,7 +573,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
     ##########################################
     ########    Update
 
-    @Slot()     
+    @Slot()
     # def changeField(self):
     def changeField(self, wdgt, dbField, force=False):
         # do I need to tell daddy to flip the commit btn? Ans: seems that's ALL I have to do - the base class on_save_clicked() will handle the actual commit when the user clicks the commit button, but I just need to show the commit button when a change is made.  If I wanted to auto-commit on change, that would be more work, but for now I just want to show the commit button so the user can click it when they're ready to commit.
@@ -1072,7 +675,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
 
             ssnmaker = self.ssnmaker()
             assert ssnmaker is not None, "Sessionmaker must be set before touching the database"
-            
+
             Repository(ssnmaker, tbl).add(new_rec)
 
             if CMChoiceCopy:
@@ -1090,7 +693,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
             self.fillFormFromcurrRec()
 
             self.requestMenuReload.emit()   # let listeners know we need a menu reload
-            
+
             # announce success
             copyword = 'copied' if CMChoiceCopy else 'moved'
             QMessageBox.information(self,
@@ -1101,12 +704,14 @@ class cWidgetMenuItem(cSRFRecordList_Record):
         # #endif retval
         return
     # copyMenuOption
-    
+
 # class cWidgetMenuItem
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+    def end_of_class(self):
+        """ place this after the all methods and comments in the class, to avoid accidentally leaving out a method or comment when copying/pasting or refactoring code"""
+        pass
 
 @superuser_required
 # perhaps this should be admin_required instead of superuser_required, but for now I'll leave it as superuser_required since that's what I have available and it will work for testing - I can always change it to admin_required later when I have that available if I decide that's more appropriate
@@ -1125,18 +730,18 @@ class cEditMenu(cSRFSingleRecordForm):
         """Ensure _ORMmodel is loaded (lazy import to avoid circular dependency)."""
         if cls._ORMmodel is None:
             cls._ORMmodel = _get_model('menuItems')
-    
+
     class wdgtmenuITEM(cWidgetMenuItem):
         # if this __init__ doesn't exist, the base class __init__ will be called, which expects a menuItems record, but the cEditMenu constructor doesn't have one to give it, so we need this __init__ to prevent the base class __init__ from running and trying to access a non-existent menuItems record
         # side effect: a phantom window will be created and persist
         def __init__(self, menuitmRec, parent = None):
             super().__init__(menuitmRec, parent)
     # wdgtmenuITEM
-            
+
     class cEdtMnuDlgGetNewMenuGroupInfo(QDialog):
         def __init__(self, parent:QWidget|None = None):
             super().__init__(parent)
-            
+
             self.setWindowModality(Qt.WindowModality.WindowModal)
             self.setWindowTitle(parent.windowTitle() if parent else 'New Menu Group')
 
@@ -1157,47 +762,47 @@ class cEditMenu(cSRFSingleRecordForm):
                 Qt.Orientation.Horizontal,
                 )
             dlgButtons.accepted.connect(self.accept)
-            dlgButtons.rejected.connect(self.reject)            
+            dlgButtons.rejected.connect(self.reject)
 
             layoutMine = QVBoxLayout()
             layoutMine.addLayout(layoutGroupName)
             layoutMine.addLayout(layoutGroupInfo)
             layoutMine.addWidget(dlgButtons)
-            
+
             self.setLayout(layoutMine)
-            
+
         def exec_NewMGInfo(self):
             ret = super().exec()
             # later - prevent lvng if lnedtGroupName blank
             return (
-                ret, 
+                ret,
                 self.lnedtGroupName.text()         if ret==self.DialogCode.Accepted else None,
                 self.txtedtGroupInfo.toPlainText() if ret==self.DialogCode.Accepted else None,
                 )
     # cEdtMnuDlgGetNewMenuGroupInfo
-    
+
     class cEdtMnuDlgCopyMoveMenu(QDialog):
         intCMChoiceCopy:int = 10
         intCMChoiceMove:int = 20
-        
+
         def __init__(self, mnuGrp:int, menuID:int, parent:QWidget|None = None):
             super().__init__(parent)
-            
+
             self.setWindowModality(Qt.WindowModality.WindowModal)
             self.setWindowTitle(parent.windowTitle() if parent else 'Copy/Move Menu')
 
             lblDlgTitle = QLabel(self.tr(f' Copy or Move Menu {menuID}'))
-            
+
             layoutMenuID = QHBoxLayout()
             lblMenuID = QLabel(self.tr('Menu ID'))
             self.combobxMenuID = QComboBox(self)
-            
+
             dictDefinedMenus = MenuRecords().recordsetList(['MenuID'], filter=f'MenuGroup_id={mnuGrp} AND OptionNumber=0')
             definedMenus = {mDict['MenuID'] for mDict in dictDefinedMenus}
             self.combobxMenuID.addItems([str(n) for n in range(256) if n not in definedMenus])
             layoutMenuID.addWidget(lblMenuID)
             layoutMenuID.addWidget(self.combobxMenuID)
-            
+
             visualgrpboxCopyMove = QGroupBox(self.tr("Copy / Move"))
             layoutgrpCopyMove = QHBoxLayout()
             # Create radio buttons
@@ -1218,21 +823,21 @@ class cEditMenu(cSRFSingleRecordForm):
                 Qt.Orientation.Horizontal,
                 )
             dlgButtons.accepted.connect(self.accept)
-            dlgButtons.rejected.connect(self.reject)            
+            dlgButtons.rejected.connect(self.reject)
 
             layoutMine = QVBoxLayout()
             layoutMine.addWidget(lblDlgTitle)
             layoutMine.addWidget(visualgrpboxCopyMove)
             layoutMine.addLayout(layoutMenuID)
             layoutMine.addWidget(dlgButtons)
-            
+
             self.setLayout(layoutMine)
-            
+
         def exec_CMMnu(self):
             ret = super().exec()
             copymove = self.lgclbtngrpCopyMove.checkedId()
             return (
-                ret, 
+                ret,
                 copymove != self.intCMChoiceMove,   # True unless Move checked
                 int(self.combobxMenuID.currentText()) if ret==self.DialogCode.Accepted else None,
                 )
@@ -1240,9 +845,9 @@ class cEditMenu(cSRFSingleRecordForm):
 
     def __init__(self, parent:QWidget|None = None, MainMenuWindow:QWidget|None = None):
         self.__class__._ensure_model_loaded()
-        
+
         self.MainMenuWindow = MainMenuWindow
-        
+
         # variables unique to this class
         self._menuSOURCE = MenuRecords()
         self.currentMenu: Dict[int, menuItems] = {}
@@ -1261,7 +866,7 @@ class cEditMenu(cSRFSingleRecordForm):
         else:
             self.fldmenuGroupName = None    # shoul;dn't happen - this field is defined in defineFields - but just in case, we won't crash if it's not there
         #end if fldmenuGroupName
-        
+
         self.loadMenu()
     # __init__
 
@@ -1360,7 +965,7 @@ class cEditMenu(cSRFSingleRecordForm):
         self.btnCommit = fld.widget
         #do we have to connect the button here, or will it already be connected by the time we get here?  if we have to connect it here, we have to be careful not to connect it multiple times if _addActionButtons gets called multiple times for some reason - maybe we can set a flag on the form to indicate whether we've already connected the button or not?
     # _addActionButtons
-    
+
     def _buildFormLayout(self) -> cQFormLayout:
         # TODO - this layout is pretty much hardcoded to the specific needs of this form; consider making it more flexible/reusable in the future if we find we need similar layouts elsewhere
         layoutMain = QVBoxLayout(self)
@@ -1409,14 +1014,14 @@ class cEditMenu(cSRFSingleRecordForm):
             # single page form
             self.pages = ['Main']
         # endif numPages
-        
+
         self._page_map = {}
 
         for n, pg in enumerate(self.pages):
             pgnm = str(pg)
             widg, grid = QWidget(), QGridLayout()
             widg.setLayout(grid)
-            
+
             layouts.pages.addTab(widg, self.tr(pgnm))
             self._page_map[str(pgnm)] = grid
             # self._page_map[n] = grid
@@ -1466,12 +1071,12 @@ class cEditMenu(cSRFSingleRecordForm):
 
             y, x = ((bNum % _NUM_menuBTNperCOL)+1, 0 if bNum < _NUM_menuBTNperCOL else 2)
             self.layoutmainMenu.addWidget(frame,y,x)
-            
+
             self.WmenuItm[bNum] = None      # type: ignore  # later - build WmenuItm before this loop?
         # end for bNum in range(_NUM_menuBUTTONS)
     # _build_fields
 
-            
+
     ##########################################
     ########    menu and Group dicts
 
@@ -1500,7 +1105,7 @@ class cEditMenu(cSRFSingleRecordForm):
         # menuItemRecs.setFilter('OptionNumber=0')
         # menuHdrRec:QSqlRecord = self.movetoutil_findrecwithvalue(menuItemRecs,'OptionNumber',0)
         menuHdrRec:menuItems = menuItemRecs[0]
-        
+
         # set header elements
         self.lblnummenuGroupID.display(str(menuGroup) + "@")       # we add the "@" to the value to force the LCD to display a trailing space
         self.fldmenuGroup.setValue(str(menuGroup)) # type: ignore
@@ -1573,7 +1178,7 @@ class cEditMenu(cSRFSingleRecordForm):
         assert isinstance(self.layoutForm, cGridWidget), "layoutForm is not a cGridWidget"
         if self.layoutForm._scroller is not None and frameW > 0 and frameH > 0:
             self.layoutForm._scroller.setMinimumSize((frameW * numCols) + padW, (frameH * numRows) + padH)
-        
+
     # displayMenu
 
     ##########################################
@@ -1590,7 +1195,7 @@ class cEditMenu(cSRFSingleRecordForm):
                 GroupInfo=grpInfo,
             )
             newrec = Repository(get_cMenu_sessionmaker(), _get_model('menuGroups')).add(newrec)
-            grppk = newrec.id            
+            grppk = newrec.id
             # with cMenu_Session() as session:
             #     session.add(newrec)
             #     session.commit()
@@ -1634,7 +1239,7 @@ class cEditMenu(cSRFSingleRecordForm):
         if retval:
             assert isinstance(newMnuID, int) and newMnuID >= 0, "New Menu ID must be a non-negative integer"
             qsFrom = self.currentMenu
-            with get_cMenu_session() as session:         
+            with get_cMenu_session() as session:
                 if CMChoiceCopy:
                     qsTo: Dict[int, menuItems] = {}     # qsTo is technically not used, but being built JIC its needed later
                     for i, orig_rec in qsFrom.items():
@@ -1657,17 +1262,17 @@ class cEditMenu(cSRFSingleRecordForm):
                         session.merge(orig_rec)
                     #endfor i, orig_rec in qsFrom.items()
                 #endif CMChoiceCopy
-                
+
                 session.commit()                # commit the changes
-                
+
                 self.loadMenu(mnuGrp, newMnuID)
-                
+
             #endwith cMenu_Session() as session:
         #endif retval
 
         # return
     # copyMenu
-        
+
     ##########################################
     ########    Read
 
@@ -1702,7 +1307,7 @@ class cEditMenu(cSRFSingleRecordForm):
 
         self.intmenuGroup = menuGroup
         self.intmenuID = menuID
-        
+
         if SRC.menuExist(menuGroup, menuID):
             self.currentMenu = SRC.menuDBRecs(menuGroup, menuID)
             # self.currRec = self.movetoutil_findrecwithvalue(self.currentMenu, 'OptionNumber', 0)
@@ -1726,14 +1331,14 @@ class cEditMenu(cSRFSingleRecordForm):
     def writeRecord(self):
         if not self.isDirty():
             return
-        
+
         cRec = self.currRec()
-        
+
         # check other traps later
-        
+
         # fldmenuGroupName = self.fieldDefs['+GroupName'].get('widget')  # type: ignore
         fldmenuGroupName = self._formWidgets['+GroupName'].widget
-        
+
         if fldmenuGroupName.isDirty():  # type: ignore
             # update the menu group name in menuGroups table
             groupRec = Repository(get_cMenu_sessionmaker(), _get_model('menuGroups')).get_by_id(self.intmenuGroup)
@@ -1761,19 +1366,19 @@ class cEditMenu(cSRFSingleRecordForm):
 
     @Slot()
     def rmvMenu(self):
-        
+
         pleaseWriteMe('Remove Menu', parent=self)
         return
-        
+
         ##### old code below #####
         # (mGrp, mnu, mOpt) = (self.currRec().MenuGroup, self.currRec().MenuID, self.currRec().OptionNumber)
-        
+
         # # verify delete
-        
+
         # # remove from db
         # if self.currRec().pk:
         #     self.currRec().delete()
-        
+
         # # replace with an "next" record
         # self.setcurrRec(menuItems_QT(
         #     MenuGroup = mGrp,
@@ -1789,244 +1394,12 @@ class cEditMenu(cSRFSingleRecordForm):
     ########    Widget-responding procs
 
 # cEditMenu
-
-#############################################
-#############################################
-#############################################
-
-
-class OpenTable(QWidget):
-    
-    class cOpnTblDlgGetTable(QDialog):
-        _tableListSQL:str = 'PRAGMA table_list;'
-        
-        def __init__(self, parent:QWidget|None = None):
-            super().__init__(parent)
-            
-            from calvincTools import calvincTools
-            app_sessionmaker = calvincTools().app_sessionmaker
-            
-            self.setWindowModality(Qt.WindowModality.WindowModal)
-            self.setWindowTitle(parent.windowTitle() if parent else 'Choose Table')
-
-            layoutTableName = QHBoxLayout()
-            lblTableName = QLabel(self.tr('Table to Show'))
-            self.combobxTableName = QComboBox(self)
-            self.combobxTableName.addItems(self.TableList(app_sessionmaker))
-            layoutTableName.addWidget(lblTableName)
-            layoutTableName.addWidget(self.combobxTableName)
-
-            dlgButtons = QDialogButtonBox(
-                QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.Cancel,
-                Qt.Orientation.Horizontal,
-                )
-            dlgButtons.accepted.connect(self.accept)
-            dlgButtons.rejected.connect(self.reject)            
-
-            layoutMine = QVBoxLayout()
-            layoutMine.addLayout(layoutTableName)
-            layoutMine.addWidget(dlgButtons)
-            
-            self.setLayout(layoutMine)
-
-        def TableList(self, app_sessionmaker) -> List:
-            
-            db:Engine = app_sessionmaker().get_bind()
-            
-            qmodel = SQLAlchemySQLQueryModel(self._tableListSQL, db)
-            
-            colIdx = qmodel.colIndex('name')
-            if colIdx < 0:
-                # no 'name' column found
-                # raise ValueError("No 'name' column found in the table list query result.")
-                return []
-
-            # retList = [qmodel.record(n)[colIdx] for n in range(qmodel.rowCount())]
-            retList = [qmodel.data(qmodel.index(n, colIdx)) for n in range(qmodel.rowCount())]
-            return retList
-
-        def exec_DlgGetTbl(self):
-            ret = super().exec()
-            # later - prevent lvng if lnedtGroupName blank
-            return (
-                ret, 
-                self.combobxTableName.currentText()    if ret==self.DialogCode.Accepted else None,
-                )
-    
-    def __init__(self, tbl:str|None = None, parent:QWidget|None = None):
-        super().__init__(parent)
-        
-        # font = QFont()
-        # font.setPointSize(12)
-        # self.setFont(font)
-    
-        from calvincTools import calvincTools
-        app_sessionmaker = calvincTools().app_sessionmaker
-        assert app_sessionmaker is not None, "app_sessionmaker must be provided"
-        db:Engine=app_sessionmaker().get_bind()
-        
-        if not tbl:
-            # get tbl name
-                # use self._tableListSQL
-            # read all table names
-            # present and select
-            tbl = self.chooseTable()
-        
-        # for testing ...
-        # tbl = 'incShip_hbl'
-        
-        # read into model
-        # verify tbl exists
-        # error, rows, colNames = (None, [], [])
-        # error, rows, colNames = self.getTable(tbl)
-        # if error:
-        #     raise error
-        
-        # tblWidget = self.tableWidget(rows, colNames)
-        tblWidget = self.tableWidget(tbl, db)
-        self.model = tblWidget.model()
-        # bring all rows in so rowCount will be correct
-        # while tblWidget.model().canFetchMore():
-        #     tblWidget.model().fetchMore()
-        rows = tblWidget.model().rowCount()
-        colNames = [tblWidget.model().headerData(n, Qt.Orientation.Horizontal) for n in range(tblWidget.model().columnCount())]
-        # present TableView
-
-        # save incoming for future use if needed
-        self.rows = rows
-        self.colNames = colNames
-
-        self.layoutForm = QVBoxLayout(self)
-
-        #TODO: make Title the name of the table        
-        #TODO: note on screen that this form is RO        
-        # Form Header Layout
-        self.layoutFormHdr = QVBoxLayout()
-        self.lblFormName = cQFmNameLabel()
-        self.lblFormName.setText(self.tr('Table'))
-        self.setWindowTitle(self.tr('Table'))
-        self.layoutFormHdr.addWidget(self.lblFormName)
-        
-        self.layoutFormTableDescription = QFormLayout()
-        lblnRecs = QLabel()
-        lblnRecs.setText(f'{rows}')
-        lblcolNames = QLabel()
-        lblcolNames.setText(str(colNames))
-        self.layoutFormTableDescription.addRow('rows:', lblnRecs)
-        self.layoutFormTableDescription.addRow('cols:', lblcolNames)
-
-        # main area for displaying SQL
-        self.layoutFormMain = QVBoxLayout()
-        self.layoutFormMain.addWidget(tblWidget)
-        
-        # nope - this is RO
-        # # Add a add row button
-        # addrow_button = QPushButton("Add Row")
-        # addrow_button.clicked.connect(lambda: self.addRow())
-        
-        # # Add a save button
-        # save_button = QPushButton("Save Changes")
-        # save_button.clicked.connect(lambda: self.model.save_changes() or print("Saved!"))    # type: ignore
-        
-        # layoutButtons = QHBoxLayout()
-        # layoutButtons.addWidget(addrow_button)
-        # layoutButtons.addWidget(save_button)
-        
-        self.layoutForm.addLayout(self.layoutFormHdr)
-        self.layoutForm.addLayout(self.layoutFormTableDescription)
-        self.layoutForm.addLayout(self.layoutFormMain)
-        # self.layoutForm.addLayout(layoutButtons)
-        
-    def chooseTable(self) -> str|None:
-        dlg = self.cOpnTblDlgGetTable(self)
-        retval, tblName = dlg.exec_DlgGetTbl()
-        return tblName if retval == QDialog.DialogCode.Accepted else None
-            
-
-    def getTable(self, tblName:str): # -> Tuple[Exception|None, List[Dict[str, Any]], List[str]|str]:
-        pleaseWriteMe('fix getTable in class OpenTable', parent=self)
-        # inputSQL:str = f'SELECT * FROM {tblName}'
-        # # inputSQL:str = f'SELECT * FROM %(tblName)s'
-        # sqlerr = None
-        # with db.connection.cursor() as djngocursor:
-        #     try:
-        #         djngocursor.execute(inputSQL)
-        #         # djngocursor.execute(inputSQL, [tblName])
-        #     except Exception as err:
-        #         sqlerr = err
-        #     colNames = []
-        #     rows = []
-        #     if not sqlerr:
-        #         if djngocursor.description:
-        #             colNames = [col[0] for col in djngocursor.description]
-        #             rows = dictfetchall(djngocursor)
-        #         else:
-        #             colNames = 'NO RECORDS RETURNED; ' + str(djngocursor.rowcount) + ' records affected'
-        #             rows = []
-        #         #endif cursor.description
-        #     else:  
-        #         # nothing to do
-        #         ...
-        #     #endif not sqlerr
-        # #end with
-        
-        # return (sqlerr, rows, colNames)
-
-    # def tableWidget(self, rows:List[Dict[str, Any]], colNames:str|List[str]) -> QTableView:
-    def tableWidget(self, tbl:str|None, db:Engine) -> QTableView:
-        sqlstat = f"SELECT * FROM {tbl}" if tbl else "SELECT * FROM sqlite_master WHERE type='table';"
-        resultModel = SQLAlchemySQLQueryModel(sqlstat, db, self.parent())
-        resultTable = QTableView()
-        # resultTable.verticalHeader().setHidden(True)
-        header = resultTable.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        # Apply stylesheet to control text wrapping
-        resultTable.setStyleSheet("""
-        QHeaderView::section {
-            padding: 5px;
-            font-size: 12px;
-            text-align: center;
-            white-space: normal;  /* Allow text to wrap */
-        }
-        """)
-        resultTable.setModel(resultModel)
-        
-        return resultTable
-        
-    def addRow(self):
-        self.model.insertRow(self.model.rowCount())
+    def end_of_class(self):
+        """ place this after the all methods and comments in the class, to avoid accidentally leaving out a method or comment when copying/pasting or refactoring code"""
+        pass
 
 
-#############################################
-#############################################
 
-class loadExternalWebPage():
-    def __init__(self, url:str|None, parent:QWidget|None = None):
-        if url:
-            self.reloadPage(url)
-    # __init__
-    
-    def reloadPage(self, url:str):
-        webbrowser.open_new_tab(url)
-    # reloadPage
-
-
-#############################################
-#############################################
-
-@active_user_required
-class changePassword():
-    def __init__(self, parent:QWidget|None = None):
-        from calvincTools.usr_auth import current_user
-        uRec = current_user()
-        pwDlg = chngPW_dlg()
-        id = uRec.id if uRec else None
-        if id is None:
-            return
-        pwDlg.exec_chg_PW(id, require_oldPW=True)
-    # __init__
-
-#############################################
-#############################################
-#############################################
-
+#####################################################
+#####################################################
+#####################################################
