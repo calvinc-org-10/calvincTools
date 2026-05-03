@@ -20,20 +20,18 @@ from PySide6.QtWidgets import (QApplication, QWidget, QGridLayout, QHBoxLayout, 
 
 from qtawesome import icon_browser
 
+from calvincTools.cMenu.constants import (
+    _SCRN_menuBTNWIDTH, _SCRN_menuDIVWIDTH, 
+    _NUM_menuBTNperCOL, _NUM_menuBUTTONS, _NUM_menuBUTNCOLS, 
+    )
+
 from .dbmenulist import MenuRecords
 from .menucommand_constants import MENUCOMMANDS, COMMANDNUMBER
 from . import menucommand_handlers
+from .cEditMenu import cEditMenu
 from calvincTools.utils import (cComboBoxFromDict, pleaseWriteMe, cGridWidget, )
 from calvincTools.usr_auth import (editusers, )
 from calvincTools.usr_auth.decorators import (superuser_required,  )
-
-# TODO: put in class?
-# cMenu-related constants
-_SCRN_menuBTNWIDTH:int = 250
-_SCRN_menuDIVWIDTH:int = 40
-_NUM_menuBUTTONS:int = 20
-_NUM_menuBUTNCOLS:int = 2
-_NUM_menuBTNperCOL: int = int(_NUM_menuBUTTONS/_NUM_menuBUTNCOLS)
 
 #############################################
 #############################################
@@ -87,7 +85,7 @@ class cMenu(QWidget):
         # these will be loaded into FormNameToURL_Map in _addInternalForms. From that point on, they can be used like any other form reference in FormNameToURL_Map, but they won't have a URL since they're for internal use only.
         # NOTE: unlike external FormNameToURL_Map keys, these internal keys ARE case sensitive, since they're only for internal use and we can control how they're called. So they don't have to be all lowercase like external keys do.
 
-        EditMenu = ('.-EDT-menu.-', menucommand_handlers.cEditMenu)
+        EditMenu = ('.-EDT-menu.-', cEditMenu)
         OpenTable = ('-.OPN-tbL.-', menucommand_handlers.OpenTable)
         # RunCode = ''
         RunSQLStatement = ('.-ruN-sql.-', menucommand_handlers.cMRunSQL)
