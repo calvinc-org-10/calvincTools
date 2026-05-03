@@ -7,8 +7,7 @@ from PySide6.QtWidgets import QButtonGroup, QCheckBox, QComboBox, QDialog, QDial
 
 from sqlalchemy.orm.session import make_transient
 
-from calvincTools.database import Repository, get_cMenu_session, get_cMenu_sessionmaker
-from calvincTools.models import menuGroups, menuItems
+from ..database import Repository, get_cMenu_session, get_cMenu_sessionmaker
 
 from calvincTools.cMenu.constants import _NUM_menuBTNperCOL, _NUM_menuBUTTONS, _NUM_menuBUTNCOLS
 from calvincTools.cMenu.menucommand_constants import COMMANDNUMBER
@@ -850,7 +849,7 @@ class cEditMenu(cSRFSingleRecordForm):
 
         # variables unique to this class
         self._menuSOURCE = MenuRecords()
-        self.currentMenu: Dict[int, menuItems] = {}
+        self.currentMenu: Dict[int, Any] = {}
         self.WmenuItm: Any = [None for bNum in range(_NUM_menuBUTTONS)]    # later - build WmenuItm before this loop?
 
         super().__init__(parent=parent)
@@ -1190,7 +1189,7 @@ class cEditMenu(cSRFSingleRecordForm):
         if retval:
             # new menuGroups record
             # create a new menu group
-            newrec = menuGroups(
+            newrec = _get_model('menuGroups')(
                 GroupName=grpName,
                 GroupInfo=grpInfo,
             )
@@ -1209,7 +1208,7 @@ class cEditMenu(cSRFSingleRecordForm):
                 # create a new record in menuItems
                 # TODO: check for existing menu items with same MenuGroup_id and MenuID and OptionNumber?
                 # TODO: make sure rec has all required keys
-                newmenurec = menuItems(
+                newmenurec = _get_model('menuItems')(
                     MenuGroup_id=grppk,
                     MenuID=0,  # default menu ID
                     OptionNumber=rec['OptionNumber'],
@@ -1231,6 +1230,8 @@ class cEditMenu(cSRFSingleRecordForm):
     # createNewMenuGroup
 
     def copyMenu(self, dummyparm=None):
+        from  ..models import menuItems
+        
         mnuGrp = self.intmenuGroup
         mnuID = self.intmenuID
 
