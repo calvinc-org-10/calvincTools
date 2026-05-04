@@ -103,7 +103,7 @@ def show_fns(path_:str):
         result['functions'].append(f'{prefix} {show_fninfo(function)}')
 
     for class_ in classes:
-        result['classes'].append(f'class {class_.name}({[getattr(NN,'id','---') for NN in class_.bases]}) {dividerchar} lines {class_.lineno} to {class_.end_lineno}') # type: ignore
+        result['classes'].append(f'class {class_.name}({[getattr(NN,"id","---") for NN in class_.bases]}) {dividerchar} lines {class_.lineno} to {class_.end_lineno}') # type: ignore
         methods = [n for n in class_.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
         for method in methods:
             prefix = 'async def' if isinstance(method, ast.AsyncFunctionDef) else 'def'
