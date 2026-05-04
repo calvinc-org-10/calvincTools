@@ -76,6 +76,22 @@ def main() -> int:
     SymbolPrinter().print_module(tree)
     return 0
 
+from calvincTools.utils import pretty_show_fns
+def cPretty():
+    if len(sys.argv) != 2:
+        print("Usage: python scripts/list_python_symbols.py <python_file>")
+        return 1
 
+    target = Path(sys.argv[1])
+    if not target.exists() or not target.is_file():
+        print(f"File not found: {target}")
+        return 1
+
+    print(target)
+    print(f"Symbols in {target}:")
+    print(pretty_show_fns(str(target)))
+    return 0
+        
 if __name__ == "__main__":
     raise SystemExit(main())
+    # raise SystemExit(cPretty())
