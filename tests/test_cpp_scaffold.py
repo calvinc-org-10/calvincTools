@@ -26,7 +26,7 @@ def test_cpp_version_matches_python_package_version():
     major = re.search(r"_base_ver_major\s*=\s*(\d+)", python_version_file)
     minor = re.search(r"_base_ver_minor\s*=\s*(\d+)", python_version_file)
     patch = re.search(r"_base_ver_patch\s*=\s*['\"]([^'\"]+)['\"]", python_version_file)
-    cmake_version = re.search(r"project\(calvincToolsCpp VERSION ([0-9A-Za-z\.\-_]+)\s+", cmake_file)
+    cmake_version = re.search(r"project\(calvincToolsCpp VERSION (\d+\.\d+\.\d+)\s+", cmake_file)
 
     assert major and minor and patch and cmake_version
     assert "return CALVINC_TOOLS_VERSION;" in cpp_version_file
