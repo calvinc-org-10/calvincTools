@@ -10,9 +10,12 @@ CPP_ROOT = REPO_ROOT / "calvincTools-cpp"
 
 def test_cpp_scaffold_files_exist():
     assert (CPP_ROOT / "CMakeLists.txt").is_file()
-    assert (CPP_ROOT / "include" / "calvinc_tools" / "version_config.hpp.in").is_file()
     assert (CPP_ROOT / "include" / "calvinc_tools" / "version.hpp").is_file()
     assert (CPP_ROOT / "src" / "version.cpp").is_file()
+
+
+def test_cpp_version_template_exists():
+    assert (CPP_ROOT / "include" / "calvinc_tools" / "version_config.hpp.in").is_file()
 
 
 def test_cpp_version_matches_python_package_version():
@@ -23,7 +26,7 @@ def test_cpp_version_matches_python_package_version():
     major = re.search(r"_base_ver_major\s*=\s*(\d+)", python_version_file)
     minor = re.search(r"_base_ver_minor\s*=\s*(\d+)", python_version_file)
     patch = re.search(r"_base_ver_patch\s*=\s*['\"]([^'\"]+)['\"]", python_version_file)
-    cmake_version = re.search(r"project\(calvincToolsCpp VERSION ([0-9A-Za-z\.\-_]+) ", cmake_file)
+    cmake_version = re.search(r"project\(calvincToolsCpp VERSION ([0-9A-Za-z\.\-_]+)\s+", cmake_file)
 
     assert major and minor and patch and cmake_version
     assert "return CALVINC_TOOLS_VERSION;" in cpp_version_file

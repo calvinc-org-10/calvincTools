@@ -8,7 +8,7 @@ std::string version() {
 }
 
 std::string package_name() {
-    return "Calvin C Tools";
+    return "calvincTools";
 }
 
 }  // namespace calvinc::tools
