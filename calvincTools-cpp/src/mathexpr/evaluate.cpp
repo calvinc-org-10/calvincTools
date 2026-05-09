@@ -1,5 +1,5 @@
 #include "calvinc_tools/mathexpr/evaluate.hpp"
-#include "parser.hpp"
+#include "calvinc_tools/mathexpr/parser.hpp"
 #include <cmath>
 
 namespace calvinc::tools::mathexpr {

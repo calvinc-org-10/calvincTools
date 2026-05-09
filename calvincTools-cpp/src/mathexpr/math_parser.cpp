@@ -53,7 +53,7 @@ static const std::map<std::string, MathFunc> FUNCTIONS = {
     }},
     {"degrees", [](const std::vector<double>& args) {
         if (args.size() != 1) throw ParseException("degrees() requires exactly 1 argument");
-        return args[0] * 180.0 / M_PI;
+        return args[0] * 180.0 / CONSTANTS.at("pi");
     }},
     {"exp", [](const std::vector<double>& args) {
         if (args.size() != 1) throw ParseException("exp() requires exactly 1 argument");
@@ -103,7 +103,7 @@ static const std::map<std::string, MathFunc> FUNCTIONS = {
     }},
     {"radians", [](const std::vector<double>& args) {
         if (args.size() != 1) throw ParseException("radians() requires exactly 1 argument");
-        return args[0] * M_PI / 180.0;
+        return args[0] * CONSTANTS.at("pi") / 180.0;
     }},
     {"sin", [](const std::vector<double>& args) {
         if (args.size() != 1) throw ParseException("sin() requires exactly 1 argument");
