@@ -6,6 +6,9 @@
 #include <vector>
 #include <memory>
 
+#include "calvinc_tools/database/models.hpp"
+
+
 namespace calvinc::tools::database {
 
 /**

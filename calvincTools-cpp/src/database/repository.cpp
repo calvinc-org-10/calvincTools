@@ -188,8 +188,10 @@ User* UserRepository::getById(int id) {
 std::vector<User> UserRepository::getAll() {
     std::vector<User> users;
     QSqlQuery query(db_);
-    
-    if (!executeQuery(query.prepare("SELECT * FROM User"))) {
+ 
+    query.prepare("SELECT * FROM User");
+    // query.bindValue(":id", userId);
+    if (!executeQuery(query)) {
         return users;
     }
     
@@ -281,7 +283,8 @@ std::vector<MenuGroup> MenuGroupRepository::getAll() {
     std::vector<MenuGroup> groups;
     QSqlQuery query(db_);
     
-    if (!executeQuery(query.prepare("SELECT * FROM cMenu_menuGroups"))) {
+    query.prepare("SELECT * FROM cMenu_menuGroups");
+    if (!executeQuery(query)) {
         return groups;
     }
     
