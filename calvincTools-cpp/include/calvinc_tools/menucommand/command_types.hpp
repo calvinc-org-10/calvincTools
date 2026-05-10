@@ -58,11 +58,10 @@ CommandType getCommandType(const QString& name);
  * Map of all available commands.
  */
 class CommandRegistry {
-private:
+public:
     static const std::map<int, QString> commandMap_;
     static const std::map<QString, int> nameMap_;
 
-public:
     /**
      * Get all available commands as a map.
      */

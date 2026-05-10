@@ -67,17 +67,20 @@ QString getCommandName(CommandType cmd) {
 }
 
 QString getCommandName(int cmdInt) {
-    auto it = CommandRegistry::commandMap_.find(cmdInt);
-    if (it != CommandRegistry::commandMap_.end()) {
+    const auto& commandMap = CommandRegistry::getCommandMap();
+    auto it = commandMap.find(cmdInt);
+    if (it != commandMap.end()) {
         return it->second;
     }
     return "";
 }
 
 CommandType getCommandType(const QString& name) {
-    auto it = CommandRegistry::nameMap_.find(name);
-    if (it != CommandRegistry::nameMap_.end()) {
-        return intToCommandType(it->second);
+    const auto& commandMap = CommandRegistry::getCommandMap();
+    for (const auto& [cmdInt, cmdName] : commandMap) {
+        if (cmdName == name) {
+            return intToCommandType(cmdInt);
+        }
     }
     return CommandType::NullCommand;
 }

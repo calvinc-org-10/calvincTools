@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+
 #include "calvinc_tools/mathexpr/parser.hpp"
 #include <cmath>
 #include <cctype>
