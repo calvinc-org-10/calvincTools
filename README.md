@@ -58,6 +58,12 @@ Lint code:
 flake8 calvincTools
 ```
 
+## C++ Build Notes
+
+For the C++ migration project (including Qt6 setup on Windows), see:
+
+- [calvincTools-cpp/README.md](calvincTools-cpp/README.md)
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.

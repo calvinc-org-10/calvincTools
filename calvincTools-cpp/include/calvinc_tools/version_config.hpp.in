@@ -1,3 +1,0 @@
-#pragma once
-
-#define CALVINC_TOOLS_VERSION "@PROJECT_VERSION@"
