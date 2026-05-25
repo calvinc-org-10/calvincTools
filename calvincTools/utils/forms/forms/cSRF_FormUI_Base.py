@@ -62,8 +62,10 @@ class cSRF_FormUI_Base(QWidget):
         self._lookupFrmElements: Dict[str, cQFmLookupWidg] = {}
         self._build_fields()
 
+        # define action buttons
+        actBtns = self.defineActionButtons()  # this is just to allow subclasses to define the buttons and have them in self._action_buttons if needed for conditional logic in _addActionButtons
         # Add buttons
-        self._addActionButtons()
+        self._addActionButtons(actBtns)
 
         self.initialdisplay()
 
@@ -340,7 +342,7 @@ class cSRF_FormUI_Base(QWidget):
         """
         return None
 
-    def _addActionButtons(self) -> None:
+    def _addActionButtons(self, ActionButtons) -> None:
         """Add action buttons to the form.
 
         Raises:

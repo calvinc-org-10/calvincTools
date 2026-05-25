@@ -162,7 +162,7 @@ class cSRFRecordGrid(cSRF_Formdb_Base, cSimpRecFmElement_Base):
         self.FormPage(0).addWidget(self.table)       # type: ignore
 
         # Add buttons
-        self._addActionButtons()
+        self._addActionButtons(None)
 
     # __init__
 

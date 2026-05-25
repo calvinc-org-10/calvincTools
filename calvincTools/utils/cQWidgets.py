@@ -382,4 +382,11 @@ class cGridWidget(QWidget):
         """Return the internal QGridLayout."""
         return self._grid    
     # grid
+
+    def __getattr__(self, name):
+        # Delegate the missing attribute call to the internal grid layout
+        return getattr(self.grid(), name)
+    # __getattr__
 # cGridWidget
+    def end_of_class(self):
+        pass
