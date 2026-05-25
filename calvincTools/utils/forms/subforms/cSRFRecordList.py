@@ -120,7 +120,7 @@ class cSRFRecordList_Record(
     ########    overrides of cSimpleRecordForm_Base methods
     #############################################################
 
-    def _addActionButtons(self) -> None:
+    def _addActionButtons(self, ActionButtons = None) -> None:
         return None
 
     def _connect_widget(self, widget: QWidget, defn: cQFormFieldDef):
