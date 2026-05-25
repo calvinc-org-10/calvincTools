@@ -137,6 +137,10 @@ class cExcelFile(Workbook):
         TargetModel: The target ORM model class for the spreadsheet data.
         SprdsheetDateEpoch: Date epoch used for spreadsheet date conversion.
         SprdsheetFlds (dict): Dictionary mapping spreadsheet field names to field descriptors.
+    
+    This is now implemented in save_to_SQLAlchemyModel method of cExcelFile, which uses the SprdsheetFlds dict 
+    TODO: create save_to_listofdict method 
+    
     """
     class SprdsheetFldDescriptor:
         """Descriptor for spreadsheet fields, defining validation rules and cleaning procedures."""
