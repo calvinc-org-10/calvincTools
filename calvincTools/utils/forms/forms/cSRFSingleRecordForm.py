@@ -187,8 +187,12 @@ class cSRFSingleRecordForm(cSRF_FormUI_Base, cSRF_Formdb_Base):
         for widgStructure in self._formWidgets.values():
             defn = widgStructure.defn
             widg = widgStructure.widget
-            if isinstance(widg, cSimpRecFmElement_Base) and defn.field_type in [cQFormFieldDef.cQFormFieldType.SUBFORM, cQFormFieldDef.cQFormFieldType.SCALAR]:
-                widg.loadFromRecord(self.currRec())
+            if all([ 
+                # hasattr(widg, 'loadFromRecord'),
+                callable(getattr(widg, 'loadFromRecord')),
+                defn.field_type in [cQFormFieldDef.cQFormFieldType.SCALAR, cQFormFieldDef.cQFormFieldType.SUBFORM]
+                ]):
+                widg.loadFromRecord(self.currRec())     # type: ignore[attr-defined]
 
         self.showNewRecordFlag()
         self.showCommitButton()
