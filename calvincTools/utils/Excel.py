@@ -16,6 +16,12 @@ ExcelWorkbook_fileext = ".XLSX"
 
 class cExcelFile(Workbook):
     """Subclass of openpyxl's Workbook to add custom functionality for Excel file handling."""
+    
+    num_rows = None
+    nRows = None
+    nRowsSkipped = None
+    
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Additional initialization can be added here if needed
@@ -142,6 +148,7 @@ class cExcelFile(Workbook):
     TODO: create save_to_listofdict method 
     
     """
+    # shoudl I just go on and make this a dataclass?
     class SprdsheetFldDescriptor:
         """Descriptor for spreadsheet fields, defining validation rules and cleaning procedures."""
         """Create a field descriptor for spreadsheet field validation.
@@ -155,20 +162,27 @@ class cExcelFile(Workbook):
         Returns:
             dict: Field descriptor dictionary with ModelFldName and AllowedTypes.
         """
-        def __init__(self, ModelFldName:str, AllowedTypes=None, CleanProc=None):
+        ModelFldName:str
+        CalculatedFld:bool
+        AllowedTypes:tuple
+        CleanProc:Any
+
+        def __init__(self, ModelFldName:str, CalculatedFld=None, AllowedTypes=None, CleanProc=None):
             self.ModelFldName:str = ModelFldName
+            self.CalculatedFld:bool = CalculatedFld or False
             self.AllowedTypes:tuple = AllowedTypes if AllowedTypes is not None else (str, )
             self.CleanProc = CleanProc
       # key will be the SprdsheetName, value is a SprdsheetFldDescriptor
     SprdsheetFlds:Dict[str,SprdsheetFldDescriptor] = {}  # key will be the SprdsheetName, value is a SprdsheetFldDescriptor
       # key will be the SprdsheetName, value is a SprdsheetFldDescriptor
 
-    def cleanupfld(self, fld, val):
+    def cleanupfld(self, fld, val, row, dbFld_to_SsprshtCol):
         """Clean and validate a field value according to its allowed types.
         
         Args:
             fld: Field name to clean.
             val: Value to clean and validate.
+            row: The entire row of data, which may be used in the cleaning procedure.
         
         Returns:
             tuple: (usefld, cleanval) where usefld is True if the field should be used,
@@ -186,7 +200,7 @@ class cExcelFile(Workbook):
         
         cleanDesc = self.SprdsheetFlds[fld]
         if callable(cleanDesc.CleanProc):
-            result = cleanDesc.CleanProc(val)
+            result = cleanDesc.CleanProc(fld, val, row, dbFld_to_SsprshtCol)
             if isinstance(result, tuple) and len(result) == 2:
                 usefld, cleanval = result
                 if not usefld:
@@ -207,7 +221,7 @@ class cExcelFile(Workbook):
     def save_to_SQLAlchemyModel(self, 
         ssnmaker, 
         TargetModel:Type[Any],
-        WksheetName, 
+        WksheetName, # default to None?
         SprdsheetFlds:Dict[str,SprdsheetFldDescriptor]|None = None, 
         required_columns=None,      # these are model field names, not spreadsheet column names - they are mapped to spreadsheet column names via SprdsheetFlds
         progress_interval=100,
@@ -244,6 +258,11 @@ class cExcelFile(Workbook):
                 colval = str(col.value)
                 modlFldNm = self.SprdsheetFlds[colval].ModelFldName
                 colIndx = (col.column or 0) - 1
+                # has this field already been mapped?
+                if modlFldNm in dbFld_to_SsprshtCol and dbFld_to_SsprshtCol[modlFldNm] is not None:
+                    # yes, that's not good - duplicate column in spreadsheet.  Warn and skip this column
+                    print(f"Warning: Duplicate column '{colval}' in spreadsheet. Column {dbFld_to_SsprshtCol[modlFldNm]+1} Already mapped to model field '{modlFldNm}'. Skipping this column ({colIndx+1}).")
+                    continue
                 dbFld_to_SsprshtCol[modlFldNm] = colIndx
         # end for col in SprshtHdrRow
         
@@ -254,26 +273,26 @@ class cExcelFile(Workbook):
         # end if any missing required columns
         
         # Process each row in the worksheet
-        num_rows = ws.max_row
-        nRows = 0
-        nRowsSkipped = 0
+        self.num_rows = ws.max_row
+        self.nRows = 0
+        self.nRowsSkipped = 0
         for row in ws.iter_rows(min_row=2, values_only=True):
-            nRows += 1
-            if nRows % progress_interval == 0:
-                print(f"Processing row {nRows} of {num_rows}...")
+            self.nRows += 1
+            if self.nRows % progress_interval == 0:
+                print(f"Processing row {self.nRows} of {self.num_rows}...")
                 if callable(progress_callback):
-                    progress_callback(nRows, num_rows)
+                    progress_callback(self.nRows, self.num_rows)
             # if nRows % progress_interval == 0
             # does this row have all required columns?
             if any([row[dbFld_to_SsprshtCol[req_col]] is None for req_col in required_columns]):
-                nRowsSkipped += 1
+                self.nRowsSkipped += 1
                 continue
             record_data = {}
             for dbFld, colIndx in dbFld_to_SsprshtCol.items():
                 if colIndx is not None and colIndx < len(row):
                     fld_name = next((fld for fld, desc in self.SprdsheetFlds.items() if desc.ModelFldName == dbFld), None)
                     if fld_name:
-                        usefld, cleanval = self.cleanupfld(fld_name, row[colIndx])
+                        usefld, cleanval = self.cleanupfld(fld_name, row[colIndx], row, dbFld_to_SsprshtCol)
                         if usefld:
                             record_data[dbFld] = cleanval
             # end for dbFld, colIndx in dbFld_to_SsprshtCol.items()
@@ -287,8 +306,8 @@ class cExcelFile(Workbook):
                 new_record = TargetModel(**record_data)
                 Repository(ssnmaker, TargetModel).add(new_record)
             else:
-                nRowsSkipped += 1
-                print(f"Row {nRows} skipped due to validation failure.\n    {record_data}")
+                self.nRowsSkipped += 1
+                print(f"Row {self.nRows} skipped due to validation failure.\n    {record_data}")
             # endif validRecord
         # for each row
         
