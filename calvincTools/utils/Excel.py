@@ -227,8 +227,7 @@ class cExcelFile(Workbook):
         progress_interval=100,
         progress_callback = None,
         validation_callback = None,
-        ) -> bool:
-      # key will be the SprdsheetName, value is a SprdsheetFldDescriptor
+        ) -> Any:
         """Process the imported spreadsheet data and save it to the database.
         
         Args:
@@ -236,97 +235,24 @@ class cExcelFile(Workbook):
             SprsheetName: Name of the spreadsheet being processed.
             data: The data extracted from the spreadsheet to be processed.
             
-        Note:
-            This method is not yet implemented and should be overridden in subclasses
-            to provide specific processing logic for the imported data.
         """
-        wb = self
-        
-        if SprdsheetFlds is not None:
-            self.SprdsheetFlds = SprdsheetFlds
-        
-        ws = wb[WksheetName] if WksheetName in wb.sheetnames else wb.active
-        if ws is None:
-            print(f"Worksheet {WksheetName} not found in workbook.")
-            return False
-                
-        SprshtHdrRow = ws[1]
-        required_columns = required_columns if required_columns is not None else []
-        dbFld_to_sprshtCol:dict[str, Any] = {req_col: None for req_col in required_columns}
-        for col in SprshtHdrRow:
-            if col.value in self.SprdsheetFlds:
-                colval = str(col.value)
-                modlFldNm = self.SprdsheetFlds[colval].ModelFldName
-                colIndx = (col.column or 0) - 1
-                # has this field already been mapped?
-                if modlFldNm in dbFld_to_sprshtCol and dbFld_to_sprshtCol[modlFldNm] is not None:
-                    # yes, that's not good - duplicate column in spreadsheet.  Warn and skip this column
-                    print(f"Warning: Duplicate column '{colval}' in spreadsheet. Column {dbFld_to_sprshtCol[modlFldNm]+1} Already mapped to model field '{modlFldNm}'. Skipping this column ({colIndx+1}).")
-                    continue
-                dbFld_to_sprshtCol[modlFldNm] = colIndx
-        # end for col in SprshtHdrRow
-        
-        if any(val is None for val in dbFld_to_sprshtCol.values()):
-            missing_cols = [col for col, val in dbFld_to_sprshtCol.items() if val is None]
-            print(f"Error: Missing required columns in spreadsheet: {', '.join(missing_cols)}")
-            return False
-        # end if any missing required columns
-        
-        # Process each row in the worksheet
-        self.num_rows = ws.max_row
-        self.nRows = 0
-        self.nRowsSkipped = 0
-        for row in ws.iter_rows(min_row=2, values_only=True):
-            self.nRows += 1
-            if self.nRows % progress_interval == 0:
-                print(f"Processing row {self.nRows} of {self.num_rows}...")
-                if callable(progress_callback):
-                    progress_callback(self.nRows, self.num_rows)
-            # if nRows % progress_interval == 0
-            
-            # convert row to dict for easier processing - keys are model field names, values are cell values
-            rowdict =  {modlFldNm: row[colIndx] for modlFldNm, colIndx in dbFld_to_sprshtCol.items() if colIndx is not None and colIndx < len(row)}
-            
-            # does this row have all required columns?
-            if any([rowdict.get(req_col, None) in (None, '') for req_col in required_columns]):
-                self.nRowsSkipped += 1
-                continue
-            
-            record_data = {}
-            # process the row
-            for dbFldNm, val in rowdict.items():
-                spshtFldNm = next((fld for fld, desc in self.SprdsheetFlds.items() if desc.ModelFldName == dbFldNm), None)
-                if spshtFldNm:
-                    usefld, cleanval = self.cleanupfld(spshtFldNm, dbFldNm, val, rowdict)
-                    if usefld:
-                        record_data[dbFldNm] = cleanval
-            # end for dbFld, colIndx in dbFld_to_SsprshtCol.items()
-            # process calculated fields, if any
-            for spshtFldNm, desc in self.SprdsheetFlds.items():
-                if not desc.CalculatedFld:
-                    continue
-                dbFldNm = desc.ModelFldName
-                usefld, cleanval = self.cleanupfld(spshtFldNm, dbFldNm, None, rowdict)
-                if usefld:
-                    record_data[dbFldNm] = cleanval
-            # end for fld_name, desc in self.SprdsheetFlds.items()
-            
-            validRecord = True            
-            if callable(validation_callback):
-                validRecord = validation_callback(record_data)
 
-            # create an instance of TargetModel with record_data and add it to the session
-            if validRecord:
-                new_record = TargetModel(**record_data)
-                Repository(ssnmaker, TargetModel).add(new_record)
-            else:
-                self.nRowsSkipped += 1
-                print(f"Row {self.nRows} skipped due to validation failure.\n    {record_data}")
-            # endif validRecord
-        # for each row
+        record_data = self.save_to_listofdict(
+            WksheetName, 
+            SprdsheetFlds, 
+            required_columns, 
+            progress_interval, 
+            progress_callback, 
+            validation_callback
+        )
+        err_list = [d for d in record_data if any(str(k).startswith("$error") for k in d)]
+        dbdata_list = [d for d in record_data if not any(str(k).startswith("$error") for k in d)]
         
-        return True
+        if len(dbdata_list) > 0:
+            Repository(ssnmaker, TargetModel).bulk_add_from_listofdict(dbdata_list)
+        return err_list
     # save_to_SQLAlchemyModel
+    
 
     def save_to_listofdict(self, 
         WksheetName, # default to None?
@@ -356,7 +282,7 @@ class cExcelFile(Workbook):
         ws = wb[WksheetName] if WksheetName in wb.sheetnames else wb.active
         if ws is None:
             print(f"Worksheet {WksheetName} not found in workbook.")
-            return [{'error': f"Worksheet {WksheetName} not found in workbook."}]
+            return [{'$error': f"Worksheet {WksheetName} not found in workbook."}]
                 
         SprshtHdrRow = ws[1]
         required_columns = required_columns if required_columns is not None else []
@@ -377,7 +303,7 @@ class cExcelFile(Workbook):
         if any(val is None for val in dbFld_to_sprshtCol.values()):
             missing_cols = [col for col, val in dbFld_to_sprshtCol.items() if val is None]
             print(f"Error: Missing required columns in spreadsheet: {', '.join(missing_cols)}")
-            return [{'error': f"Missing required columns in spreadsheet: {', '.join(missing_cols)}"}]
+            return [{'$error': f"Missing required columns in spreadsheet: {', '.join(missing_cols)}"}]
         # end if any missing required columns
         
         data_list = []
@@ -432,7 +358,7 @@ class cExcelFile(Workbook):
                 self.nRowsSkipped += 1
                 print(f"Row {self.nRows} skipped due to validation failure.\n    {record_data}")
                 data_list.append({
-                    f'error-{self.nRows}': f"Row {self.nRows} skipped due to validation failure.", 
+                    f'$error-row{self.nRows}': f"Row {self.nRows} skipped due to validation failure.", 
                     'incoming row': rowdict,
                     'processed row': record_data
                     })
