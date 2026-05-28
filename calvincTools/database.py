@@ -1,9 +1,10 @@
 from typing import List, Dict, Any
 
 from sqlalchemy import (
-    create_engine, SQLAlchemyError,
+    create_engine, 
     )
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import SQLAlchemyError
 
 rootdir = "."
 cMenu_dbName = f"{rootdir}\\cMenudb.sqlite"
