@@ -1,4 +1,8 @@
-from sqlalchemy import create_engine
+from typing import List, Dict, Any
+
+from sqlalchemy import (
+    create_engine, SQLAlchemyError,
+    )
 from sqlalchemy.orm import sessionmaker
 
 rootdir = "."
@@ -21,7 +25,9 @@ def get_cMenu_sessionmaker():
 ###################    REPOSITORIES    ###################
 ##########################################################
 
-from sqlalchemy import (select, insert, update, delete, )   # pylint: disable=unused-import
+from sqlalchemy import (
+    select, insert, update, delete, 
+    )   # pylint: disable=unused-import
 from typing import Generic, Sequence, TypeVar, Type     # pylint: disable=unused-import
 
 T = TypeVar("T")  # entity type
@@ -87,6 +93,24 @@ class Repository(Generic[T]):
             session.expunge(entity)
         return entity
     # add
+    def bulk_add_from_listofdict(self, entities: List[Dict]) -> Any:
+        """
+        Bulk insert from a list of dictionaries.
+        """
+        retval = None
+        with self._session_factory() as session:
+            # Execute the bulk insert
+            try:
+                session.execute(insert(self._model), entities)
+                session.commit()
+                retval = True
+            except SQLAlchemyError as e:
+                session.rollback()
+                retval = ('database', e)
+            except Exception as e:
+                session.rollback()
+                retval = ('other', e)
+        return retval
     #addmultiple ??
 
     def remove(self, entity: T) -> None:
