@@ -363,6 +363,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
     ########    Fields
 
     def defineFields(self):
+        _ID_WDTH = 40
         return [
             cQFormFieldDef(
                 name='OptionNumber',
@@ -371,7 +372,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
                 position=(0,0),
                 # readonly=True,
                 # frame=False,
-                # maximum_width=25,
+                maximum_width=_ID_WDTH,
                 focus_policy=Qt.FocusPolicy.NoFocus,
             ),
             cQFormFieldDef(
@@ -381,7 +382,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
                 position=(0,1),
                 # readonly=True,
                 # frame=False,
-                # maximum_width=25,
+                maximum_width=int(_ID_WDTH * 1.5),
                 focus_policy=Qt.FocusPolicy.NoFocus,
             ),
             cQFormFieldDef(
@@ -389,13 +390,13 @@ class cWidgetMenuItem(cSRFRecordList_Record):
                 label='OptionText',
                 widget_type=QLineEdit,
                 on_change=self.changeField,
-                position=(0,2,1,2),
+                position=(0,2,1,3),
             ),
             cQFormFieldDef(
                 name='TopLine',
                 label='Top Line',
                 widget_type=QCheckBox,
-                position=(0,3,1,2),
+                position=(0,5,1,2),
                 on_change=self.changeField,
                 lblChkBxYesNo={True:'YES', False:'NO'},
             ),
@@ -403,7 +404,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
                 name='BottomLine',
                 label='Btm Line',
                 widget_type=QCheckBox,
-                position=(0,5),
+                position=(0,7),
                 on_change=self.changeField,
                 lblChkBxYesNo={True:'YES', False:'NO'},
             ),
@@ -413,21 +414,21 @@ class cWidgetMenuItem(cSRFRecordList_Record):
                 widget_type=cComboBoxFromDict,
                 choices=vars(COMMANDNUMBER),
                 on_change=self.changeField,
-                position=(1,0,1,2),
+                position=(1,0,1,3),
             ),
             cQFormFieldDef(
                 name='Argument',
                 label='Argument',
                 widget_type=QLineEdit,
                 on_change=self.changeField,
-                position=(1,2,1,2),
+                position=(1,3,1,3),
             ),
             cQFormFieldDef(
                 name='PWord',
                 label='Password',
                 widget_type=QLineEdit,
                 on_change=self.changeField,
-                position=(1,4,1,2),
+                position=(1,6,1,2),
             ),
         ]
 
@@ -480,6 +481,11 @@ class cWidgetMenuItem(cSRFRecordList_Record):
     def _configure_widget(self, widget: QWidget, defn: cQFormFieldDef):
         super()._configure_widget(widget, defn)
 
+        _YESNO_WDTH = 30
+        if defn.name in ['TopLine', 'BottomLine']:
+            widget._lblChkYN.setMaximumWidth(_YESNO_WDTH)       # type: ignore - this is a bit hacky, but it works - the cCheckBoxFromDict widget creates a QLabel named _lblChkYN to show the Yes/No label, so we can access that here to set its maximum width to keep the form compact
+            
+            
         widget.setContentsMargins(0,0,0,0)
         widget.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
 

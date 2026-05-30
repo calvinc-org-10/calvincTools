@@ -286,6 +286,7 @@ class cQFmFldWidg(cSimpRecFmElement_Base):
 
         if lblChkBxYesNo:
             self._lblChkYNValues = lblChkBxYesNo
+            # TODO: consider using a QLabel instead of a read-only QLineEdit for the yes/no display
             self._lblChkYN = QLineEdit()
             self._lblChkYN.setProperty('noedit', True)
             self._lblChkYN.setReadOnly(True)
