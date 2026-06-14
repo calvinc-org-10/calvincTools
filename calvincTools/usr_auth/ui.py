@@ -157,6 +157,7 @@ class LoginForm(cSRFSingleRecordForm):
 
     def fillFormFromcurrRec(self):
         # nope, let's not show any user info on the login form, that would be weird. Just show the blank form ready for input.
+        # TODO: show appnews in the appnews field, which is really just a read-only text box that can be used to show news, tips, or whatever else might be useful to show on the login page
         return 
     
     def _on_login_clicked(self):

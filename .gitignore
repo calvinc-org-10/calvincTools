@@ -135,4 +135,4 @@ dmypy.json
 .DS_Store
 Thumbs.db
 cMenudb.sqlite
-calvincTools/app_secrets/
+app_secrets/

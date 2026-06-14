@@ -142,7 +142,7 @@ class calvincTools(QObject):
 
     @property
     def FormNameToURL_Map(self):
-        if self._app_sessionmaker is None:
+        if self._FormNameToURL_Map is None:
             raise RuntimeError(
                 "cTools_apphooks has not been initialized with 'FormNameToURL_Map'. "
                 "Call cTools_apphooks.initialize() first."
@@ -154,7 +154,7 @@ class calvincTools(QObject):
 
     @property
     def ExternalWebPageURL_Map(self):
-        if self._app_sessionmaker is None:
+        if self._ExternalWebPageURL_Map is None:
             raise RuntimeError(
                 "cTools_apphooks has not been initialized with 'ExternalWebPageURL_Map'. "
                 "Call cTools_apphooks.initialize() first."
