@@ -6,6 +6,8 @@ from .usr_auth import (LoginForm, current_user, set_current_user, )
 from .usr_auth.models import User_usrauth_not_used
 
 from .cMenu import cMenu
+from calvincTools import CallerContext
+
 
 class calvincTools(QObject):
     """
@@ -48,14 +50,7 @@ class calvincTools(QObject):
         return cls._instance
 
     def __init__(self, 
-            app_sessionmaker=None, 
-            FormNameToURL_Map=None,
-            ExternalWebPageURL_Map=None,
-            usr_auth=None,
-            appname=None,
-            appver=None,
-            logo=None,
-            **kwargs
+            caller_context = None,         # CallerContext|None = None,
             ):
         """
         Initialize the singleton with all required hooks.
@@ -64,7 +59,21 @@ class calvincTools(QObject):
         # Only initialize once - use simple flag to avoid recursion
         if self.__class__._initialized:
             return
+        if caller_context is None:
+            return
+            raise ValueError("caller_context must be provided for calvincTools initialization.")
         
+        self._caller_context = caller_context
+
+        app_sessionmaker = caller_context.app_ssnmaker
+        app_config = caller_context.config
+        FormNameToURL_Map = getattr(app_config, 'FORMNAME_TO_URL_MAP', {})
+        ExternalWebPageURL_Map = getattr(app_config, 'EXTERNAL_WEBPAGE_URL_MAP', {})
+        appname = getattr(app_config, 'APP_NAME', 'Application')
+        appver = getattr(app_config, 'APP_VERSION', '')
+        logo = getattr(app_config, 'APP_LOGO', None)
+        usr_auth = getattr(app_config, 'USER_AUTHENTICATION_ENABLED', True)
+
         # Set provided values, or keep class defaults
         if app_sessionmaker is not None:
             self._app_sessionmaker = app_sessionmaker
@@ -74,7 +83,6 @@ class calvincTools(QObject):
         self._appname = appname or 'Application'
         if logo is not None:
             self._logo = logo
-        
         # Mark as initialized and validate required fields were set
         self.__class__._initialized = True
         
