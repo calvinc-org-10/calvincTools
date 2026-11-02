@@ -26,6 +26,7 @@ class calvincTools(QObject):
     
     _app_sessionmaker = None
     _appver = ''
+    _app_config = None
     _FormNameToURL_Map = {}
     _ExternalWebPageURL_Map = {}
     _appname='Application'
@@ -77,6 +78,7 @@ class calvincTools(QObject):
         # Set provided values, or keep class defaults
         if app_sessionmaker is not None:
             self._app_sessionmaker = app_sessionmaker
+        self._app_config = app_config
         self._FormNameToURL_Map = FormNameToURL_Map or {}
         self._ExternalWebPageURL_Map = ExternalWebPageURL_Map or {}
         self._appver = appver or ''
@@ -147,6 +149,13 @@ class calvincTools(QObject):
     @appver.setter
     def appver(self, appver):
         self._appver = appver
+
+    @property
+    def app_config(self):
+        return self._app_config
+    @app_config.setter
+    def app_config(self, app_config):
+        self._app_config = app_config
 
     @property
     def FormNameToURL_Map(self):

@@ -72,29 +72,36 @@ class LoginForm(cSRFSingleRecordForm):
     def defineFields(self):
         flds = [
             cQFormFieldDef(
+                name='versioninfo',
+                field_type=cQFormFieldDef.cQFormFieldType.INTERNAL,
+                label=' ',
+                position=(0, 0, 1, 2),
+                widget_type=QLabel,
+            ),
+            cQFormFieldDef(
                 name='loginmsg',
                 field_type=cQFormFieldDef.cQFormFieldType.INTERNAL,
                 label=' ',
-                position=(0, 0),
+                position=(1, 0),
                 widget_type=QLabel,
             ),
             cQFormFieldDef(
                 name='username', 
                 label='Username', 
                 widget_type=QLineEdit,
-                position=(1,0)
+                position=(2,0)
                 ),
             cQFormFieldDef(
                 name='password', 
                 label='Password', 
                 widget_type=QLineEdit,
-                position=(2,0),
+                position=(3,0),
                 ),
             cQFormFieldDef(
                 name='login', 
                 field_type=cQFormFieldDef.cQFormFieldType.INTERNAL,
                 label='Login', 
-                position=(4,0),
+                position=(5,0),
                 widget_type=QPushButton,
                 on_change=self._on_login_clicked
             ),
@@ -102,14 +109,14 @@ class LoginForm(cSRFSingleRecordForm):
                 name='greeting',
                 field_type=cQFormFieldDef.cQFormFieldType.INTERNAL,
                 label=' ',
-                position=(6,0),
+                position=(7,0),
                 widget_type=QLabel,
             ),
             cQFormFieldDef(
                 name='appnews',
                 field_type=cQFormFieldDef.cQFormFieldType.INTERNAL,
                 label=' ',
-                position=(0, 1, 7, 1),
+                position=(1, 1, 7, 1),
                 widget_type=QTextEdit,
                 readonly=True,
             ),
@@ -120,6 +127,16 @@ class LoginForm(cSRFSingleRecordForm):
     def _build_fields(self):
         flds = super()._build_fields()
         
+        from calvincTools import calvincTools
+        from calvincTools.__version__ import __version__ as cTools_version
+        
+        versiontext_app = f"{getattr(calvincTools().app_config, 'APP_NAME', 'App')} Version: {getattr(calvincTools().app_config, 'APP_VERSION', 'N/A')}"
+        versiontext_cTools = f"cTools Version: {cTools_version}"
+        versiontext = f"{versiontext_app} |\N{black large circle}| {versiontext_cTools}"
+        versioninfofld = self._formWidgets.get('versioninfo')
+        if versioninfofld is not None:
+            versioninfofld.widget.setText(versiontext)  # type: ignore
+            
         # set text color of login failure message to red
         loginmsgfld = self._formWidgets.get('loginmsg')
         if loginmsgfld is not None:
@@ -139,6 +156,8 @@ class LoginForm(cSRFSingleRecordForm):
             widg = appnewsfld.widget
             widg.setStyleSheet("background: transparent; border: none;")  # type: ignore
         
+        self.show_app_news()
+        
         return flds
         
     def defineActionButtons(self):
@@ -157,7 +176,22 @@ class LoginForm(cSRFSingleRecordForm):
 
     def fillFormFromcurrRec(self):
         # nope, let's not show any user info on the login form, that would be weird. Just show the blank form ready for input.
+        return
+
+    def show_app_news(self):
         # TODO: show appnews in the appnews field, which is really just a read-only text box that can be used to show news, tips, or whatever else might be useful to show on the login page
+        from calvincTools import calvincTools
+        
+        newsfile = getattr(calvincTools().app_config, 'APP_NEWS_FILE', None)
+        if newsfile is None:
+            self._formWidgets.get('appnews').set_value("No news available.")  # type: ignore
+            return
+        try:
+            with open(newsfile, 'r') as f:
+                appnews = f.read()
+            self._formWidgets.get('appnews').widget.setMarkdown(appnews)  # type: ignore
+        except FileNotFoundError:
+            self._formWidgets.get('appnews').set_value("No news available.")  # type: ignore
         return 
     
     def _on_login_clicked(self):
