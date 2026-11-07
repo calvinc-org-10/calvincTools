@@ -350,50 +350,50 @@ class cMenu(QWidget):
         CommandArg = menuItem['Argument']
         CommandText = MENUCOMMANDDICTIONARY.get(CommandNum, 'UnknownCommand')
         
-        if CommandText == MENUCOMMAND.LoadMenu:
+        if CommandNum == MENUCOMMAND.LoadMenu:
             CommandArg = int(CommandArg)
             self.loadMenu(self.intmenuGroup, CommandArg)
-        elif CommandText == MENUCOMMAND.FormBrowse:
+        elif CommandNum == MENUCOMMAND.FormBrowse:
             frm = menucommand_handlers.FormBrowse(self, CommandArg.lower())
             if frm is not None: 
                 self.open_childScreen(CommandArg, frm)
-        elif CommandText == MENUCOMMAND.OpenTable :
+        elif CommandNum == MENUCOMMAND.OpenTable :
             CmdFm = self._internalForms.OpenTable.value[0]
             frm = menucommand_handlers.FormBrowse(self, CmdFm, CommandArg)
             if frm is not None: 
                 self.open_childScreen(CmdFm, frm)
-        elif CommandText == MENUCOMMAND.RunSQLStatement:
+        elif CommandNum == MENUCOMMAND.RunSQLStatement:
             CmdFm = self._internalForms.RunSQLStatement.value[0]
             frm = menucommand_handlers.FormBrowse(self, CmdFm)
             if frm is not None: 
                 self.open_childScreen(CmdFm, frm)
-        elif CommandText  == MENUCOMMAND.LoadExtWebPage:
+        elif CommandNum  == MENUCOMMAND.LoadExtWebPage:
             url = self.ExternalWebPageURL_Map.get(CommandArg, None)
             menucommand_handlers.loadExternalWebPage(url)
             return
-        elif CommandText == MENUCOMMAND.ChangePW:
+        elif CommandNum == MENUCOMMAND.ChangePW:
             menucommand_handlers.changePassword()
             return
-        elif CommandText == MENUCOMMAND.EditMenu:
+        elif CommandNum == MENUCOMMAND.EditMenu:
             CmdFm = self._internalForms.EditMenu.value[0]
             frm = menucommand_handlers.FormBrowse(self, CmdFm, MainMenuWindow=self)
             if frm: 
                 self.open_childScreen(CmdFm, frm)
-        # elif CommandText == 'EditParameters':
+        # elif CommandNum == 'EditParameters':
         #     return
             # return redirect('EditParms')
-        # elif CommandText == 'EditGreetings':
+        # elif CommandNum == 'EditGreetings':
         #     return
             # return redirect('Greetings')
-        elif CommandText == MENUCOMMAND.EditUsers:
+        elif CommandNum == MENUCOMMAND.EditUsers:
             CmdFm = self._internalForms.EditUsers.value[0]
             frm = menucommand_handlers.FormBrowse(self, CmdFm, MainMenuWindow=self)
             if frm: 
                 self.open_childScreen(CmdFm, frm)
-        # elif CommandText == 'ShowHelp':
-        # elif CommandText == 'ShowRoutes_URLs':
-        # elif CommandText == 'ShowForms':
-        elif CommandText == MENUCOMMAND.ExitApplication:
+        # elif CommandNum == 'ShowHelp':
+        # elif CommandNum == 'ShowRoutes_URLs':
+        # elif CommandNum == 'ShowForms':
+        elif CommandNum == MENUCOMMAND.ExitApplication:
             self.logout()  # trigger logout process which should lead to app shutdown if usr_auth is False (since there's no login form to show if usr_auth is False, we just trigger the logout process which should lead to app shutdown in that case; if usr_auth is True, then this will show the login form again after logging out)
             # # exit the application
             # appinst = QApplication.instance()
