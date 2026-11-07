@@ -22,12 +22,13 @@ class loaddfltNewPW:
     _dfltNewPW = None 
     
     def __init__(self) -> None:
+        from calvincTools import calvincTools
         from calvincTools.models import cParameters
 
-        _parmKey = cParameters.ParmName == "DFLT-NEW-PW"
-        _dfltNewPW_rec = Repository(get_cMenu_sessionmaker(), cParameters).get_all(_parmKey)
-        _dfltNewPW_rec = _dfltNewPW_rec[0] if _dfltNewPW_rec else None
-        self._dfltNewPW = getattr(_dfltNewPW_rec, "ParmValue", "password123")
+        app_config = getattr(calvincTools(), 'app_config', None)
+        _parmKey = "NEWUSER_DEFAULT_PW"
+
+        self._dfltNewPW = getattr(app_config, _parmKey, "password123")
     # __init__
 class loadUsermodel:
     def __init__(self):

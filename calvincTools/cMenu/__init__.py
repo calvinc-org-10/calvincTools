@@ -1,6 +1,6 @@
-from .menucommand_constants import MENUCOMMANDS, COMMANDNUMBER
+from .menucommand_constants import MENUCOMMANDDICTIONARY, MENUCOMMAND
 from .cMenu import cMenu
-from .dbmenulist import (MenuRecords, 
+from .menu_prototypes import (MenuRecords, 
     initmenu_menulist, 
     newmenu_menulist, 
     newgroupnewmenu_menulist, 

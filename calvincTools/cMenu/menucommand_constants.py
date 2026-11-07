@@ -5,7 +5,7 @@ import types
 
 
 # Menu Command Constants
-MENUCOMMANDS = {
+MENUCOMMANDDICTIONARY = {
     # CommandNumber: CommandText
     0: '',     #'Null Command',
     1:  'LoadMenu',
@@ -13,11 +13,11 @@ MENUCOMMANDS = {
     15: 'OpenTable',
     21: 'RunCode',
     31: 'RunSQLStatement',
-    # 32: 'ConstructSQLStatement',
+    32: 'ConstructSQLStatement',
     36: 'LoadExtWebPage',
     51: 'ChangePW',
-    # 62: 'ChangeUser',
-    # 63: 'ChangeMenuGroup',
+    62: 'ChangeUser',
+    63: 'ChangeMenuGroup',
     91: 'EditMenu',
     92: 'EditParameters',
     93: 'EditGreetings',
@@ -28,4 +28,4 @@ MENUCOMMANDS = {
     200: 'ExitApplication',
 }
 # Convert dictionary to object
-COMMANDNUMBER =  types.SimpleNamespace(**{CText:CNum for CNum,CText in MENUCOMMANDS.items()})
+MENUCOMMAND =  types.SimpleNamespace(**{CText:CNum for CNum,CText in MENUCOMMANDDICTIONARY.items()})

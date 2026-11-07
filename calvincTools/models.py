@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (QApplication, )
 from .utils import (pleaseWriteMe, )
 
 from .database import (get_cMenu_sessionmaker, get_cMenu_session, )
-from .cMenu.menucommand_constants import MENUCOMMANDS, COMMANDNUMBER
+from .cMenu.menucommand_constants import MENUCOMMANDDICTIONARY, MENUCOMMAND
 
 
 tblName_menuGroups = 'cMenu_menuGroups'
@@ -136,19 +136,19 @@ class menuGroups(cMenuBase):
                     menuItems(
                         MenuGroup_id=starter_id, MenuID=0, OptionNumber=11, 
                         OptionText='Edit Menu', 
-                        Command=COMMANDNUMBER.EditMenu, Argument='', 
+                        Command=MENUCOMMAND.EditMenu, Argument='', 
                         PWord='', TopLine=None, BottomLine=None
                         ),
                     menuItems(
                         MenuGroup_id=starter_id, MenuID=0, OptionNumber=19, 
                         OptionText='Change Password', 
-                        Command=COMMANDNUMBER.ChangePW, Argument='', 
+                        Command=MENUCOMMAND.ChangePW, Argument='', 
                         PWord='', TopLine=None, BottomLine=None
                         ),
                     menuItems(
                         MenuGroup_id=starter_id, MenuID=0, OptionNumber=20, 
                         OptionText='Go Away!', 
-                        Command=COMMANDNUMBER.ExitApplication, Argument='', 
+                        Command=MENUCOMMAND.ExitApplication, Argument='', 
                         PWord='', TopLine=None, BottomLine=None
                         ),
                     ]
