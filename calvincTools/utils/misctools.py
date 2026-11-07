@@ -138,3 +138,14 @@ def pretty_show_fns(path_:str):
     
     return result_str
 
+def show_forms():
+    pass
+    # from ..utils import checkTemplate_and_render
+
+    # FormNameToURL_Map = current_app.config['FORMNAME_TO_URL_MAP']
+
+    # templt = 'utils/forms.html'
+    # cntext = {
+    #     'forms': FormNameToURL_Map
+    # }
+    # return checkTemplate_and_render(templt, **cntext)

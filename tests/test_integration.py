@@ -3,7 +3,7 @@ import pytest
 from datetime import datetime
 from calvincTools.utils.strings import str2, WrapInQuotes, UnWrapQuotes
 from calvincTools.utils.misctools import show_fns
-from calvincTools.utils.dates import parse_flexible_date
+from calvincTools.utils.datetools import parse_flexible_date
 
 
 class TestIntegrationStringAndDate:

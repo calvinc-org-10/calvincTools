@@ -10,8 +10,8 @@ from sqlalchemy.orm.session import make_transient
 from ..database import Repository, get_cMenu_session, get_cMenu_sessionmaker
 
 from calvincTools.cMenu.constants import _NUM_menuBTNperCOL, _NUM_menuBUTTONS, _NUM_menuBUTNCOLS
-from calvincTools.cMenu.menucommand_constants import COMMANDNUMBER
-from calvincTools.cMenu.dbmenulist import MenuRecords, newgroupnewmenu_menulist
+from calvincTools.cMenu.menucommand_constants import MENUCOMMAND
+from calvincTools.cMenu.menu_prototypes import MenuRecords, newgroupnewmenu_menulist
 from calvincTools.cMenu.menucommand_handlers import Nochoice
 from calvincTools.usr_auth.decorators import superuser_required
 from calvincTools.utils import areYouSure, cComboBoxFromDict, cGridWidget, cQFormBtnDef, cQFormFieldDef, cQFormLayout, cstdTabWidget, pleaseWriteMe, recordsetList
@@ -412,7 +412,7 @@ class cWidgetMenuItem(cSRFRecordList_Record):
                 name='Command',
                 label='Command',
                 widget_type=cComboBoxFromDict,
-                choices=vars(COMMANDNUMBER),
+                choices=vars(MENUCOMMAND),
                 on_change=self.changeField,
                 position=(1,0,1,3),
             ),

@@ -25,10 +25,10 @@ from calvincTools.cMenu.constants import (
     _NUM_menuBTNperCOL, _NUM_menuBUTTONS, _NUM_menuBUTNCOLS, 
     )
 
-from .dbmenulist import MenuRecords
-from .menucommand_constants import MENUCOMMANDS, COMMANDNUMBER
+from .menu_prototypes import MenuRecords
+from .menucommand_constants import MENUCOMMANDDICTIONARY, MENUCOMMAND
 from . import menucommand_handlers
-from .cEditMenu import cEditMenu
+from .EditMenu import cEditMenu
 from calvincTools.utils import (cComboBoxFromDict, pleaseWriteMe, cGridWidget, )
 from calvincTools.usr_auth import (editusers, )
 from calvincTools.usr_auth.decorators import (superuser_required,  )
@@ -348,33 +348,33 @@ class cMenu(QWidget):
         # return
         CommandNum = menuItem['Command']
         CommandArg = menuItem['Argument']
-        CommandText = MENUCOMMANDS.get(CommandNum)
+        CommandText = MENUCOMMANDDICTIONARY.get(CommandNum, 'UnknownCommand')
         
-        if CommandText == 'LoadMenu' :
+        if CommandText == MENUCOMMAND.LoadMenu:
             CommandArg = int(CommandArg)
             self.loadMenu(self.intmenuGroup, CommandArg)
-        elif CommandText == 'FormBrowse':
+        elif CommandText == MENUCOMMAND.FormBrowse:
             frm = menucommand_handlers.FormBrowse(self, CommandArg.lower())
             if frm is not None: 
                 self.open_childScreen(CommandArg, frm)
-        elif CommandText == 'OpenTable' :
+        elif CommandText == MENUCOMMAND.OpenTable :
             CmdFm = self._internalForms.OpenTable.value[0]
             frm = menucommand_handlers.FormBrowse(self, CmdFm, CommandArg)
             if frm is not None: 
                 self.open_childScreen(CmdFm, frm)
-        elif CommandText == 'RunSQLStatement':
+        elif CommandText == MENUCOMMAND.RunSQLStatement:
             CmdFm = self._internalForms.RunSQLStatement.value[0]
             frm = menucommand_handlers.FormBrowse(self, CmdFm)
             if frm is not None: 
                 self.open_childScreen(CmdFm, frm)
-        elif CommandText  == 'LoadExtWebPage':
+        elif CommandText  == MENUCOMMAND.LoadExtWebPage:
             url = self.ExternalWebPageURL_Map.get(CommandArg, None)
             menucommand_handlers.loadExternalWebPage(url)
             return
-        elif CommandText == 'ChangePW':
+        elif CommandText == MENUCOMMAND.ChangePW:
             menucommand_handlers.changePassword()
             return
-        elif CommandText == 'EditMenu':
+        elif CommandText == MENUCOMMAND.EditMenu:
             CmdFm = self._internalForms.EditMenu.value[0]
             frm = menucommand_handlers.FormBrowse(self, CmdFm, MainMenuWindow=self)
             if frm: 
@@ -385,7 +385,7 @@ class cMenu(QWidget):
         # elif CommandText == 'EditGreetings':
         #     return
             # return redirect('Greetings')
-        elif CommandText == 'EditUsers':
+        elif CommandText == MENUCOMMAND.EditUsers:
             CmdFm = self._internalForms.EditUsers.value[0]
             frm = menucommand_handlers.FormBrowse(self, CmdFm, MainMenuWindow=self)
             if frm: 
@@ -393,13 +393,13 @@ class cMenu(QWidget):
         # elif CommandText == 'ShowHelp':
         # elif CommandText == 'ShowRoutes_URLs':
         # elif CommandText == 'ShowForms':
-        elif CommandText == 'ExitApplication':
+        elif CommandText == MENUCOMMAND.ExitApplication:
             self.logout()  # trigger logout process which should lead to app shutdown if usr_auth is False (since there's no login form to show if usr_auth is False, we just trigger the logout process which should lead to app shutdown in that case; if usr_auth is True, then this will show the login form again after logging out)
             # # exit the application
             # appinst = QApplication.instance()
             # if appinst is not None:
             #     appinst.quit()
-        elif CommandNum in MENUCOMMANDS:
+        elif CommandNum in MENUCOMMANDDICTIONARY:
             # command recognized but not yet implemented
             # TODO: QMessageBox.information ?
             msg = QMessageBox(self)
