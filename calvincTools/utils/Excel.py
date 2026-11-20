@@ -14,6 +14,30 @@ from ..database import Repository
 
 ExcelWorkbook_fileext = ".XLSX"
 
+class SprdsheetFldDescriptor:
+    """Descriptor for spreadsheet fields, defining validation rules and cleaning procedures."""
+    """Create a field descriptor for spreadsheet field validation.
+    
+    Args:
+        ModelFldName (str): The name of the field in the TargetModel.
+        AllowedTypes: tuple (or singleton) specifying allowed types
+            for the field value. If not provided, defaults to str.
+        CleanProc: Optional cleaning procedure to apply to the field value.
+    
+    Returns:
+        dict: Field descriptor dictionary with ModelFldName and AllowedTypes.
+    """
+    ModelFldName:str
+    CalculatedFld:bool
+    AllowedTypes:tuple
+    CleanProc:Any
+
+    def __init__(self, ModelFldName:str, CalculatedFld=None, AllowedTypes=None, CleanProc=None):
+        self.ModelFldName:str = ModelFldName
+        self.CalculatedFld:bool = CalculatedFld or False
+        self.AllowedTypes:tuple = AllowedTypes if AllowedTypes is not None else (str, )
+        self.CleanProc = CleanProc
+
 class cExcelFile(Workbook):
     """Subclass of openpyxl's Workbook to add custom functionality for Excel file handling."""
     
@@ -149,29 +173,6 @@ class cExcelFile(Workbook):
     
     """
     # shoudl I just go on and make this a dataclass?
-    class SprdsheetFldDescriptor:
-        """Descriptor for spreadsheet fields, defining validation rules and cleaning procedures."""
-        """Create a field descriptor for spreadsheet field validation.
-        
-        Args:
-            ModelFldName (str): The name of the field in the TargetModel.
-            AllowedTypes: tuple (or singleton) specifying allowed types
-                for the field value. If not provided, defaults to str.
-            CleanProc: Optional cleaning procedure to apply to the field value.
-        
-        Returns:
-            dict: Field descriptor dictionary with ModelFldName and AllowedTypes.
-        """
-        ModelFldName:str
-        CalculatedFld:bool
-        AllowedTypes:tuple
-        CleanProc:Any
-
-        def __init__(self, ModelFldName:str, CalculatedFld=None, AllowedTypes=None, CleanProc=None):
-            self.ModelFldName:str = ModelFldName
-            self.CalculatedFld:bool = CalculatedFld or False
-            self.AllowedTypes:tuple = AllowedTypes if AllowedTypes is not None else (str, )
-            self.CleanProc = CleanProc
       # key will be the SprdsheetName, value is a SprdsheetFldDescriptor
     SprdsheetFlds:Dict[str,SprdsheetFldDescriptor] = {}  # key will be the SprdsheetName, value is a SprdsheetFldDescriptor
       # key will be the SprdsheetName, value is a SprdsheetFldDescriptor

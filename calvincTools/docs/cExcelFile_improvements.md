@@ -31,8 +31,8 @@ For code examples, see the companion document: **cExcelFile_implementation_examp
 - Makes testing easier
 
 **Implementation:**
-1. Move `SprdsheetFldDescriptor` class definition to module level (before `cExcelFile` class)
-2. Update imports to support: `from calvincTools.utils.Excel import SprdsheetFldDescriptor`
+1. done✓ - Move `SprdsheetFldDescriptor` class definition to module level (before `cExcelFile` class)
+2. none ndd✓ - Update imports to support: `from calvincTools.utils.Excel import SprdsheetFldDescriptor`
 3. Update all documentation references
 
 **Expected Impact:** Users can now write cleaner code:
