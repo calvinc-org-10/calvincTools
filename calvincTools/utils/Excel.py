@@ -12,6 +12,11 @@ from openpyxl.utils.datetime import from_excel, WINDOWS_EPOCH
 from .cQModels import (SQLAlchemyTableModel, )
 from ..database import Repository
 
+import logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+
 ExcelWorkbook_fileext = ".XLSX"
 
 class SprdsheetFldDescriptor:
@@ -152,7 +157,7 @@ class cExcelFile(Workbook):
             wb.__class__ = cls
             return cast("cExcelFile", wb)
         except Exception as e:
-            print(f"Error loading file {filename}: {e}")
+            logger.error(f"Error loading file {filename}: {e}")
             return None
     # load_from_file
 
@@ -282,7 +287,7 @@ class cExcelFile(Workbook):
         
         ws = wb[WksheetName] if WksheetName in wb.sheetnames else wb.active
         if ws is None:
-            print(f"Worksheet {WksheetName} not found in workbook.")
+            logging.error(f"Worksheet {WksheetName} not found in workbook.")
             return [{'$error': f"Worksheet {WksheetName} not found in workbook."}]
                 
         SprshtHdrRow = ws[1]
@@ -296,14 +301,14 @@ class cExcelFile(Workbook):
                 # has this field already been mapped?
                 if modlFldNm in dbFld_to_sprshtCol and dbFld_to_sprshtCol[modlFldNm] is not None:
                     # yes, that's not good - duplicate column in spreadsheet.  Warn and skip this column
-                    print(f"Warning: Duplicate column '{colval}' in spreadsheet. Column {dbFld_to_sprshtCol[modlFldNm]+1} Already mapped to model field '{modlFldNm}'. Skipping this column ({colIndx+1}).")
+                    logger.warning(f"Warning: Duplicate column '{colval}' in spreadsheet. Column {dbFld_to_sprshtCol[modlFldNm]+1} Already mapped to model field '{modlFldNm}'. Skipping this column ({colIndx+1}).")
                     continue
                 dbFld_to_sprshtCol[modlFldNm] = colIndx
         # end for col in SprshtHdrRow
         
         if any(val is None for val in dbFld_to_sprshtCol.values()):
             missing_cols = [col for col, val in dbFld_to_sprshtCol.items() if val is None]
-            print(f"Error: Missing required columns in spreadsheet: {', '.join(missing_cols)}")
+            logger.error(f"Error: Missing required columns in spreadsheet: {', '.join(missing_cols)}")
             return [{'$error': f"Missing required columns in spreadsheet: {', '.join(missing_cols)}"}]
         # end if any missing required columns
         

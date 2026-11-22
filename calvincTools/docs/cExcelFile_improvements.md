@@ -75,6 +75,7 @@ fields = {
 2. Create logger: `logger = logging.getLogger(__name__)`
 3. Replace all `print()` with appropriate `logger.error()`, `logger.warning()`, `logger.debug()`, `logger.info()`
 4. Add optional parameter to control logging level
+done✓ - except in print.py - will hit that later and list_python_symbols.py - must decide if I want to log or print those msgs
 
 **Example Replacements:**
 ```python

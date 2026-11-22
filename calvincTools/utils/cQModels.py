@@ -15,6 +15,10 @@ from sqlalchemy.dialects import sqlite
 from .messageBoxes import pleaseWriteMe
 from .strings import str2
 
+import logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 
 class cDictModel(QAbstractTableModel):
     """ A model for displaying a dictionary in a table format.
@@ -289,7 +293,7 @@ class SQLAlchemyTableModel(QAbstractTableModel):
             return True
         except Exception as e:
             self.endInsertRows()
-            print(f"Error inserting row: {e}")
+            logger.error(f"Error inserting row: {e}")
             return False
     
     def removeRow(self, row, parent:QModelIndex | QPersistentModelIndex=QModelIndex()):
@@ -308,7 +312,7 @@ class SQLAlchemyTableModel(QAbstractTableModel):
         except Exception as e:
             self._data.insert(row, item)  # Reinsert if failed
             self.endRemoveRows()
-            print(f"Error removing row: {e}")
+            logger.error(f"Error removing row: {e}")
             return False
 
     def record(self, row:int|None = None):
@@ -369,7 +373,7 @@ class SQLAlchemyTableModel(QAbstractTableModel):
             compiled = stmt.compile(dialect=sqlite.dialect(), compile_kwargs={"literal_binds": True})
             return str(compiled)
         except Exception as e:
-            print(f"Error compiling SQL statement: {e}")
+            logger.error(f"Error compiling SQL statement: {e}")
             return ""
 
     def isDirty(self, row, col) -> bool:

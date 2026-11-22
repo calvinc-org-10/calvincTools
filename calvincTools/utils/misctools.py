@@ -110,9 +110,6 @@ def show_fns(path_:str):
             result['classes'].append(f'    {prefix} {class_.name}.{show_fninfo(method)}')
 
     return result
-    # print(', '.join(result))
-    # This prints expected output
-    # fo(x), A.fun(self,y), A._bo(self,y), A.NS(y,z), B.foo(self,z), B._bar(self,t)
 def pretty_show_fns(path_:str):
     """Parse a Python file and return a formatted string of functions and classes.
     
