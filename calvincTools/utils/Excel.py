@@ -287,7 +287,7 @@ class cExcelFile(Workbook):
         
         ws = wb[WksheetName] if WksheetName in wb.sheetnames else wb.active
         if ws is None:
-            logging.error(f"Worksheet {WksheetName} not found in workbook.")
+            logger.error(f"Worksheet {WksheetName} not found in workbook.")
             return [{'$error': f"Worksheet {WksheetName} not found in workbook."}]
                 
         SprshtHdrRow = ws[1]

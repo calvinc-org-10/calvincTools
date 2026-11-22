@@ -22,13 +22,13 @@ Complete these in order. Do ONE at a time. ~1 hour total.
 **Reference:** cExcelFile_implementation_examples.md → Section 1
 
 Steps:
-- [ ] Move `SprdsheetFldDescriptor` class definition before `cExcelFile` class
-- [ ] Update imports at top of file
+- [✓] Move `SprdsheetFldDescriptor` class definition before `cExcelFile` class
+- [✓] Update imports at top of file
 - [ ] Add module-level constants (HEADER_FREEZE_PANE_CELL, HEADER_FONT, HEADER_FILL)
-- [ ] Delete nested class definition from cExcelFile
-- [ ] Test: `from calvincTools.utils.Excel import SprdsheetFldDescriptor` works
+- [✓] Delete nested class definition from cExcelFile
+- [NO] **not ndd** Test: `from calvincTools.utils.Excel import SprdsheetFldDescriptor` works
 - [ ] Run tests: `python -m pytest tests/ -v`
-- [ ] Commit: `git commit -m "Extract SprdsheetFldDescriptor to module level"`
+- [✓] Commit: `git commit -m "Extract SprdsheetFldDescriptor to module level"`
 
 **Signs of Success:**
 - No import errors
@@ -42,20 +42,20 @@ Steps:
 **Reference:** cExcelFile_implementation_examples.md → Section 2
 
 Locations to update:
-- [ ] Line ~125: `load_from_file()` error handling
-- [ ] Line ~252: worksheet not found check
-- [ ] Line ~260: missing required columns error
-- [ ] Line ~275: duplicate column warning
-- [ ] Line ~295: progress updates
-- [ ] Line ~335: validation failure messages
+- [✓] Line ~125: `load_from_file()` error handling
+- [✓] Line ~252: worksheet not found check
+- [✓] Line ~260: missing required columns error
+- [✓] Line ~275: duplicate column warning
+- [NO] Line ~295: progress updates - _these will remain printed_
+- [NO] Line ~335: validation failure messages - _these will remain printed_
 
 Steps:
-- [ ] Add `import logging` at top
-- [ ] Add `logger = logging.getLogger(__name__)` after imports
-- [ ] Replace all 6 `print()` calls with `logger.*()` equivalents
+- [✓] Add `import logging` at top
+- [✓] Add `logger = logging.getLogger(__name__)` after imports
+- [✓] Replace all 6 `print()` calls with `logger.*()` equivalents
 - [ ] Test with logging configured: See cExcelFile_implementation_examples.md
 - [ ] Run tests: `python -m pytest tests/ -v`
-- [ ] Commit: `git commit -m "Add logging instead of print statements"`
+- [✓] Commit: `git commit -m "Add logging instead of print statements"`
 
 **Signs of Success:**
 - Logger messages appear (if logging configured)
