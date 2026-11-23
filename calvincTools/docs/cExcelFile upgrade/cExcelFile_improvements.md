@@ -111,6 +111,7 @@ done✓ - except in print.py - will hit that later and list_python_symbols.py - 
 2. Update `load_from_listofdict()` to use `freezecols` value
 3. Update `load_from_SQLAlchModel()` (it delegates to #1, so will inherit fix)
 4. Test with various `freezecols` values (0, 1, 2, 3, etc.)
+✓coding done; testing not done yet
 
 **Example:**
 ```python
@@ -183,6 +184,8 @@ def _normalize_cleanproc_result(result):
 
 ### 5. Remove Placeholder Method ⭐⭐
 **Priority:** 2 | **Complexity:** Low | **Effort:** ~5 minutes
+WILL NOT BE DONE
+end_of_class() is present so that refactorings capture comments at end of class. Such comments should be placed before this method
 
 **Current Issue:**
 - Line 375 has empty method `end_of_class()` with only docstring

@@ -69,12 +69,12 @@ Steps:
 **Reference:** cExcelFile_implementation_examples.md → Section 3
 
 Steps:
-- [ ] Add helper method: `_calculate_freeze_address(num_cols)`
-- [ ] Update `load_from_listofdict()` to use `freezecols` parameter
+- [✓] Add helper method: `_calculate_freeze_address(num_cols)`
+- [✓] Update `load_from_listofdict()` to use `freezecols` parameter
 - [ ] Test with different freezecols values (0, 1, 2, 3)
 - [ ] Verify freeze_panes is set correctly
 - [ ] Run tests: `python -m pytest tests/ -v`
-- [ ] Commit: `git commit -m "Implement column freezing via freezecols parameter"`
+- [✓] Commit: `git commit -m "Implement column freezing via freezecols parameter"`
 
 **Signs of Success:**
 - `freezecols=0` sets `freeze_panes='A2'`
@@ -85,7 +85,8 @@ Steps:
 ---
 
 ### [ ] 4. Remove Placeholder Method (5 min)
-
+WILL NOT BE DONE
+Placeholder method is present so that refactorings capture any comments at the end of the class
 **Reference:** cExcelFile_implementation_examples.md → Section 5
 
 Steps:

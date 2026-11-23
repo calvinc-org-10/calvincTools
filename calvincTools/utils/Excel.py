@@ -56,6 +56,30 @@ class cExcelFile(Workbook):
         # Additional initialization can be added here if needed
     
 
+    @staticmethod
+    def _calculate_freeze_address(num_cols: int) -> str:
+        """Convert column count to Excel freeze panes cell address.
+        
+        Args:
+            num_cols: Number of columns to freeze (0 = freeze only header row)
+            
+        Returns:
+            Excel cell address for freeze_panes (e.g., 'A2', 'B2', 'D2')
+            
+        Examples:
+            _calculate_freeze_address(0) → 'A2'   # Only header row frozen
+            _calculate_freeze_address(1) → 'B2'   # Cols A + header
+            _calculate_freeze_address(3) → 'D2'   # Cols A-C + header
+        """
+        from openpyxl.utils import get_column_letter
+        
+        if num_cols <= 0:
+            return 'A2'  # Default: freeze only header row
+        
+        freeze_col_letter = get_column_letter(num_cols + 1)
+        return f'{freeze_col_letter}2'
+    # _calculate_freeze_address
+
     def load_from_listofdict(self,
         qlist:List[Dict[str, Any]], 
         wsName:str|None = None,
@@ -101,8 +125,9 @@ class cExcelFile(Workbook):
                                 end_color=colors.Color("00808080")
                                 )
             #TODO: convert row1 and cols:freezecols to an address (A=0, B=1, C=2 etc) for line below
-            ws.freeze_panes ='A2'
-            #TODO: if freezecols passed, freeze them, too
+            freeze_address = self._calculate_freeze_address(freezecols)
+            ws.freeze_panes = freeze_address
+            logger.debug(f"Set freeze panes to {freeze_address} for {freezecols} columns")
         #endif qlist
 
         return True
