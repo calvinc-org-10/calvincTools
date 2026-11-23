@@ -75,6 +75,7 @@ fields = {
 2. Create logger: `logger = logging.getLogger(__name__)`
 3. Replace all `print()` with appropriate `logger.error()`, `logger.warning()`, `logger.debug()`, `logger.info()`
 4. Add optional parameter to control logging level
+
 done✓ - except in print.py - will hit that later and list_python_symbols.py - must decide if I want to log or print those msgs
 
 **Example Replacements:**
@@ -111,6 +112,7 @@ done✓ - except in print.py - will hit that later and list_python_symbols.py - 
 2. Update `load_from_listofdict()` to use `freezecols` value
 3. Update `load_from_SQLAlchModel()` (it delegates to #1, so will inherit fix)
 4. Test with various `freezecols` values (0, 1, 2, 3, etc.)
+
 ✓coding done; testing not done yet
 
 **Example:**

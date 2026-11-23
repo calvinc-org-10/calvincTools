@@ -37,7 +37,7 @@ class SprdsheetFldDescriptor:
     AllowedTypes:tuple
     CleanProc:Any
 
-    def __init__(self, ModelFldName:str, CalculatedFld=None, AllowedTypes=None, CleanProc=None):
+    def __init__(self, ModelFldName:str, CalculatedFld=None, AllowedTypes=None, CleanProc=None) -> None:
         self.ModelFldName:str = ModelFldName
         self.CalculatedFld:bool = CalculatedFld or False
         self.AllowedTypes:tuple = AllowedTypes if AllowedTypes is not None else (str, )
@@ -51,7 +51,7 @@ class cExcelFile(Workbook):
     nRowsSkipped = None
     
     
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         # Additional initialization can be added here if needed
     
@@ -207,7 +207,7 @@ class cExcelFile(Workbook):
     SprdsheetFlds:Dict[str,SprdsheetFldDescriptor] = {}  # key will be the SprdsheetName, value is a SprdsheetFldDescriptor
       # key will be the SprdsheetName, value is a SprdsheetFldDescriptor
 
-    def cleanupfld(self, spshtFldNm, dbFldNm, val, rowdict):
+    def cleanupfld(self, spshtFldNm, dbFldNm, val, rowdict) -> tuple[bool, Any]:
         """Clean and validate a field value according to its allowed types.
         
         Args:
@@ -258,7 +258,7 @@ class cExcelFile(Workbook):
         progress_interval=100,
         progress_callback = None,
         validation_callback = None,
-        ) -> Any:
+        ) -> List[Dict[str, Any]]:
         """Process the imported spreadsheet data and save it to the database.
         
         Args:
