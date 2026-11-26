@@ -17,7 +17,7 @@ Use this checklist when you're ready to implement improvements (weeks from now).
 
 Complete these in order. Do ONE at a time. ~1 hour total.
 
-### [ ] 1. Extract SprdsheetFldDescriptor to Module Level (15 min)
+### [✓ mostly done] 1. Extract SprdsheetFldDescriptor to Module Level (15 min)
 
 **Reference:** cExcelFile_implementation_examples.md → Section 1
 
@@ -37,7 +37,7 @@ Steps:
 
 ---
 
-### [ ] 2. Add Logging Instead of Print Statements (30 min)
+### [✓ mostly done] 2. Add Logging Instead of Print Statements (30 min)
 
 **Reference:** cExcelFile_implementation_examples.md → Section 2
 
@@ -64,7 +64,7 @@ Steps:
 
 ---
 
-### [ ] 3. Implement Column Freezing (20 min)
+### [✓ mostly done] 3. Implement Column Freezing (20 min)
 
 **Reference:** cExcelFile_implementation_examples.md → Section 3
 
@@ -84,8 +84,8 @@ Steps:
 
 ---
 
-### [ ] 4. Remove Placeholder Method (5 min)
-WILL NOT BE DONE
+### [NO] 4. Remove Placeholder Method (5 min)
+### WILL NOT BE DONE
 Placeholder method is present so that refactorings capture any comments at the end of the class
 
 **Reference:** cExcelFile_implementation_examples.md → Section 5
@@ -106,7 +106,7 @@ Steps:
 
 Complete these after Phase 1. ~2.5 hours total.
 
-### [ ] 5. Add Comprehensive Type Hints (45 min)
+### [✓ mostly done] 5. Add Comprehensive Type Hints (45 min)
 
 **Reference:** cExcelFile_implementation_examples.md → Section 6
 
@@ -119,12 +119,12 @@ Methods to update:
 - [ ] `save_to_SQLAlchemyModel()` → return `List[Dict[str, Any]]`
 
 Steps:
-- [ ] Update typing imports at top
-- [ ] Add return type to each method
-- [ ] Add parameter type hints where missing
+- [✓] Update typing imports at top
+- [✓] Add return type to each method
+- [✓] Add parameter type hints where missing
 - [ ] Test with type checker if available: `mypy calvincTools/utils/Excel.py`
 - [ ] Run tests: `python -m pytest tests/ -v`
-- [ ] Commit: `git commit -m "Add comprehensive type hints"`
+- [✓] Commit: `git commit -m "Add comprehensive type hints"`
 
 **Signs of Success:**
 - All methods have return type hints
@@ -195,17 +195,17 @@ Steps:
 
 ---
 
-### [ ] 9. Add Column Width Auto-Adjustment (20 min)
+### [✓] 9. Add Column Width Auto-Adjustment (20 min)
 
 **Reference:** cExcelFile_implementation_examples.md → Section 9
 
 Steps:
-- [ ] Add `auto_adjust_columns()` method
-- [ ] Update `load_from_listofdict()` to call it (add `auto_adjust` parameter)
+- [✓] Add `auto_adjust_columns()` method
+- [✓] Update `load_from_listofdict()` to call it (add `auto_adjust` parameter)
 - [ ] Test with various content lengths
 - [ ] Run tests: `python -m pytest tests/ -v`
 - [ ] Verify column widths are reasonable (not too narrow, not >50)
-- [ ] Commit: `git commit -m "Add column width auto-adjustment"`
+- [✓] Commit: `git commit -m "Add column width auto-adjustment"`
 
 **Signs of Success:**
 - Columns auto-fit to content

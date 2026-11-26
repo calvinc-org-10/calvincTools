@@ -1,4 +1,4 @@
-from typing import (Dict, List, Any, Type, cast, )
+from typing import (Dict, List, Any, Type, Callable, cast, )
 # from warnings import deprecated  # python >= 3.13
 
 from PySide6.QtCore import (
@@ -7,6 +7,7 @@ from PySide6.QtCore import (
 
 from openpyxl import (Workbook, load_workbook, )
 from openpyxl.styles import PatternFill, Font, fills, colors
+from openpyxl.utils import get_column_letter
 from openpyxl.utils.datetime import from_excel, WINDOWS_EPOCH
 
 from .cQModels import (SQLAlchemyTableModel, )
@@ -18,6 +19,13 @@ logger.setLevel(logging.DEBUG)
 
 
 ExcelWorkbook_fileext = ".XLSX"
+HEADER_FREEZE_PANE_CELL = 'A2'
+HEADER_FONT = Font(bold=True)
+HEADER_FILL = PatternFill(
+    fill_type=fills.FILL_SOLID,
+    start_color=colors.Color("00808080"),
+    end_color=colors.Color("00808080")
+)
 
 class SprdsheetFldDescriptor:
     """Descriptor for spreadsheet fields, defining validation rules and cleaning procedures."""
@@ -46,6 +54,7 @@ class SprdsheetFldDescriptor:
 class cExcelFile(Workbook):
     """Subclass of openpyxl's Workbook to add custom functionality for Excel file handling."""
     
+    # this is only used in save_to_listdict. Should these be local to that method instead of class attributes?
     num_rows = None
     nRows = None
     nRowsSkipped = None
@@ -71,7 +80,6 @@ class cExcelFile(Workbook):
             _calculate_freeze_address(1) → 'B2'   # Cols A + header
             _calculate_freeze_address(3) → 'D2'   # Cols A-C + header
         """
-        from openpyxl.utils import get_column_letter
         
         if num_cols <= 0:
             return 'A2'  # Default: freeze only header row
@@ -80,17 +88,54 @@ class cExcelFile(Workbook):
         return f'{freeze_col_letter}2'
     # _calculate_freeze_address
 
+    def auto_adjust_columns(self, ws, max_width: int = 50) -> None:
+        """Auto-fit column widths based on content.
+        
+        Args:
+            ws: Worksheet to adjust
+            max_width: Maximum column width (prevents extremely wide columns)
+        """
+        from openpyxl.worksheet.worksheet import Worksheet
+        
+        if not isinstance(ws, Worksheet):
+            logger.warning("auto_adjust_columns: ws is not a valid Worksheet")
+            return
+        
+        for col_index, column in enumerate(ws.columns, start=1):
+            max_length = 0
+            column_letter = get_column_letter(col_index)
+            
+            for cell in column:
+                try:
+                    if cell.value:
+                        cell_length = len(str(cell.value))
+                        max_length = max(max_length, cell_length)
+                except Exception as e:
+                    logger.debug(f"Error measuring cell {cell.coordinate}: {e}")
+                    pass
+            
+            # Set width: content length + 2 for padding, capped at max_width
+            adjusted_width = min(max_length + 2, max_width)
+            ws.column_dimensions[column_letter].width = adjusted_width
+            
+        logger.debug(f"Auto-adjusted column widths in worksheet '{ws.title}'")
+    # auto_adjust_columns
+
     def load_from_listofdict(self,
         qlist:List[Dict[str, Any]], 
         wsName:str|None = None,
         freezecols:int = 0, 
+        auto_adjust: bool = True,
         ) -> bool:
         """
         Load data from a SQLAlchemy model into the workbook.
         
+        Args:
         qset: a QAbstractTableModel or list of dictionaries
         flName: the name of the file to be built (WITHOUT extension!).  It's stored on the server.  If it's to be dl'd, the caller does that
         freezecols = 0: the number of columns to freeze to the left
+        auto_adjust: Auto-fit column widths after loading (default: True)
+
         The top row contains the field names, is always frozen, is bold and is shaded grey
 
         Returns True if the workbook was successfully populated from the qset, False otherwise.
@@ -119,15 +164,18 @@ class cExcelFile(Workbook):
             # make header row bold, shade it grey, freeze it
             # ws.show_gridlines = True  #Nope - this is a R/O attribute
             for cell in ws[1]: # type: ignore
-                cell.font = Font(bold=True)
-                cell.fill = PatternFill(fill_type=fills.FILL_SOLID,
-                                start_color=colors.Color("00808080"),
-                                end_color=colors.Color("00808080")
-                                )
-            #TODO: convert row1 and cols:freezecols to an address (A=0, B=1, C=2 etc) for line below
+                cell.font = HEADER_FONT
+                cell.fill = HEADER_FILL
+                
+            # convert row1 and cols:freezecols to an address (A=0, B=1, C=2 etc) for line below
             freeze_address = self._calculate_freeze_address(freezecols)
             ws.freeze_panes = freeze_address
             logger.debug(f"Set freeze panes to {freeze_address} for {freezecols} columns")
+
+            # Auto-adjust column widths if requested
+            if auto_adjust:
+                self.auto_adjust_columns(ws)
+    
         #endif qlist
 
         return True
@@ -288,10 +336,10 @@ class cExcelFile(Workbook):
     def save_to_listofdict(self, 
         WksheetName, # default to None?
         SprdsheetFlds:Dict[str,SprdsheetFldDescriptor]|None = None, 
-        required_columns=None,      # these are model field names, not spreadsheet column names - they are mapped to spreadsheet column names via SprdsheetFlds
-        progress_interval=100,
-        progress_callback = None,
-        validation_callback = None,
+        required_columns: List[str]|None = None,      # these are model field names, not spreadsheet column names - they are mapped to spreadsheet column names via SprdsheetFlds
+        progress_interval: int = 100,
+        progress_callback: Callable[[int, int], None]|None = None,
+        validation_callback: Callable[[Dict[str, Any]], None]|None = None,
         ) -> List[Dict[str, Any]]:
       # key will be the SprdsheetName, value is a SprdsheetFldDescriptor
         """Process the imported spreadsheet data and save it to the database.
