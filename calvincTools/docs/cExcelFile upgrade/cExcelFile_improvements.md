@@ -126,6 +126,7 @@ done✓ - except in print.py - will hit that later and list_python_symbols.py - 
 
 ### 4. Standardize CleanProc Return Values ⭐⭐
 **Priority:** 2 | **Complexity:** Medium | **Effort:** ~40 minutes
+### ✓ mostly done
 
 **Current Issue:**
 - `cleanupfld()` accepts TWO different return formats from `CleanProc` callbacks:

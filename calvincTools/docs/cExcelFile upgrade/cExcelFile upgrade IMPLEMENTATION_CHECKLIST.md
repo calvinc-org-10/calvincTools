@@ -133,17 +133,17 @@ Steps:
 
 ---
 
-### [ ] 6. Standardize CleanProc Return Values (40 min)
+### [✓ mostly done] 6. Standardize CleanProc Return Values (40 min)
 
 **Reference:** cExcelFile_implementation_examples.md → Section 4
 
 Steps:
-- [ ] Add `_normalize_cleanproc_result()` static method
-- [ ] Update `cleanupfld()` to use normalizer
+- [✓] Add `_normalize_cleanproc_result()` static method
+- [✓] Update `cleanupfld()` to use normalizer
 - [ ] Test with both return formats (tuple and non-tuple)
 - [ ] Run tests: `python -m pytest tests/ -v`
-- [ ] Add docstring examples showing correct format
-- [ ] Commit: `git commit -m "Standardize CleanProc return value handling"`
+- [✓] Add docstring examples showing correct format
+- [✓] Commit: `git commit -m "Standardize CleanProc return value handling"`
 
 **Signs of Success:**
 - Both return formats work (tuple and non-tuple)

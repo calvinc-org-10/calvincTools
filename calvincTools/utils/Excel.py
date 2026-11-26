@@ -255,7 +255,52 @@ class cExcelFile(Workbook):
     SprdsheetFlds:Dict[str,SprdsheetFldDescriptor] = {}  # key will be the SprdsheetName, value is a SprdsheetFldDescriptor
       # key will be the SprdsheetName, value is a SprdsheetFldDescriptor
 
-    def cleanupfld(self, spshtFldNm, dbFldNm, val, rowdict) -> tuple[bool, Any]:
+    @staticmethod
+    def _normalize_cleanproc_result(result: Any) -> tuple[bool, Any]:
+        """Normalize CleanProc return value to consistent (usefld, cleanval) tuple.
+        
+        CleanProc can return:
+        - tuple[bool, Any]: (use_field, cleaned_value) - preferred format
+        - Any other value: treated as cleaned_value, usefld=True if not None
+        
+        This method normalizes both formats to standard tuple.
+        
+        Args:
+            result: Return value from CleanProc callable
+            
+        Returns:
+            tuple[bool, Any]: (usefld, cleanval) where
+                usefld=True means include field in output
+                cleanval is the processed value
+                
+        Examples:
+            _normalize_cleanproc_result((True, 'value'))
+                → (True, 'value')
+            
+            _normalize_cleanproc_result((False, None))
+                → (False, None)
+            
+            _normalize_cleanproc_result('value')
+                → (True, 'value')
+            
+            _normalize_cleanproc_result(None)
+                → (False, None)
+        """
+        if isinstance(result, tuple) and len(result) == 2:
+            # Already in correct format
+            return result
+        
+        # Convert non-tuple to standard format
+        use_field = result is not None
+        clean_value = result if use_field else None
+        return (use_field, clean_value)
+    # _normalize_cleanproc_result
+    def cleanupfld(self, 
+            spshtFldNm: str, 
+            dbFldNm: str, 
+            val: Any, 
+            rowdict: Dict[str, Any]
+        ) -> tuple[bool, Any]:
         """Clean and validate a field value according to its allowed types.
         
         Args:
@@ -280,18 +325,15 @@ class cExcelFile(Workbook):
         cleanDesc = self.SprdsheetFlds[spshtFldNm]
         if callable(cleanDesc.CleanProc):
             result = cleanDesc.CleanProc(spshtFldNm, dbFldNm, val, rowdict)
-            if isinstance(result, tuple) and len(result) == 2:
-                usefld, cleanval = result
-                if not usefld:
-                    return usefld, cleanval
-            else:
-                usefld = (result is not None)
-                cleanval = result if usefld else None
+            usefld, cleanval = self._normalize_cleanproc_result(result)
+            if not usefld:
+                return usefld, cleanval
         # if callable(cleanDesc.CleanProc)
-        
+
+        # Validate the cleaned value against the allowed types for this field.
         allowed_types = cleanDesc.AllowedTypes
         if not isinstance(allowed_types, tuple) or allowed_types == ():
-            allowed_types = str
+            allowed_types = (str, )
         usefld = isinstance(cleanval, allowed_types)
         
         return usefld, cleanval
