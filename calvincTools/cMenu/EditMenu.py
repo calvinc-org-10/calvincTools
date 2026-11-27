@@ -20,6 +20,9 @@ from calvincTools.utils.forms.forms.cSRFSingleRecordForm import cSRFSingleRecord
 from calvincTools.utils.forms.subforms.cSRFRecordList import cSRFRecordList_Record
 from calvincTools.utils.forms.widgets import cSimpRecFmElement_Base
 
+import logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 # Lazy loading cache for avoiding circular imports
@@ -1350,7 +1353,7 @@ class cEditMenu(cSRFSingleRecordForm):
             # update the menu group name in menuGroups table
             groupRec = Repository(get_cMenu_sessionmaker(), _get_model('menuGroups')).get_by_id(self.intmenuGroup)
             if groupRec is None:
-                print("Menu group not found:", self.intmenuGroup)
+                logger.warning("Menu group not found: %s", self.intmenuGroup)
                 return
             groupRec.GroupName = str(fldmenuGroupName.Value())  # type: ignore
             Repository(get_cMenu_sessionmaker(), _get_model('menuGroups')).update(groupRec)

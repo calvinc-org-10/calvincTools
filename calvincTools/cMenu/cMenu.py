@@ -344,8 +344,6 @@ class cMenu(QWidget):
             return
         pressedBtnNum = pressedBtn.btnNumber
         menuItem = self.currentMenu[pressedBtnNum]
-        # print(f'{menuItem}')
-        # return
         CommandNum = menuItem['Command']
         CommandArg = menuItem['Argument']
         CommandText = MENUCOMMANDDICTIONARY.get(CommandNum, 'UnknownCommand')

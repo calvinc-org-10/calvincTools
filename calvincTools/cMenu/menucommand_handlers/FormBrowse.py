@@ -51,7 +51,6 @@ def FormBrowse(parntWind,
     # endif formname in FormNameToURL_Map:
     if authorized and not theForm:
         formname = f'Form {formname} is not built yet.  Calvin needs more coffee.'
-        # print(formname)
         UnderConstruction_Dialog(parntWind, formname).show()
     else:
         return theForm
