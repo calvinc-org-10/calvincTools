@@ -251,6 +251,7 @@ def cleanupfld(self,
 
 ### 7. Add Batch-Size Control for Database Inserts ⭐⭐
 **Priority:** 2 | **Complexity:** Medium | **Effort:** ~30 minutes
+### ✓ coding done, need to test
 
 **Current Issue:**
 - `save_to_SQLAlchemyModel()` tries to insert ALL records in single batch
@@ -298,7 +299,7 @@ def save_to_SQLAlchemyModel(self,
 
 ### 8. Add Sheet Validation Method ⭐⭐
 **Priority:** 2 | **Complexity:** Medium | **Effort:** ~25 minutes
-### ✓ mostly done
+### ✓ coding done, need to test
 
 **Current Issue:**
 - No validation that worksheet matches expected structure before processing
@@ -337,7 +338,7 @@ def validate_worksheet(self,
 
 ### 9. Add Column Width Auto-Adjustment ⭐⭐
 **Priority:** 3 | **Complexity:** Low | **Effort:** ~20 minutes
-### ✓done
+### ✓ coding done, need to test
 
 **Current Issue:**
 - Exported spreadsheets have narrow default column widths
@@ -379,6 +380,7 @@ if qlist:
 
 ### 10. Add Dry-Run Mode ⭐⭐
 **Priority:** 3 | **Complexity:** Medium | **Effort:** ~30 minutes
+### ✓ coding done, need to test
 
 **Current Issue:**
 - `save_to_SQLAlchemyModel()` processes AND saves immediately
@@ -418,6 +420,7 @@ def save_to_SQLAlchemyModel(self,
 
 ### 11. Improve Error Record Structure 🔴
 **Priority:** 3 | **Complexity:** Medium | **Effort:** ~40 minutes
+### ✓ coding done, need to test
 
 **Current Issue:**
 - Error records use `$error-row{N}` keys inconsistently

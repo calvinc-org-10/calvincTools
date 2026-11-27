@@ -18,6 +18,7 @@ Use this checklist when you're ready to implement improvements (weeks from now).
 Complete these in order. Do ONE at a time. ~1 hour total.
 
 ### [✓ mostly done] 1. Extract SprdsheetFldDescriptor to Module Level (15 min)
+### coding done, need to test
 
 **Reference:** cExcelFile_implementation_examples.md → Section 1
 
@@ -38,6 +39,7 @@ Steps:
 ---
 
 ### [✓ mostly done] 2. Add Logging Instead of Print Statements (30 min)
+### coding done, need to test
 
 **Reference:** cExcelFile_implementation_examples.md → Section 2
 
@@ -65,6 +67,7 @@ Steps:
 ---
 
 ### [✓ mostly done] 3. Implement Column Freezing (20 min)
+### coding done, need to test
 
 **Reference:** cExcelFile_implementation_examples.md → Section 3
 
@@ -107,6 +110,7 @@ Steps:
 Complete these after Phase 1. ~2.5 hours total.
 
 ### [✓ mostly done] 5. Add Comprehensive Type Hints (45 min)
+### coding done, need to test
 
 **Reference:** cExcelFile_implementation_examples.md → Section 6
 
@@ -134,6 +138,7 @@ Steps:
 ---
 
 ### [✓ mostly done] 6. Standardize CleanProc Return Values (40 min)
+### coding done, need to test
 
 **Reference:** cExcelFile_implementation_examples.md → Section 4
 
@@ -153,18 +158,18 @@ Steps:
 
 ---
 
-### [ ] 7. Add Batch-Size Control for Database Inserts (30 min)
-
+### [✓ partially done] 7. Add Batch-Size Control for Database Inserts (30 min)
+### ✓ coding done, need to test
 **Reference:** cExcelFile_implementation_examples.md → Section 7
 
 Steps:
-- [ ] Add `batch_size` parameter to `save_to_SQLAlchemyModel()`
-- [ ] Add `dry_run` parameter to `save_to_SQLAlchemyModel()`
-- [ ] Implement chunked processing loop
-- [ ] Add logging for batch progress
+- [✓] Add `batch_size` parameter to `save_to_SQLAlchemyModel()`
+- [✓] Add `dry_run` parameter to `save_to_SQLAlchemyModel()`
+- [✓] Implement chunked processing loop
+- [✓] Add logging for batch progress
 - [ ] Test with small batch size (e.g., 10 records)
 - [ ] Run tests: `python -m pytest tests/ -v`
-- [ ] Commit: `git commit -m "Add batch-size control for database inserts"`
+- [✓] Commit: `git commit -m "Add batch-size control for database inserts"`
 
 **Signs of Success:**
 - Large imports process in chunks
@@ -175,7 +180,7 @@ Steps:
 ---
 
 ### [✓ partially done] 8. Add Sheet Validation Method (25 min)
-
+### coding done, need to test
 **Reference:** cExcelFile_implementation_examples.md → Section 8
 
 Steps:
@@ -196,6 +201,7 @@ Steps:
 ---
 
 ### [✓] 9. Add Column Width Auto-Adjustment (20 min)
+### ✓ coding done, need to test
 
 **Reference:** cExcelFile_implementation_examples.md → Section 9
 
