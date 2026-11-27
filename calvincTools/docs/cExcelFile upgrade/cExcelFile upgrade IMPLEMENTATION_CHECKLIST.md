@@ -174,17 +174,17 @@ Steps:
 
 ---
 
-### [ ] 8. Add Sheet Validation Method (25 min)
+### [✓ partially done] 8. Add Sheet Validation Method (25 min)
 
 **Reference:** cExcelFile_implementation_examples.md → Section 8
 
 Steps:
-- [ ] Add `validate_worksheet()` method to cExcelFile
+- [✓] Add `validate_worksheet()` method to cExcelFile
 - [ ] Implement 6 checks (worksheet exists, header row, columns, etc.)
 - [ ] Test with valid and invalid worksheets
 - [ ] Run tests: `python -m pytest tests/ -v`
-- [ ] Add docstring examples
-- [ ] Commit: `git commit -m "Add sheet validation method"`
+- [✓] Add docstring examples
+- [✓] Commit: `git commit -m "Add sheet validation method"`
 
 **Signs of Success:**
 - `validate_worksheet()` returns `(is_valid, errors)`

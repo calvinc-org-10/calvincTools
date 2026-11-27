@@ -234,6 +234,97 @@ class cExcelFile(Workbook):
             return None
     # load_from_file
 
+    def validate_worksheet(self,
+        WksheetName: str | None = None,
+        SprdsheetFlds: Dict[str, SprdsheetFldDescriptor] | None = None,
+        required_columns: List[str] | None = None
+    ) -> tuple[bool, List[str]]:
+        """Validate worksheet structure before processing.
+        
+        Args:
+            WksheetName: Worksheet name (None = active sheet)
+            SprdsheetFlds: Field descriptor dict
+            required_columns: List of required model field names (mapped via SprdsheetFlds)
+            
+        Returns:
+            (is_valid, error_messages) - tuple with validation result and error list
+            
+        Checks:
+            1. Worksheet exists
+            2. Has header row
+            3. Expected columns present
+            4. Required columns present
+            5. No duplicate columns
+            6. At least one data row present
+
+        # **Usage:**
+        # wb = cExcelFile.load_from_file('import.xlsx')
+
+        # is_valid, errors = wb.validate_worksheet(
+        #     WksheetName='Users',
+        #     SprdsheetFlds=field_defs,
+        #     required_columns=['name', 'email']
+        # )
+
+        # if not is_valid:
+        #     print("Validation failed:")
+        #     for error in errors:
+        #         print(f"  - {error}")
+        # else:
+        #     print("Worksheet validation passed! Safe to import.")
+        #     # Now proceed with import
+        #     data = wb.save_to_listofdict(...)
+        """
+        errors = []
+        wb = self
+        
+        # Check 1: Worksheet exists
+        ws = wb[WksheetName] if WksheetName in wb.sheetnames else wb.active
+        if ws is None:
+            errors.append(f"Worksheet '{WksheetName}' not found in workbook")
+            return (False, errors)
+        
+        # Check 2: Has header row
+        if ws.max_row < 1:
+            errors.append("Worksheet is empty (no header row)")
+            return (False, errors)
+        
+        # Check 3: Check for expected columns
+        if SprdsheetFlds:
+            header_row = ws[1]
+            header_values = [cell.value for cell in header_row if cell.value]
+            
+            # Check 4: Required columns present
+            if required_columns:
+                required_spsheet_cols = set()
+                for req_col in required_columns:
+                    # Find spreadsheet column name that maps to this model field
+                    for spsheet_col, desc in SprdsheetFlds.items():
+                        if desc.ModelFldName == req_col:
+                            required_spsheet_cols.add(spsheet_col)
+                            break
+                
+                missing = required_spsheet_cols - set(header_values)
+                if missing:
+                    errors.append(f"Missing required columns: {', '.join(missing)}")
+            
+            # Check 5: No duplicate columns
+            seen = {}
+            for col_idx, cell in enumerate(header_row, 1):
+                if cell.value in SprdsheetFlds and cell.value in seen:
+                    errors.append(f"Duplicate column '{cell.value}' at columns "
+                                f"{seen[cell.value]} and {col_idx}")
+                if cell.value in SprdsheetFlds:
+                    seen[cell.value] = col_idx
+        
+        # Check 6: At least one data row
+        if ws.max_row < 2:
+            errors.append("Worksheet has no data rows (only header)")
+        
+        is_valid = len(errors) == 0
+        return (is_valid, errors)
+    # validate_worksheet
+    
 # move this into a method of cExcelFile
 # class UpldSprdsheet():
     """Base class for handling spreadsheet uploads with field validation.
