@@ -1,5 +1,6 @@
 from typing import (Dict, List, Any, Type, Callable, cast, )
 from dataclasses import dataclass
+from datetime import datetime, date
 # from warnings import deprecated  # python >= 3.13
 
 from PySide6.QtCore import (
@@ -44,12 +45,20 @@ class SprdsheetFldDescriptor:
     ModelFldName:str
     CalculatedFld:bool
     AllowedTypes:tuple
+    ExcelFormat:str | None = None
     CleanProc:Any
 
-    def __init__(self, ModelFldName:str, CalculatedFld=None, AllowedTypes=None, CleanProc=None) -> None:
+    def __init__(self, 
+        ModelFldName:str, 
+        CalculatedFld=None, 
+        AllowedTypes=None, 
+        ExcelFormat=None, 
+        CleanProc=None
+        ) -> None:
         self.ModelFldName:str = ModelFldName
         self.CalculatedFld:bool = CalculatedFld or False
         self.AllowedTypes:tuple = AllowedTypes if AllowedTypes is not None else (str, )
+        self.ExcelFormat = ExcelFormat
         self.CleanProc = CleanProc
 
 @dataclass
@@ -67,6 +76,21 @@ class cExcelFile(Workbook):
     num_rows = None
     nRows = None
     nRowsSkipped = None
+    EXCEL_FORMATS = {
+        'currency': '$#,##0.00',
+        'percentage': '0.00%',
+        'date': 'mm/dd/yyyy',
+        'datetime': 'mm/dd/yyyy hh:mm:ss',
+        'integer': '#,##0',
+        'decimal': '#,##0.00'
+    }
+    _Python_to_Excel_map = {
+        int: 'integer',
+        float: 'decimal',
+        datetime: 'datetime',
+        date: 'date',
+        bool: None
+    }
     
     
     def __init__(self, *args, **kwargs) -> None:
@@ -96,6 +120,33 @@ class cExcelFile(Workbook):
         freeze_col_letter = get_column_letter(num_cols + 1)
         return f'{freeze_col_letter}2'
     # _calculate_freeze_address
+
+    def _infer_format_from_type(self, value: Any, AllowedTypes: tuple) -> str | None:
+        """Infer Excel format from Python type."""
+        # Map Python types to format keys
+        # int → 'integer'
+        # float → 'decimal' 
+        # datetime → 'datetime'
+        # date → 'date'
+        # bool → None (no special format)
+        for typ in self._Python_to_Excel_map:
+            if isinstance(value, typ) and typ in AllowedTypes:
+                return self._Python_to_Excel_map[typ]
+        return None
+    # _infer_format_from_type
+
+    def _apply_column_format(self, ws, col_index: int, format_key: str) -> None:
+        """Apply Excel number format to an entire column."""
+        # Get the format string from EXCEL_FORMATS
+        # Apply to all data cells (skip header row)
+        if format_key not in self.EXCEL_FORMATS:
+            logger.warning(f"Unknown format key: {format_key}")
+            return
+        format_str = self.EXCEL_FORMATS[format_key]
+        for row in ws.iter_rows(min_row=2, min_col=col_index, max_col=col_index):
+            for cell in row:
+                cell.number_format = format_str
+    # _apply_column_format
 
     def auto_adjust_columns(self, ws, max_width: int = 50) -> None:
         """Auto-fit column widths based on content.
@@ -135,6 +186,8 @@ class cExcelFile(Workbook):
         wsName:str|None = None,
         freezecols:int = 0, 
         auto_adjust: bool = True,
+        SprdsheetFlds: Dict[str, SprdsheetFldDescriptor] | None = None,
+        auto_format: bool = True,
         ) -> bool:
         """
         Load data from a SQLAlchemy model into the workbook.
@@ -185,6 +238,16 @@ class cExcelFile(Workbook):
             if auto_adjust:
                 self.auto_adjust_columns(ws)
     
+            # Apply formatting if requested
+            if auto_format and SprdsheetFlds:
+                for col_index, field_name in enumerate(fields, start=1):
+                    for spsheet_col, descriptor in SprdsheetFlds.items():
+                        if spsheet_col == field_name:
+                            format_key = descriptor.ExcelFormat or \
+                                        self._infer_format_from_type(qlist[0].get(field_name), 
+                                                                    descriptor.AllowedTypes)
+                            if format_key:
+                                self._apply_column_format(ws, col_index, format_key)
         #endif qlist
 
         return True
@@ -194,6 +257,9 @@ class cExcelFile(Workbook):
         qset:SQLAlchemyTableModel, 
         wsName:str|None = None,
         freezecols:int = 0, 
+        auto_adjust: bool = True,
+        SprdsheetFlds: Dict[str, SprdsheetFldDescriptor] | None = None,
+        auto_format: bool = True,
         ) -> bool:
         """
         qset: a QAbstractTableModel or list of dictionaries
@@ -220,7 +286,12 @@ class cExcelFile(Workbook):
                 except:
                     qlist = []
 
-        return self.load_from_listofdict(qlist, wsName, freezecols)
+        return self.load_from_listofdict(
+            qlist, wsName, freezecols, 
+            auto_adjust=auto_adjust, 
+            SprdsheetFlds=SprdsheetFlds, 
+            auto_format=auto_format
+            )
     # load_from_SQLAlchModel
 
     @classmethod

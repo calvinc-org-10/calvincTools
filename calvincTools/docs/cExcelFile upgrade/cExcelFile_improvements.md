@@ -420,7 +420,7 @@ def save_to_SQLAlchemyModel(self,
 
 ### 11. Improve Error Record Structure 🔴
 **Priority:** 3 | **Complexity:** Medium | **Effort:** ~40 minutes
-### ✓ coding done, need to test
+#### ✓ coding done, need to test
 
 **Current Issue:**
 - Error records use `$error-row{N}` keys inconsistently
@@ -474,6 +474,7 @@ class ErrorRecord:
 
 ### 12. Add Auto-Format Number/Date Columns ⭐
 **Priority:** 3 | **Complexity:** High | **Effort:** ~60 minutes
+#### ✓ coding done, need to test
 
 **Current Issue:**
 - Loaded data has no Excel formatting
